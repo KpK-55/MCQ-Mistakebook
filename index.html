@@ -153,6 +153,10 @@
         <select id="filterSubject" class="flex-1 sm:flex-none px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-slate-300 focus:outline-none">
           <option value="ALL">All Subjects</option>
         </select>
+        <select id="filterChapter" class="flex-1 sm:flex-none px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-slate-300 focus:outline-none">
+          <option value="ALL">All Chapters</option>
+        </select>
+        <button id="exportPdfBtn" type="button" class="px-3 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white whitespace-nowrap">Export PDF</button>
 
         <select id="filterReviewStatus" class="flex-1 sm:flex-none px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-slate-300 focus:outline-none">
           <option value="ALL">All Status</option>
@@ -333,24 +337,24 @@
             <input type="text" id="modalQNum" placeholder="e.g. 43 or Q12" required class="w-full px-3 py-2 bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl font-semibold text-black dark:text-white">
           </div>
           <div>
-            <label class="block text-xs font-bold text-black dark:text-slate-300 mb-1">Source *</label>
+            <div class="flex items-center justify-between mb-1"><label class="block text-xs font-bold text-black dark:text-slate-300">Source *</label><button type="button" id="quickAddSourceBtn" class="text-brand-500 font-bold">+ Add</button></div>
             <select id="modalSource" required class="w-full px-3 py-2 bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-white"></select>
           </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-bold text-black dark:text-slate-300 mb-1">Subject *</label>
+            <div class="flex items-center justify-between mb-1"><label class="block text-xs font-bold text-black dark:text-slate-300">Subject *</label><button type="button" id="quickAddSubjectBtn" class="text-brand-500 font-bold">+ Add</button></div>
             <select id="modalSubject" required class="w-full px-3 py-2 bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-white"></select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-black dark:text-slate-300 mb-1">Chapter *</label>
+            <div class="flex items-center justify-between mb-1"><label class="block text-xs font-bold text-black dark:text-slate-300">Chapter *</label><button type="button" id="quickAddChapterBtn" class="text-brand-500 font-bold">+ Add</button></div>
             <select id="modalChapter" required class="w-full px-3 py-2 bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-white"></select>
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-black dark:text-slate-300 mb-1.5">Error Classification *</label>
+          <div class="flex items-center justify-between mb-1.5"><label class="block text-xs font-bold text-black dark:text-slate-300">Error Classification *</label><button type="button" id="quickAddErrorTypeBtn" class="text-brand-500 font-bold">+ Add type</button></div>
           <div id="modalErrorTypesPillContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
         </div>
 
@@ -403,6 +407,7 @@
             </button>
             <span id="voiceTimer" class="font-mono text-xs text-slate-500 ml-1">00:00</span>
           </div>
+          <div class="flex items-center gap-2"><label class="cursor-pointer text-xs font-bold text-brand-500">Upload audio<input type="file" id="modalAudioInput" accept="audio/*" class="hidden"></label></div>
           <div id="voicePlaybackContainer" class="hidden flex items-center gap-2">
             <audio id="modalAudioEl" controls class="h-7 w-36"></audio>
             <button type="button" id="deleteVoiceBtn" class="text-rose-500 font-bold text-xs">Remove</button>
@@ -458,6 +463,8 @@
     const LOCAL_DATA_KEY = "mcq_error_entries_stable_v1";
     const LOCAL_CONFIG_KEY = "mcq_app_config_stable_v1";
     const LAST_SYNC_KEY = "mcq_last_synced_stable_v1";
+    const CONFIG_UPDATED_KEY = "mcq_config_updated_at_v1";
+    let configUpdatedAt = Number(localStorage.getItem(CONFIG_UPDATED_KEY) || 0);
 
     const DEFAULT_CONFIG = {
       sources: ["MCQ Practice Session", "Part Test", "Grand Test", "Allen Minor Test", "PW DPP"],
@@ -557,6 +564,7 @@
     let gDriveAccessToken = localStorage.getItem(DRIVE_TOKEN_KEY) || null;
     let gDriveFileId = null;
     let isSyncing = false;
+    let syncRequestedWhileBusy = false;
 
     let mediaRecorder = null;
     let audioChunks = [];
@@ -584,12 +592,17 @@
       }, 2000);
     }
 
-    function saveLocalCache() {
+    function saveLocalCache(configChanged = false) {
       try {
         localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(errorEntries));
         localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(appConfig));
+        if (configChanged) {
+          configUpdatedAt = Date.now();
+          localStorage.setItem(CONFIG_UPDATED_KEY, String(configUpdatedAt));
+        }
       } catch (e) {
         console.error("Storage error:", e);
+        showToast("Storage full. Export backup and reduce image/audio size.");
       }
     }
 
@@ -730,6 +743,7 @@
           updateDriveUI(false);
           return null;
         }
+        if (!res.ok) throw new Error(`Drive file search failed (${res.status})`);
         const data = await res.json();
         if (data.files && data.files.length > 0) {
           gDriveFileId = data.files[0].id;
@@ -748,6 +762,7 @@
           headers: { Authorization: `Bearer ${gDriveAccessToken}` }
         });
         if (res.ok) return await res.json();
+        throw new Error(`Drive download failed (${res.status})`);
       } catch (e) {}
       return null;
     }
@@ -802,22 +817,18 @@
       if (state !== "working") setTimeout(() => { if (!isSyncing) wrap.classList.add("hidden"); }, 2600);
     }
 
-    function mergeAppConfig(remote = {}) {
-      const merged = { sources: [], subjects: {}, errorTypes: [] };
-      const local = appConfig || DEFAULT_CONFIG;
-      merged.sources = [...new Set([...(remote.sources || []), ...(local.sources || [])])];
-      const subjectNames = new Set([...Object.keys(remote.subjects || {}), ...Object.keys(local.subjects || {})]);
-      subjectNames.forEach(name => merged.subjects[name] = [...new Set([...(remote.subjects?.[name] || []), ...(local.subjects?.[name] || [])])]);
-      const types = new Map();
-      [...(remote.errorTypes || []), ...(local.errorTypes || [])].forEach(et => { if (et?.label) { const key = et.id || et.label; if (!types.has(key)) types.set(key, et); else if (!types.get(key).color && et.color) types.set(key, et); } });
-      merged.errorTypes = [...types.values()];
-      if (!merged.errorTypes.length) merged.errorTypes = DEFAULT_CONFIG.errorTypes.map(x => ({...x}));
-      return merged;
+    function normalizeConfig(config = {}) {
+      const normalized = {
+        sources: Array.isArray(config.sources) ? config.sources : [...DEFAULT_CONFIG.sources],
+        subjects: config.subjects && typeof config.subjects === "object" ? config.subjects : structuredClone(DEFAULT_CONFIG.subjects),
+        errorTypes: Array.isArray(config.errorTypes) && config.errorTypes.length ? config.errorTypes : DEFAULT_CONFIG.errorTypes.map(x => ({...x}))
+      };
+      return normalized;
     }
 
     async function syncWithGoogleDriveImmediate() {
-      if (!gDriveAccessToken) { setSyncProgress("Drive not connected", null, "error"); showToast("Connect Google Drive first"); return; }
-      if (isSyncing) return;
+      if (!gDriveAccessToken) { setSyncProgress("Drive not connected", null, "error"); return; }
+      if (isSyncing) { syncRequestedWhileBusy = true; return; }
       isSyncing = true;
       const spinner = document.getElementById("syncSpinner");
       if (spinner) spinner.classList.add("spin-fast");
@@ -836,12 +847,20 @@
             if (!local || (remoteEntry.updatedAt || 0) > (local.updatedAt || 0)) map.set(remoteEntry.id, remoteEntry);
           });
           errorEntries = Array.from(map.values());
-          appConfig = mergeAppConfig(remoteData.appConfig || {});
+          const remoteConfigTime = Number(remoteData.configUpdatedAt || remoteData.syncedAt || 0);
+          if (remoteData.appConfig && remoteConfigTime > configUpdatedAt) {
+            appConfig = normalizeConfig(remoteData.appConfig);
+            configUpdatedAt = remoteConfigTime;
+            localStorage.setItem(CONFIG_UPDATED_KEY, String(configUpdatedAt));
+            localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(appConfig));
+          } else {
+            appConfig = normalizeConfig(appConfig);
+          }
           saveLocalCache();
           populateDropdowns(); renderTable();
         }
         setSyncProgress("Uploading merged logs and settings…", 65);
-        const payload = { version: "6.0.0", syncedAt: Date.now(), appConfig, errorEntries };
+        const payload = { version: "6.1.0", syncedAt: Date.now(), configUpdatedAt, appConfig, errorEntries };
         const ok = await uploadDriveSyncFile(payload);
         if (!ok) throw new Error("Drive upload failed. Check OAuth permissions, network, and Drive API configuration.");
         localStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
@@ -855,6 +874,10 @@
       } finally {
         isSyncing = false;
         if (spinner) spinner.classList.remove("spin-fast");
+        if (syncRequestedWhileBusy) {
+          syncRequestedWhileBusy = false;
+          setTimeout(() => syncWithGoogleDriveImmediate(), 150);
+        }
       }
     }
 
@@ -871,6 +894,8 @@
       }
 
       const fSub = document.getElementById("filterSubject");
+      const fChap = document.getElementById("filterChapter");
+      const priorChapter = fChap?.value || "ALL";
       const mSub = document.getElementById("modalSubject");
       const tSub = document.getElementById("taxSubjectSelect");
       if (fSub && mSub && tSub) {
@@ -884,6 +909,11 @@
         });
       }
 
+      if (fChap) {
+        const allChapters = [...new Set(Object.values(appConfig.subjects).flat())].sort((a,b)=>a.localeCompare(b));
+        fChap.innerHTML = '<option value="ALL">All Chapters</option>' + allChapters.map(ch => `<option value="${escapeHtml(ch)}">${escapeHtml(ch)}</option>`).join("");
+        if (allChapters.includes(priorChapter)) fChap.value = priorChapter;
+      }
       if (mSub) updateChapterSelect(mSub.value);
       renderErrorTypeRadioPills();
       renderTaxonomyLists();
@@ -979,6 +1009,7 @@
       const q = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
       const fSrc = document.getElementById("filterSource")?.value || "ALL";
       const fSub = document.getElementById("filterSubject")?.value || "ALL";
+      const fChap = document.getElementById("filterChapter")?.value || "ALL";
       const fStatus = document.getElementById("filterReviewStatus")?.value || "ALL";
       const list = errorEntries.filter(item => !item.deleted).sort((a,b) => (b.createdAt||0)-(a.createdAt||0)).filter(item => {
         if (fSrc !== "ALL" && item.source !== fSrc) return false;
@@ -1203,7 +1234,7 @@
 
     window.removeTaxSource = (idx) => {
       appConfig.sources.splice(idx, 1);
-      saveLocalCache();
+      saveLocalCache(true);
       populateDropdowns();
       syncWithGoogleDriveImmediate();
     };
@@ -1211,7 +1242,7 @@
     window.removeTaxChapter = (subj, idx) => {
       if (appConfig.subjects[subj]) {
         appConfig.subjects[subj].splice(idx, 1);
-        saveLocalCache();
+        saveLocalCache(true);
         populateDropdowns();
         syncWithGoogleDriveImmediate();
       }
@@ -1220,7 +1251,7 @@
     window.removeTaxErrorType = (idx) => {
       if (appConfig.errorTypes.length <= 1) return;
       appConfig.errorTypes.splice(idx, 1);
-      saveLocalCache();
+      saveLocalCache(true);
       populateDropdowns();
       syncWithGoogleDriveImmediate();
     };
@@ -1317,7 +1348,7 @@
         if (val && !appConfig.sources.includes(val)) {
           appConfig.sources.push(val);
           input.value = "";
-          saveLocalCache();
+          saveLocalCache(true);
           populateDropdowns();
           syncWithGoogleDriveImmediate();
         }
@@ -1329,7 +1360,7 @@
         if (val && !appConfig.subjects[val]) {
           appConfig.subjects[val] = [];
           input.value = "";
-          saveLocalCache();
+          saveLocalCache(true);
           populateDropdowns();
           syncWithGoogleDriveImmediate();
         }
@@ -1342,7 +1373,7 @@
         if (subj && val && appConfig.subjects[subj] && !appConfig.subjects[subj].includes(val)) {
           appConfig.subjects[subj].push(val);
           input.value = "";
-          saveLocalCache();
+          saveLocalCache(true);
           populateDropdowns();
           syncWithGoogleDriveImmediate();
         }
@@ -1355,7 +1386,7 @@
         if (name) {
           appConfig.errorTypes.push({ id: "et_" + Date.now(), label: name, color: col });
           input.value = "";
-          saveLocalCache();
+          saveLocalCache(true);
           populateDropdowns();
           syncWithGoogleDriveImmediate();
         }
@@ -1365,6 +1396,126 @@
       document.getElementById("authDriveBtn")?.addEventListener("click", triggerGoogleAuth);
       document.getElementById("disconnectDriveBtn")?.addEventListener("click", disconnectGoogleDrive);
       document.getElementById("quickSyncBtn")?.addEventListener("click", syncWithGoogleDriveImmediate);
+
+      // Reliable image/audio attachment handlers (previous version had no file-input listeners).
+      const readAsDataUrl = file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("Could not read selected file"));
+        reader.readAsDataURL(file);
+      });
+      const compressImage = file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("Image read failed"));
+        reader.onload = () => {
+          const img = new Image();
+          img.onerror = () => reject(new Error("Image decode failed"));
+          img.onload = () => {
+            const maxSide = 1600, scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(img.width * scale)); canvas.height = Math.max(1, Math.round(img.height * scale));
+            const ctx = canvas.getContext("2d"); if (!ctx) { reject(new Error("Canvas unavailable")); return; }
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", 0.78));
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+      const bindImageInput = (inputId, previewId, labelId, removeId, setter) => {
+        document.getElementById(inputId)?.addEventListener("change", async e => {
+          const file = e.target.files?.[0]; if (!file) return;
+          if (!file.type.startsWith("image/")) { showToast("Choose an image file"); return; }
+          try {
+            const data = await compressImage(file);
+            setter(data);
+            const preview = document.getElementById(previewId); preview.src = data; preview.classList.remove("hidden");
+            document.getElementById(labelId).textContent = file.name;
+            document.getElementById(removeId).classList.remove("hidden");
+          } catch (err) { showToast("Image upload failed"); }
+        });
+        document.getElementById(removeId)?.addEventListener("click", () => {
+          setter(null); document.getElementById(previewId).src = ""; document.getElementById(previewId).classList.add("hidden");
+          document.getElementById(labelId).textContent = "Upload photo"; document.getElementById(inputId).value = "";
+          document.getElementById(removeId).classList.add("hidden");
+        });
+      };
+      bindImageInput("modalQImgInput", "modalQImgPreview", "modalQImgLabel", "modalRemoveQImgBtn", value => questionImgBase64 = value);
+      bindImageInput("modalSImgInput", "modalSImgPreview", "modalSImgLabel", "modalRemoveSImgBtn", value => solutionImgBase64 = value);
+
+      document.getElementById("modalAudioInput")?.addEventListener("change", async e => {
+        const file = e.target.files?.[0]; if (!file) return;
+        if (!file.type.startsWith("audio/")) { showToast("Choose an audio file"); return; }
+        if (file.size > 1500000) { showToast("Audio file is over 1.5 MB. Trim/compress it first to avoid browser storage limits."); e.target.value = ""; return; }
+        try {
+          recordedAudioBase64 = await readAsDataUrl(file);
+          const audio = document.getElementById("modalAudioEl"); audio.src = recordedAudioBase64;
+          document.getElementById("voicePlaybackContainer").classList.remove("hidden");
+          showToast("Audio attached");
+        } catch (err) { showToast("Audio upload failed"); }
+      });
+      document.getElementById("deleteVoiceBtn")?.addEventListener("click", () => {
+        recordedAudioBase64 = null; document.getElementById("modalAudioEl").removeAttribute("src");
+        document.getElementById("modalAudioInput").value = ""; document.getElementById("voicePlaybackContainer").classList.add("hidden");
+      });
+      document.getElementById("startVoiceRecBtn")?.addEventListener("click", async () => {
+        try {
+          if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw new Error("Audio recording is not supported in this browser. Use HTTPS and a supported browser.");
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          audioChunks = []; mediaRecorder = new MediaRecorder(stream);
+          mediaRecorder.ondataavailable = ev => { if (ev.data?.size) audioChunks.push(ev.data); };
+          mediaRecorder.onstop = async () => {
+            try {
+              const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+              recordedAudioBase64 = await readAsDataUrl(new File([blob], "voice-note.webm", {type: blob.type}));
+              document.getElementById("modalAudioEl").src = recordedAudioBase64;
+              document.getElementById("voicePlaybackContainer").classList.remove("hidden");
+            } catch (err) { showToast("Could not save recording"); }
+            stream.getTracks().forEach(track => track.stop());
+            clearInterval(recordInterval); recordInterval = null;
+            document.getElementById("startVoiceRecBtn").disabled = false; document.getElementById("stopVoiceRecBtn").disabled = true;
+          };
+          mediaRecorder.start(); recordSeconds = 0;
+          document.getElementById("startVoiceRecBtn").disabled = true; document.getElementById("stopVoiceRecBtn").disabled = false;
+          recordInterval = setInterval(() => { recordSeconds++; document.getElementById("voiceTimer").textContent = `${String(Math.floor(recordSeconds/60)).padStart(2,"0")}:${String(recordSeconds%60).padStart(2,"0")}`; }, 1000);
+        } catch (err) { showToast(err.message || "Microphone permission denied"); }
+      });
+      document.getElementById("stopVoiceRecBtn")?.addEventListener("click", () => { if (mediaRecorder?.state === "recording") mediaRecorder.stop(); });
+
+      // Add taxonomy directly while logging a mistake.
+      document.getElementById("quickAddSourceBtn")?.addEventListener("click", () => {
+        const name = prompt("New source name:"); if (!name?.trim()) return; const v = name.trim();
+        if (!appConfig.sources.includes(v)) { appConfig.sources.push(v); saveLocalCache(true); populateDropdowns(); }
+        document.getElementById("modalSource").value = v; syncWithGoogleDriveImmediate();
+      });
+      document.getElementById("quickAddSubjectBtn")?.addEventListener("click", () => {
+        const name = prompt("New subject name:"); if (!name?.trim()) return; const v = name.trim();
+        if (!appConfig.subjects[v]) { appConfig.subjects[v] = []; saveLocalCache(true); populateDropdowns(); }
+        document.getElementById("modalSubject").value = v; updateChapterSelect(v); syncWithGoogleDriveImmediate();
+      });
+      document.getElementById("quickAddChapterBtn")?.addEventListener("click", () => {
+        const sub = document.getElementById("modalSubject").value; if (!sub) { showToast("Select a subject first"); return; }
+        const name = prompt(`New chapter for ${sub}:`); if (!name?.trim()) return; const v = name.trim();
+        appConfig.subjects[sub] ||= []; if (!appConfig.subjects[sub].includes(v)) { appConfig.subjects[sub].push(v); saveLocalCache(true); }
+        updateChapterSelect(sub, v); populateDropdowns(); document.getElementById("modalChapter").value = v; syncWithGoogleDriveImmediate();
+      });
+      document.getElementById("quickAddErrorTypeBtn")?.addEventListener("click", () => {
+        const name = prompt("New error classification:"); if (!name?.trim()) return; const v = name.trim();
+        if (!appConfig.errorTypes.some(et => et.label.toLowerCase() === v.toLowerCase())) { appConfig.errorTypes.push({id:"et_"+crypto.randomUUID(),label:v,color:"purple"}); saveLocalCache(true); }
+        renderErrorTypeRadioPills(v); renderTable(); syncWithGoogleDriveImmediate();
+      });
+
+      // Print only the currently filtered records and requested columns; user can choose Save as PDF.
+      document.getElementById("exportPdfBtn")?.addEventListener("click", () => {
+        const rows = getFilteredEntries();
+        if (!rows.length) { showToast("No matching logs to export"); return; }
+        const esc = value => escapeHtml(value ?? "");
+        const printHtml = `<!doctype html><html><head><meta charset="utf-8"><title>MCQ Mistake Logs</title><style>
+          body{font:12px Arial,sans-serif;color:#111;margin:20px}h1{font-size:18px}p{color:#555;font-size:10px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #bbb;padding:6px;vertical-align:top;overflow-wrap:anywhere;white-space:pre-wrap}th{background:#eee;text-align:left}th:nth-child(1){width:7%}th:nth-child(2){width:16%}th:nth-child(3){width:11%}th:nth-child(4){width:17%}th:nth-child(5){width:14%}th:nth-child(6){width:35%}@media print{body{margin:10mm}tr{break-inside:avoid}}
+          </style></head><body><h1>MCQ Error Tracker — Mistake Logs</h1><p>Exported ${new Date().toLocaleString()} · ${rows.length} entries</p><table><thead><tr><th>Question #</th><th>Source</th><th>Subject</th><th>Chapter</th><th>Error Type</th><th>Text Explanation</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.questionNum)}</td><td>${esc(x.source)}</td><td>${esc(x.subject)}</td><td>${esc(x.chapter)}</td><td>${esc(x.errorType)}</td><td>${esc(x.remedialAction)}</td></tr>`).join("")}</tbody></table><script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`;
+        const w = window.open("", "_blank"); if (!w) { showToast("Allow pop-ups to export PDF"); return; }
+        w.document.open(); w.document.write(printHtml); w.document.close();
+      });
 
       // JSON backup
       document.getElementById("exportJsonBtn")?.addEventListener("click", () => {
@@ -1387,7 +1538,7 @@
             if (parsed.appConfig && parsed.errorEntries) {
               appConfig = parsed.appConfig;
               errorEntries = parsed.errorEntries;
-              saveLocalCache();
+              saveLocalCache(true);
               populateDropdowns();
               renderTable();
               syncWithGoogleDriveImmediate();
@@ -1401,7 +1552,7 @@
       });
 
       // Filter events
-      ["searchInput", "filterSource", "filterSubject", "filterReviewStatus"].forEach(id => {
+      ["searchInput", "filterSource", "filterSubject", "filterChapter", "filterReviewStatus"].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
           el.addEventListener("input", renderTable);
