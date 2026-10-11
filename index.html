@@ -686,20 +686,10 @@
       });
     }
 
-    function queueLocalChange(type, entityId, payload) {
-      const record = {
-        changeId: (crypto.randomUUID ? crypto.randomUUID() : `chg_${Date.now()}_${Math.random().toString(36).slice(2)}`),
-        schemaVersion: CHANGE_SCHEMA_VERSION,
-        clientId: getOrCreateSyncClientId(),
-        sequence: ++localMutationSequence,
-        type, entityId: String(entityId || "config"),
-        changedAt: Date.now(), payload
-      };
-      queuedWriteChain = queuedWriteChain.then(() => outboxPut(record)).catch(err => {
-        console.error("Could not persist sync change in IndexedDB", err);
-        showToast("Sync queue unavailable. Export a backup before continuing.");
-      });
-    }
+    // New storage model: per-log Drive files are authoritative. Do not create
+    // append-only change_*.json records; this prevents the Data folder growing
+    // on every edit. The old queue is retained only for compatibility with old installs.
+    function queueLocalChange(type, entityId, payload) { return; }
 
     const SYNC_CLIENT_ID_KEY = "mcq_sync_client_id_v3";
     function getOrCreateSyncClientId() {
@@ -1302,6 +1292,45 @@
       }
     }
 
+    const PER_LOG_SYNC_STATE_KEY = "mcq_per_log_sync_state_v1";
+    const PER_LOG_SCAN_CURSOR_KEY = "mcq_per_log_scan_cursor_v1";
+    const PER_LOG_SETTINGS_NAME = "settings_current.json";
+
+    function readPerLogSyncState() {
+      try { return JSON.parse(localStorage.getItem(PER_LOG_SYNC_STATE_KEY) || '{"files":{}}'); }
+      catch (_) { return { files: {} }; }
+    }
+    function entryFileName(id) {
+      return `log_${String(id).replace(/[^a-zA-Z0-9_-]/g, "_")}.json`;
+    }
+    function entrySignature(entry) { return JSON.stringify(entry); }
+
+    async function uploadJsonDriveFile(folderId, name, payload, existingFileId = null, appProperties = {}) {
+      const content = JSON.stringify(payload);
+      if (existingFileId) {
+        const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(existingFileId)}?uploadType=media`, {
+          method: "PATCH", headers: { Authorization: `Bearer ${gDriveAccessToken}`, "Content-Type": "application/json" }, body: content
+        });
+        if (res.ok) return existingFileId;
+        if (res.status !== 404) throw new Error(`Could not update ${name} (${res.status})`);
+      }
+      const metadata = { name, mimeType: "application/json", parents: [folderId], appProperties };
+      const form = new FormData();
+      form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
+      form.append("file", new Blob([content], { type: "application/json" }));
+      const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,appProperties", {
+        method: "POST", headers: { Authorization: `Bearer ${gDriveAccessToken}` }, body: form
+      });
+      if (!res.ok) throw new Error(`Could not create ${name} (${res.status})`);
+      return (await res.json()).id;
+    }
+
+    async function downloadJsonDriveFile(fileId) {
+      const res = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media`, { headers: { Authorization: `Bearer ${gDriveAccessToken}` } });
+      if (!res.ok) throw new Error(`Could not download Drive record (${res.status})`);
+      return res.json();
+    }
+
     async function syncWithGoogleDriveImmediate() {
       if (!gDriveAccessToken) { setSyncProgress("Drive not connected", null, "error"); return; }
       if (isSyncing) { syncRequestedWhileBusy = true; return; }
@@ -1310,69 +1339,100 @@
       if (spinner) spinner.classList.add("spin-fast");
       setSyncProgress("Checking Drive…", 8);
       try {
-        const remoteMeta = await locateDriveSyncFile();
-        setSyncProgress("Preparing change log…", 18);
         const folders = await ensureMediaFolders();
-        const remoteChanges = await downloadRemoteChanges(folders.Data);
-        if (remoteChanges.length) applyRemoteChanges(remoteChanges);
-        setSyncProgress("Downloading latest data…", 30);
-        let remoteData = null;
-        if (remoteMeta) remoteData = await downloadDriveSyncFile(remoteMeta.id);
-        if (remoteData) {
-          // Merge records by stable ID and newest update timestamp; retain deletion tombstones.
-          const map = new Map(errorEntries.map(e => [e.id, e]));
-          (Array.isArray(remoteData.errorEntries) ? remoteData.errorEntries : []).forEach(remoteEntry => {
-            if (!remoteEntry?.id) return;
-            const local = map.get(remoteEntry.id);
-            const remoteTime = Number(remoteEntry.updatedAt || 0);
-            const localTime = Number(local?.updatedAt || 0);
-            if (!local || remoteTime > localTime) {
-              map.set(remoteEntry.id, remoteEntry);
-            } else if (remoteTime === localTime) {
-              map.set(remoteEntry.id, mergeEqualTimestampMediaRefs(local, remoteEntry));
-            }
-          });
-          errorEntries = Array.from(map.values());
-          const remoteConfigTime = Number(remoteData.configUpdatedAt || remoteData.syncedAt || 0);
-          if (remoteData.appConfig && remoteConfigTime > configUpdatedAt) {
-            appConfig = normalizeConfig(remoteData.appConfig);
-            configUpdatedAt = remoteConfigTime;
+        const dataFolderId = folders.Data;
+        const state = readPerLogSyncState();
+        state.files = state.files || {};
+        const cursor = Number(localStorage.getItem(PER_LOG_SCAN_CURSOR_KEY) || 0);
+        const scanFrom = cursor > 0 ? Math.max(0, cursor - 60000) : 0;
+        const q = `'${dataFolderId}' in parents and trashed = false and (name contains 'log_' or name = '${PER_LOG_SETTINGS_NAME}')` +
+          (scanFrom ? ` and modifiedTime > '${new Date(scanFrom).toISOString()}'` : "");
+        setSyncProgress(cursor ? "Finding changed logs…" : "Setting up log sync…", 18);
+        const remoteFiles = await driveListAllFiles(q, "files(id,name,modifiedTime,appProperties),nextPageToken");
+        const now = Date.now();
+        const remoteByName = new Map(remoteFiles.map(f => [f.name, f]));
+        const remoteEntries = [];
+        let settingsRemote = null;
+        await runWithConcurrency(remoteFiles, 8, async file => {
+          try {
+            const data = await downloadJsonDriveFile(file.id);
+            if (file.name === PER_LOG_SETTINGS_NAME) settingsRemote = { file, data };
+            else if (file.name.startsWith("log_") && data && data.id) remoteEntries.push({ file, entry: data });
+          } catch (e) { console.warn("Could not read per-log file", file.name, e); throw e; }
+        });
+
+        // Merge remote per-log records by stable ID and updatedAt. An edit to an
+        // old log changes only its own Drive file; unchanged log files are untouched.
+        const map = new Map(errorEntries.filter(e => e && e.id).map(e => [String(e.id), e]));
+        for (const { file, entry } of remoteEntries) {
+          const id = String(entry.id);
+          const local = map.get(id);
+          const remoteTime = Number(entry.updatedAt || 0), localTime = Number(local?.updatedAt || 0);
+          if (!local || remoteTime > localTime) map.set(id, entry);
+          else if (remoteTime === localTime) map.set(id, mergeEqualTimestampMediaRefs(local, entry));
+          state.files[id] = { ...(state.files[id] || {}), fileId: file.id, fileName: file.name, signature: entrySignature(entry) };
+        }
+        errorEntries = Array.from(map.values());
+        if (settingsRemote?.data?.appConfig) {
+          const rt = Number(settingsRemote.data.configUpdatedAt || 0);
+          if (rt > configUpdatedAt) {
+            appConfig = normalizeConfig(settingsRemote.data.appConfig);
+            configUpdatedAt = rt;
             localStorage.setItem(CONFIG_UPDATED_KEY, String(configUpdatedAt));
             localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(appConfig));
-          } else {
-            appConfig = normalizeConfig(appConfig);
           }
-          saveLocalCache();
-          populateDropdowns(); renderTable();
         }
-        setSyncProgress("Uploading pending media…", 52);
-        const mediaSummary = await uploadPendingMedia();
-        if (mediaSummary.failed) throw new Error(`${mediaSummary.failed} media upload(s) failed. Their data remains embedded locally; retry sync before relying on another device.`);
-        setSyncProgress("Uploading logs and settings…", 82);
-        const payload = createDrivePayload();
-        const ok = await uploadDriveSyncFile(payload);
-        if (!ok) throw new Error("Drive upload failed. Check OAuth permissions, network, and Drive API configuration.");
-        setSyncProgress("Publishing change log…", 92);
-        const outboxResult = await flushChangeOutbox(folders.Data);
-        if (outboxResult.remaining) throw new Error(`${outboxResult.remaining} change(s) remain queued and will retry on the next sync.`);
-        localStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
+        saveLocalCache();
+        populateDropdowns(); renderTable();
+
+        setSyncProgress("Uploading new or edited logs…", 45);
+        const dirty = errorEntries.filter(e => e && e.id && (!state.files[String(e.id)] || state.files[String(e.id)].signature !== entrySignature(e)));
+        await runWithConcurrency(dirty, 4, async entry => {
+          const id = String(entry.id);
+          const name = entryFileName(id);
+          const old = state.files[id];
+          const fileId = await uploadJsonDriveFile(dataFolderId, name, entry, old?.fileId || remoteByName.get(name)?.id || null, { mcqEntryId: id, mcqRecordSchema: "1" });
+          state.files[id] = { fileId, fileName: name, signature: entrySignature(entry) };
+        });
+
+        setSyncProgress("Syncing settings and media…", 70);
+        const settingsName = PER_LOG_SETTINGS_NAME;
+        const settingsFile = remoteByName.get(settingsName);
+        const localConfigPayload = { appConfig, configUpdatedAt, schemaVersion: 1 };
+        const settingsSignature = JSON.stringify(localConfigPayload);
+        if (!state.settingsSignature || state.settingsSignature !== settingsSignature || !settingsFile) {
+          const settingsId = await uploadJsonDriveFile(dataFolderId, settingsName, localConfigPayload, settingsFile?.id || state.settingsFileId || null, { mcqSettingsSchema: "1" });
+          state.settingsFileId = settingsId;
+          state.settingsSignature = settingsSignature;
+        } else if (settingsFile && !state.settingsFileId) state.settingsFileId = settingsFile.id;
+
+        const mediaSummary = await uploadPendingMedia(folders);
+        if (mediaSummary.failed) throw new Error(`${mediaSummary.failed} media upload(s) failed; failed media remains local.`);
+        // Recalculate signatures after media uploads have replaced data URLs with Drive IDs.
+        for (const entry of errorEntries) {
+          if (!entry?.id) continue;
+          const id = String(entry.id), existing = state.files[id];
+          if (existing && existing.signature !== entrySignature(entry)) {
+            const fileId = await uploadJsonDriveFile(dataFolderId, existing.fileName || entryFileName(id), entry, existing.fileId || null, { mcqEntryId: id, mcqRecordSchema: "1" });
+            state.files[id] = { fileId, fileName: existing.fileName || entryFileName(id), signature: entrySignature(entry) };
+          }
+        }
+        localStorage.setItem(PER_LOG_SYNC_STATE_KEY, JSON.stringify(state));
+        localStorage.setItem(PER_LOG_SCAN_CURSOR_KEY, String(now));
+        localStorage.setItem(LAST_SYNC_KEY, String(Date.now()));
         updateDriveUI(true);
         setSyncProgress("Synced successfully", 100, "success");
-        showToast("Drive sync complete");
+        showToast(`Sync complete · ${dirty.length} log(s) updated`);
       } catch (e) {
-        console.error("Google Drive sync failed:", e);
+        console.error("Google Drive per-log sync failed:", e);
         setSyncProgress("Sync failed — retry when online", null, "error");
-        showToast(e?.message?.includes("401") ? "Drive session expired. Sign in again." : "Sync failed. Check connection and permissions.");
+        showToast(e?.message?.includes("401") ? "Drive session expired. Sign in again." : (e.message || "Sync failed. Check connection and permissions."));
       } finally {
         isSyncing = false;
         if (spinner) spinner.classList.remove("spin-fast");
-        if (syncRequestedWhileBusy) {
-          syncRequestedWhileBusy = false;
-          setTimeout(() => syncWithGoogleDriveImmediate(), 150);
-        }
+        if (syncRequestedWhileBusy) { syncRequestedWhileBusy = false; setTimeout(() => syncWithGoogleDriveImmediate(), 150); }
       }
     }
-
     function populateDropdowns() {
       const fSrc = document.getElementById("filterSource");
       const mSrc = document.getElementById("modalSource");
