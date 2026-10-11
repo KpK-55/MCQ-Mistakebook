@@ -139,6 +139,34 @@
       #logsTable th:nth-child(6), #logsTable td:nth-child(6) { width: 40%; }
       #logsTable th:nth-child(9), #logsTable td:nth-child(9) { width: 16%; }
     }
+
+    /* Stronger outlines and calmer pastel status/error pills. */
+    .border-slate-200, .dark\:border-amoled-border, .border-slate-300 { border-width: 2px !important; }
+    #filteredLogsModal .border-b, #detailModal .border-b { border-bottom-width: 2px !important; }
+    #statTotalLogs, #statNewLogs, #statReviewedLogs, #statErrorTypes { font-size: 2rem !important; line-height: 1.1 !important; font-weight: 900 !important; }
+    main > .grid:first-child > div { border-width: 2px !important; padding: 1rem !important; }
+    #errorTypeStats > span { border-width: 2px !important; }
+    /* One full-width book page at a time on desktop, tablet and phone. */
+    #filteredLogsContent:has(#filteredBookTrack) { width:100%; min-width:0; flex:1 1 auto; }
+    #filteredBookTrack { display:flex; width:100%; min-width:0; height:100%; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y; }
+    .filtered-book-page { box-sizing:border-box; flex:0 0 100% !important; width:100% !important; min-width:100% !important; max-width:100% !important; scroll-snap-align:start; scroll-snap-stop:always; overflow-y:auto; padding:clamp(1rem,2.4vw,2rem) !important; border-right:2px solid #334155; }
+    #filteredLogsModal > div { border-width:2px !important; }
+    #filteredLogsContent article[data-filtered-card] { cursor:pointer; border-width:2px !important; transition:border-color .15s, background .15s; }
+    #filteredLogsContent article[data-filtered-card]:hover { border-color:#64748b !important; }
+    #filteredLogsContent article[data-filtered-card]:focus-visible { outline:3px solid #60a5fa; outline-offset:2px; }
+    /* Muted pastel badge family; retain hue distinctions without neon saturation. */
+    .error-pill-pastel { border-width:2px !important; font-weight:800 !important; }
+    .error-pill-pastel.pastel-blue { background:#17283b !important; color:#b8d8ff !important; border-color:#527da8 !important; }
+    .error-pill-pastel.pastel-amber { background:#332a17 !important; color:#f6dfa0 !important; border-color:#8d7945 !important; }
+    .error-pill-pastel.pastel-red { background:#351e22 !important; color:#ffc0c5 !important; border-color:#98565d !important; }
+    .error-pill-pastel.pastel-green { background:#183027 !important; color:#b9efd4 !important; border-color:#52856e !important; }
+    .error-pill-pastel.pastel-purple { background:#2b2039 !important; color:#e0c5ff !important; border-color:#8060a5 !important; }
+    .status-pastel { border-width:2px !important; font-weight:800 !important; }
+    @media (min-width:641px) {
+      #filteredLogsModal > div { max-width: min(1100px, 94vw) !important; max-height:94dvh !important; }
+      #filteredLogsContent:has(#filteredBookTrack) { min-height:0; }
+      .filtered-book-page { max-height:calc(94dvh - 190px) !important; }
+    }
   </style>
 </head>
 <body class="bg-slate-50 dark:bg-amoled-bg text-black dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200">
@@ -206,10 +234,10 @@
   <main class="max-w-7xl mx-auto px-3 sm:px-6 py-4 flex-1 w-full space-y-4">
     <!-- Dashboard -->
     <section class="grid grid-cols-2 lg:grid-cols-4 gap-2.5" aria-label="Mistake log statistics">
-      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Total Logs</div><div id="statTotalLogs" class="text-2xl font-extrabold mt-1">0</div><div class="text-[10px] text-slate-500">All active entries</div></div>
-      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-[10px] uppercase tracking-wider font-bold text-slate-500">New / Unreviewed</div><div id="statNewLogs" class="text-2xl font-extrabold text-amber-400 mt-1">0</div><div class="text-[10px] text-slate-500">Not reviewed yet</div></div>
-      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Reviewed</div><div id="statReviewedLogs" class="text-2xl font-extrabold text-emerald-400 mt-1">0</div><div class="text-[10px] text-slate-500">At least one review</div></div>
-      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Error Types</div><div id="statErrorTypes" class="text-2xl font-extrabold mt-1">0</div><div class="text-[10px] text-slate-500">Types currently configured</div></div>
+      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-slate-400">Total Logs</div><div id="statTotalLogs" class="text-2xl font-extrabold mt-1">0</div><div class="text-xs font-semibold text-slate-400">All active entries</div></div>
+      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-slate-400">New / Unreviewed</div><div id="statNewLogs" class="text-2xl font-extrabold text-amber-400 mt-1">0</div><div class="text-xs font-semibold text-slate-400">Not reviewed yet</div></div>
+      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-slate-400">Reviewed</div><div id="statReviewedLogs" class="text-2xl font-extrabold text-emerald-400 mt-1">0</div><div class="text-xs font-semibold text-slate-400">At least one review</div></div>
+      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-slate-400">Error Types</div><div id="statErrorTypes" class="text-2xl font-extrabold mt-1">0</div><div class="text-xs font-semibold text-slate-400">Types currently configured</div></div>
     </section>
     <section id="mistakeTypeSection" class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3">
       <div class="flex items-center justify-between gap-2"><h2 class="text-xs font-extrabold">Logs by mistake type</h2><button id="toggleMistakeTypeStatsBtn" type="button" class="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-amoled-border px-2.5 py-1.5 text-[11px] font-bold"><i data-lucide="chevron-down" class="w-4 h-4"></i><span>Show active entries</span></button></div>
@@ -1684,7 +1712,8 @@
         purple: "bg-purple-400"
       }[color] || "bg-blue-400";
 
-      return `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${pillMap}">
+      const pastel = ({blue:"pastel-blue",amber:"pastel-amber",red:"pastel-red",emerald:"pastel-green",purple:"pastel-purple"})[color] || "pastel-blue";
+      return `<span class="error-pill-pastel ${pastel} inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${pillMap}">
         <span class="w-1.5 h-1.5 rounded-full ${dotMap}"></span>
         ${escapeHtml(label)}
       </span>`;
@@ -1731,9 +1760,14 @@
         content.innerHTML = '<div class="py-12 text-center text-sm text-slate-500">No logs match the current filters.</div>';
       } else if (filteredLogsViewMode === "list") {
         content.className = "p-3 sm:p-4 overflow-auto space-y-3";
-        content.innerHTML = rows.map(item => `<article class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 space-y-2"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="text-[10px] uppercase tracking-wide text-slate-500">${escapeHtml(item.subject || "No subject")} · Q${escapeHtml(item.questionNum || "—")}</div><div class="font-extrabold text-sm break-words mt-1">${escapeHtml(item.chapter || "No chapter")}</div></div><button type="button" class="shrink-0 rounded-lg bg-blue-600 text-white px-3 py-1.5 text-xs font-bold" data-open-filtered-id="${escapeHtml(item.id)}">Details</button></div><div>${getErrorTypeBadge(item.errorType || "Unspecified")}</div><div class="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap break-words">${escapeHtml(item.remedialAction || "No explanation recorded")}</div><div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-500"><span>Source: ${escapeHtml(item.source || "—")}</span><span>Reviews: ${Number(item.reviewCount || 0)}</span>${item.audioData || item.audioDriveId ? `<button type="button" class="text-violet-500 font-bold" data-play-filtered-id="${escapeHtml(item.id)}">▶ Play audio</button>` : ""}</div></article>`).join("");
-        content.querySelectorAll("[data-open-filtered-id]").forEach(btn => btn.addEventListener("click", () => { filteredPopupReturn = true; document.getElementById("filteredLogsModal").classList.add("hidden"); openDetail(btn.dataset.openFilteredId); }));
-        content.querySelectorAll("[data-play-filtered-id]").forEach(btn => btn.addEventListener("click", () => playInlineAudio(btn.dataset.playFilteredId, btn)));
+        content.innerHTML = rows.map(item => `<article tabindex="0" role="button" data-filtered-card="${escapeHtml(item.id)}" class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 space-y-2"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="text-[10px] uppercase tracking-wide text-slate-500">${escapeHtml(item.subject || "No subject")} · Q${escapeHtml(item.questionNum || "—")}</div><div class="font-extrabold text-sm break-words mt-1">${escapeHtml(item.chapter || "No chapter")}</div></div><button type="button" class="shrink-0 rounded-lg bg-blue-600 text-white px-3 py-1.5 text-xs font-bold" data-open-filtered-id="${escapeHtml(item.id)}">Details</button></div><div>${getErrorTypeBadge(item.errorType || "Unspecified")}</div><div class="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap break-words">${escapeHtml(item.remedialAction || "No explanation recorded")}</div><div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-500"><span>Source: ${escapeHtml(item.source || "—")}</span><span>Reviews: ${Number(item.reviewCount || 0)}</span>${item.audioData || item.audioDriveId ? `<button type="button" class="text-violet-500 font-bold" data-play-filtered-id="${escapeHtml(item.id)}">▶ Play audio</button>` : ""}</div></article>`).join("");
+        content.querySelectorAll("[data-filtered-card]").forEach(card => {
+          const openCard = e => { if (e.target.closest("button, audio, a, input, select, textarea")) return; filteredPopupReturn = true; document.getElementById("filteredLogsModal").classList.add("hidden"); openDetail(card.dataset.filteredCard); };
+          card.addEventListener("click", openCard);
+          card.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openCard(e); } });
+        });
+        content.querySelectorAll("[data-open-filtered-id]").forEach(btn => btn.addEventListener("click", e => { e.stopPropagation(); filteredPopupReturn = true; document.getElementById("filteredLogsModal").classList.add("hidden"); openDetail(btn.dataset.openFilteredId); }));
+        content.querySelectorAll("[data-play-filtered-id]").forEach(btn => btn.addEventListener("click", e => { e.stopPropagation(); playInlineAudio(btn.dataset.playFilteredId, btn); }));
       } else {
         content.className = "p-0 overflow-hidden";
         const needsMedia = rows.filter(item => (item.questionImageDriveId && !mediaFieldValue(item, "questionImage")) || (item.solutionImageDriveId && !mediaFieldValue(item, "solutionImage")) || (item.audioDriveId && !mediaFieldValue(item, "audioData")));
@@ -1744,7 +1778,7 @@
             renderFilteredLogsPopup();
           });
         }
-        content.innerHTML = `<div id="filteredBookTrack" class="flex overflow-x-auto snap-x snap-mandatory" style="scroll-behavior:smooth">${rows.map((item, index) => {
+        content.innerHTML = `<div id="filteredBookTrack" class="flex overflow-x-auto snap-x snap-mandatory" style="scroll-behavior:smooth;align-items:stretch">${rows.map((item, index) => {
           const qImg = mediaFieldValue(item, "questionImage"), sImg = mediaFieldValue(item, "solutionImage"), audio = mediaFieldValue(item, "audioData");
           const img = (src,label,type,driveId) => src ? `<button type="button" class="block w-full text-left" data-book-image="${escapeHtml(item.id)}" data-book-image-type="${type}"><img src="${src}" alt="${label}" class="max-h-64 w-full object-contain rounded-xl border border-slate-200 dark:border-amoled-border"><span class="block text-[10px] text-blue-500 mt-1">Tap image to enlarge</span></button>` : driveId ? `<div class="text-xs text-slate-500">${label} is stored in Drive; open Details to load it.</div>` : "";
           return `<article class="filtered-book-page p-4 sm:p-6 space-y-4 overflow-y-auto" style="max-height:calc(100dvh - 190px)"><div class="flex items-start justify-between gap-3"><div><div class="text-[10px] uppercase tracking-wide text-slate-500">${escapeHtml(item.subject || "No subject")} · Question ${escapeHtml(item.questionNum || "—")}</div><h3 class="text-lg font-extrabold mt-1">${escapeHtml(item.chapter || "No chapter")}</h3></div><span class="text-xs font-bold text-slate-500">${index+1}/${rows.length}</span></div><div><div class="text-[10px] uppercase text-slate-500 mb-1">Source</div><div class="font-semibold">${escapeHtml(item.source || "—")}</div></div><div><div class="text-[10px] uppercase text-slate-500 mb-1">Error type</div>${getErrorTypeBadge(item.errorType || "Unspecified")}</div><div><div class="text-[10px] uppercase text-slate-500 mb-1">Root cause / action</div><div class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 whitespace-pre-wrap break-words">${escapeHtml(item.remedialAction || "No explanation recorded")}</div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${img(qImg,"Question image","question",item.questionImageDriveId)}${img(sImg,"Solution image","solution",item.solutionImageDriveId)}</div>${audio ? `<div><div class="text-[10px] uppercase text-slate-500 mb-1">Voice explanation</div><audio controls class="w-full" src="${audio}"></audio></div>` : item.audioDriveId ? `<button type="button" class="text-violet-500 font-bold text-sm" data-play-filtered-id="${escapeHtml(item.id)}">▶ Load / play voice explanation</button>` : `<div class="text-xs text-slate-500">No voice note attached</div>`}<div class="grid grid-cols-2 gap-3 text-xs"><div><span class="text-slate-500">Reviews</span><div class="font-bold">${Number(item.reviewCount || 0)}</div></div><div><span class="text-slate-500">Flagged</span><div class="font-bold">${item.flagged ? "Yes 🚩" : "No"}</div></div></div><button type="button" class="w-full rounded-xl bg-blue-600 text-white px-4 py-2.5 text-sm font-bold" data-open-filtered-id="${escapeHtml(item.id)}">Open editable details</button></article>`;
@@ -1863,7 +1897,7 @@
         if ((item.questionImageDriveId && !questionSrc) || (item.solutionImageDriveId && !solutionSrc) || (item.audioDriveId && !audioSrc)) loadEntryMedia(item).then(loaded => { if (loaded) renderTable(); });
         const tr = document.createElement("tr"); tr.dataset.id = item.id; tr.tabIndex = 0; tr.setAttribute("role","button"); tr.setAttribute("aria-label",`Open details for question ${item.questionNum}`);
         tr.className = "log-row hover:bg-slate-50 dark:hover:bg-[#0c1222] transition-colors border-b border-slate-100 dark:border-amoled-border";
-        tr.innerHTML = `<td class="py-3 px-3 text-center"><div class="flex flex-col items-center gap-1.5"><button type="button" data-no-row="1" onclick="toggleReviewStatus('${item.id}')" title="Mark as reviewed (+1 each click)" class="inline-flex items-center justify-center w-6 h-6 rounded-full ${isReviewed?'text-emerald-500':'text-slate-400 hover:text-slate-200'}"><i data-lucide="${isReviewed?'check-circle-2':'circle'}" class="w-4 h-4"></i></button><span class="inline-flex rounded-md px-1.5 py-0.5 text-[9px] leading-3 font-extrabold ${isReviewed?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30':'bg-amber-500/10 text-amber-400 border border-amber-500/30'}">${isReviewed?count+'×':'NEW'}</span></div></td>
+        tr.innerHTML = `<td class="py-3 px-3 text-center"><div class="flex flex-col items-center gap-1.5"><button type="button" data-no-row="1" onclick="toggleReviewStatus('${item.id}')" title="Mark as reviewed (+1 each click)" class="inline-flex items-center justify-center w-6 h-6 rounded-full ${isReviewed?'text-emerald-500':'text-slate-400 hover:text-slate-200'}"><i data-lucide="${isReviewed?'check-circle-2':'circle'}" class="w-4 h-4"></i></button><span class="inline-flex rounded-md px-1.5 py-0.5 text-[9px] leading-3 font-extrabold ${isReviewed?'bg-emerald-500/10 text-emerald-200 border-2 border-emerald-300/40 status-pastel':'bg-amber-500/10 text-amber-100 border-2 border-amber-200/40 status-pastel'}">${isReviewed?count+'×':'NEW'}</span></div></td>
           <td class="py-3 px-3 font-extrabold text-black dark:text-white">${item.flagged?'<span class="text-rose-500 mr-1">🚩</span>':''}${escapeHtml(item.questionNum)}</td>
           <td class="py-3 px-3"><span class="inline-block max-w-full px-2 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border text-slate-700 dark:text-slate-300 break-words">${escapeHtml(item.source)}</span></td>
           <td class="py-3 px-3 font-bold text-black dark:text-white">${escapeHtml(item.subject)}</td>
