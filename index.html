@@ -1349,18 +1349,11 @@
           (scanFrom ? ` and modifiedTime > '${new Date(scanFrom).toISOString()}'` : "");
         setSyncProgress(cursor ? "Finding changed logs…" : "Setting up log sync…", 18);
         const remoteFiles = await driveListAllFiles(q, "files(id,name,modifiedTime,appProperties),nextPageToken");
-        // Settings must be discoverable even when unchanged and therefore excluded
-        // by the incremental modifiedTime filter. Otherwise a device can mistake
-        // an existing settings file for a missing one and overwrite it with stale data.
-        const settingsQuery = `'${dataFolderId}' in parents and trashed = false and name = '${PER_LOG_SETTINGS_NAME}'`;
-        const settingsFiles = await driveListAllFiles(settingsQuery, "files(id,name,modifiedTime,appProperties),nextPageToken");
         const now = Date.now();
         const remoteByName = new Map(remoteFiles.map(f => [f.name, f]));
-        for (const file of settingsFiles) remoteByName.set(file.name, file);
-        const filesToRead = [...new Map(remoteFiles.concat(settingsFiles).map(f => [f.id, f])).values()];
         const remoteEntries = [];
         let settingsRemote = null;
-        await runWithConcurrency(filesToRead, 8, async file => {
+        await runWithConcurrency(remoteFiles, 8, async file => {
           try {
             const data = await downloadJsonDriveFile(file.id);
             if (file.name === PER_LOG_SETTINGS_NAME) settingsRemote = { file, data };
@@ -1404,14 +1397,38 @@
 
         setSyncProgress("Syncing settings and media…", 70);
         const settingsName = PER_LOG_SETTINGS_NAME;
-        const settingsFile = remoteByName.get(settingsName);
+        let settingsFile = remoteByName.get(settingsName) || null;
+
+        // The incremental Drive query intentionally omits unchanged files. Do not
+        // interpret that omission as a missing settings file, or each device will
+        // rewrite settings_current.json on every sync and may overwrite a newer
+        // taxonomy with stale local settings.
+        if (!settingsFile && !state.settingsFileId) {
+          const foundSettings = await driveListAllFiles(
+            `'${dataFolderId}' in parents and trashed = false and name = '${settingsName}'`,
+            "files(id,name,modifiedTime,appProperties),nextPageToken"
+          );
+          settingsFile = foundSettings[0] || null;
+          if (settingsFile) state.settingsFileId = settingsFile.id;
+        }
+
         const localConfigPayload = { appConfig, configUpdatedAt, schemaVersion: 1 };
         const settingsSignature = JSON.stringify(localConfigPayload);
-        if (!state.settingsSignature || state.settingsSignature !== settingsSignature || !settingsFile) {
-          const settingsId = await uploadJsonDriveFile(dataFolderId, settingsName, localConfigPayload, settingsFile?.id || state.settingsFileId || null, { mcqSettingsSchema: "1" });
+        const settingsFileMissing = !settingsFile && !state.settingsFileId;
+        if (!state.settingsSignature || state.settingsSignature !== settingsSignature || settingsFileMissing) {
+          const settingsId = await uploadJsonDriveFile(
+            dataFolderId, settingsName, localConfigPayload,
+            settingsFile?.id || state.settingsFileId || null,
+            { mcqSettingsSchema: "1" }
+          );
           state.settingsFileId = settingsId;
           state.settingsSignature = settingsSignature;
-        } else if (settingsFile && !state.settingsFileId) state.settingsFileId = settingsFile.id;
+        } else {
+          if (settingsFile?.id) state.settingsFileId = settingsFile.id;
+          // Record the current local signature only after it is already known to
+          // match the last uploaded state. Remote settings are merged above first.
+          if (!state.settingsSignature) state.settingsSignature = settingsSignature;
+        }
 
         const mediaSummary = await uploadPendingMedia(folders);
         if (mediaSummary.failed) throw new Error(`${mediaSummary.failed} media upload(s) failed; failed media remains local.`);
