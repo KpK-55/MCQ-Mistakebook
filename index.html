@@ -1397,38 +1397,14 @@
 
         setSyncProgress("Syncing settings and media…", 70);
         const settingsName = PER_LOG_SETTINGS_NAME;
-        let settingsFile = remoteByName.get(settingsName) || null;
-
-        // The incremental Drive query intentionally omits unchanged files. Do not
-        // interpret that omission as a missing settings file, or each device will
-        // rewrite settings_current.json on every sync and may overwrite a newer
-        // taxonomy with stale local settings.
-        if (!settingsFile && !state.settingsFileId) {
-          const foundSettings = await driveListAllFiles(
-            `'${dataFolderId}' in parents and trashed = false and name = '${settingsName}'`,
-            "files(id,name,modifiedTime,appProperties),nextPageToken"
-          );
-          settingsFile = foundSettings[0] || null;
-          if (settingsFile) state.settingsFileId = settingsFile.id;
-        }
-
+        const settingsFile = remoteByName.get(settingsName);
         const localConfigPayload = { appConfig, configUpdatedAt, schemaVersion: 1 };
         const settingsSignature = JSON.stringify(localConfigPayload);
-        const settingsFileMissing = !settingsFile && !state.settingsFileId;
-        if (!state.settingsSignature || state.settingsSignature !== settingsSignature || settingsFileMissing) {
-          const settingsId = await uploadJsonDriveFile(
-            dataFolderId, settingsName, localConfigPayload,
-            settingsFile?.id || state.settingsFileId || null,
-            { mcqSettingsSchema: "1" }
-          );
+        if (!state.settingsSignature || state.settingsSignature !== settingsSignature || !settingsFile) {
+          const settingsId = await uploadJsonDriveFile(dataFolderId, settingsName, localConfigPayload, settingsFile?.id || state.settingsFileId || null, { mcqSettingsSchema: "1" });
           state.settingsFileId = settingsId;
           state.settingsSignature = settingsSignature;
-        } else {
-          if (settingsFile?.id) state.settingsFileId = settingsFile.id;
-          // Record the current local signature only after it is already known to
-          // match the last uploaded state. Remote settings are merged above first.
-          if (!state.settingsSignature) state.settingsSignature = settingsSignature;
-        }
+        } else if (settingsFile && !state.settingsFileId) state.settingsFileId = settingsFile.id;
 
         const mediaSummary = await uploadPendingMedia(folders);
         if (mediaSummary.failed) throw new Error(`${mediaSummary.failed} media upload(s) failed; failed media remains local.`);
