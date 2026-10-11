@@ -269,12 +269,17 @@
 
           <div class="pt-3 border-t border-slate-200 dark:border-amoled-border space-y-2">
             <div>
-              <span class="font-bold text-black dark:text-slate-300 block">Migration Preparation — Step 1</span>
-              <p class="mt-1 text-slate-500 dark:text-slate-400 leading-relaxed">Audit the current data and export a checksum-verified backup before changing the Drive storage format. This step does not migrate or modify Drive data.</p>
+              <span class="font-bold text-black dark:text-slate-300 block">Migration — Step 1: Safety</span>
+              <p class="mt-1 text-slate-500 dark:text-slate-400 leading-relaxed">Audit the current data and export a checksum-verified backup before migrating. Keep the backup until media migration and cross-device checks are complete.</p>
             </div>
             <div class="grid grid-cols-2 gap-2">
               <button id="migrationAuditBtn" type="button" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-[#0c1222] dark:hover:bg-slate-800 rounded-xl font-semibold text-black dark:text-slate-300 transition">Check Data</button>
               <button id="migrationBackupBtn" type="button" class="py-2 px-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold text-white transition">Export Safe Backup</button>
+            </div>
+            <div class="pt-3 border-t border-slate-200 dark:border-amoled-border space-y-2">
+              <div><span class="font-bold text-black dark:text-slate-300 block">Migration — Step 2: Separate media</span><p class="mt-1 text-slate-500 dark:text-slate-400 leading-relaxed">Uploads each question image, solution image and voice note as a separate Google Drive file. After a successful verification, the local entry stores the Drive file ID instead of embedded Base64. The existing Drive JSON file is updated in place after migration; export and keep the safe backup first.</p></div>
+              <button id="migrateMediaBtn" type="button" class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl font-bold text-white transition">Migrate Media to Drive</button>
+              <div id="mediaMigrationResult" class="hidden rounded-xl border border-slate-200 dark:border-amoled-border bg-slate-50 dark:bg-[#0c1222] p-3 text-slate-600 dark:text-slate-300 space-y-1" aria-live="polite"></div>
             </div>
             <div id="migrationAuditResult" class="hidden rounded-xl border border-slate-200 dark:border-amoled-border bg-slate-50 dark:bg-[#0c1222] p-3 text-slate-600 dark:text-slate-300 space-y-1" aria-live="polite"></div>
           </div>
@@ -590,6 +595,20 @@
     let solutionImgBase64 = null;
     let currentPlayingAudio = null;
 
+    // Phase 2: media is stored as independent Drive files. Legacy data URLs remain
+    // supported during migration and are removed locally only after verified upload.
+    const MEDIA_SPECS = [
+      { field: "questionImage", idField: "questionImageDriveId", kind: "question-image", folder: "Question Images", prefix: "question" },
+      { field: "solutionImage", idField: "solutionImageDriveId", kind: "solution-image", folder: "Solution Images", prefix: "solution" },
+      { field: "audioData", idField: "audioDriveId", kind: "voice-note", folder: "Voice Notes", prefix: "voice" }
+    ];
+    const MEDIA_ROOT_NAME = "MCQ Error Tracker";
+    const MEDIA_FOLDER_CACHE_KEY = "mcq_media_folder_ids_v2";
+    const mediaObjectUrlCache = new Map();
+    const mediaLoadPromises = new Map();
+    let mediaFolderIds = {};
+    try { mediaFolderIds = JSON.parse(localStorage.getItem(MEDIA_FOLDER_CACHE_KEY) || "{}"); } catch (_) { mediaFolderIds = {}; }
+
     function escapeHtml(str) {
       if (!str) return "";
       return String(str).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[m]);
@@ -841,6 +860,228 @@
       return normalized;
     }
 
+    function mediaFieldValue(entry, field) {
+      if (!entry) return null;
+      if (typeof entry[field] === "string" && entry[field].startsWith("data:")) return entry[field];
+      const spec = MEDIA_SPECS.find(x => x.field === field);
+      const fileId = spec ? entry[spec.idField] : null;
+      return fileId ? (mediaObjectUrlCache.get(fileId) || null) : null;
+    }
+
+    function dataUrlToBlob(dataUrl) {
+      if (typeof dataUrl !== "string" || !dataUrl.startsWith("data:")) throw new Error("Media data is not a valid data URL");
+      const comma = dataUrl.indexOf(",");
+      if (comma < 0) throw new Error("Media data URL is malformed");
+      const mime = (dataUrl.slice(5, dataUrl.indexOf(";", 5) > -1 ? dataUrl.indexOf(";", 5) : comma) || "application/octet-stream");
+      const body = dataUrl.slice(comma + 1);
+      const binary = atob(body);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return new Blob([bytes], { type: mime });
+    }
+
+    function blobToDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("Could not read downloaded media"));
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    async function driveListAllFiles(query, fields = "files(id,name,mimeType,parents,appProperties,size,md5Checksum),nextPageToken") {
+      if (!gDriveAccessToken) throw new Error("Connect Google Drive first");
+      const results = [];
+      let pageToken = "";
+      do {
+        const params = new URLSearchParams({ q: query, pageSize: "1000", fields });
+        if (pageToken) params.set("pageToken", pageToken);
+        const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params.toString()}`, { headers: { Authorization: `Bearer ${gDriveAccessToken}` } });
+        if (!res.ok) throw new Error(`Drive file listing failed (${res.status})`);
+        const data = await res.json();
+        results.push(...(data.files || []));
+        pageToken = data.nextPageToken || "";
+      } while (pageToken);
+      return results;
+    }
+
+    async function driveCreateFolder(name, parentId = null) {
+      const metadata = { name, mimeType: "application/vnd.google-apps.folder" };
+      if (parentId) metadata.parents = [parentId];
+      const res = await fetch("https://www.googleapis.com/drive/v3/files?fields=id,name,mimeType,parents", {
+        method: "POST", headers: { Authorization: `Bearer ${gDriveAccessToken}`, "Content-Type": "application/json" }, body: JSON.stringify(metadata)
+      });
+      if (!res.ok) throw new Error(`Could not create Drive folder “${name}” (${res.status})`);
+      return res.json();
+    }
+
+    async function ensureMediaFolders() {
+      if (!gDriveAccessToken) throw new Error("Connect Google Drive before migrating media");
+      const queryEscape = value => String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+      let rootId = mediaFolderIds.root;
+      if (rootId) {
+        const check = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(rootId)}?fields=id,name,mimeType,trashed`, { headers: { Authorization: `Bearer ${gDriveAccessToken}` } });
+        if (!check.ok) rootId = null;
+        else { const f = await check.json(); if (f.trashed || f.mimeType !== "application/vnd.google-apps.folder") rootId = null; }
+      }
+      if (!rootId) {
+        const roots = await driveListAllFiles(`name = '${queryEscape(MEDIA_ROOT_NAME)}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`, "files(id,name,mimeType,parents),nextPageToken");
+        rootId = roots[0]?.id || (await driveCreateFolder(MEDIA_ROOT_NAME)).id;
+      }
+      mediaFolderIds.root = rootId;
+      for (const folderName of ["Question Images", "Solution Images", "Voice Notes", "Data", "Backups"]) {
+        let id = mediaFolderIds[folderName];
+        if (id) {
+          const check = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?fields=id,name,mimeType,parents,trashed`, { headers: { Authorization: `Bearer ${gDriveAccessToken}` } });
+          if (!check.ok) id = null;
+          else { const f = await check.json(); if (f.trashed || f.mimeType !== "application/vnd.google-apps.folder" || !(f.parents || []).includes(rootId)) id = null; }
+        }
+        if (!id) {
+          const children = await driveListAllFiles(`name = '${queryEscape(folderName)}' and '${rootId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`, "files(id,name,mimeType,parents),nextPageToken");
+          id = children[0]?.id || (await driveCreateFolder(folderName, rootId)).id;
+        }
+        mediaFolderIds[folderName] = id;
+      }
+      localStorage.setItem(MEDIA_FOLDER_CACHE_KEY, JSON.stringify(mediaFolderIds));
+      return mediaFolderIds;
+    }
+
+    async function findMediaFileByKey(mediaKey) {
+      const safe = String(mediaKey).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+      const files = await driveListAllFiles(`appProperties has { key='mcqMediaKey' and value='${safe}' } and trashed = false`, "files(id,name,mimeType,parents,appProperties,size,md5Checksum),nextPageToken");
+      return files[0] || null;
+    }
+
+    async function uploadOrUpdateDriveMedia(entry, spec, dataUrl, folders) {
+      const blob = dataUrlToBlob(dataUrl);
+      const mediaKey = `${entry.id}_${spec.kind}`;
+      const existing = entry[spec.idField] ? { id: entry[spec.idField] } : await findMediaFileByKey(mediaKey);
+      const ext = blob.type === "image/png" ? "png" : blob.type === "image/webp" ? "webp" : blob.type === "image/jpeg" ? "jpg" : blob.type === "audio/webm" ? "webm" : blob.type === "audio/mp4" ? "m4a" : blob.type === "audio/ogg" ? "ogg" : "bin";
+      const metadata = {
+        name: `${spec.prefix}_${String(entry.id).replace(/[^a-zA-Z0-9_-]/g, "_")}.${ext}`,
+        mimeType: blob.type || "application/octet-stream",
+        appProperties: { mcqMediaKey: mediaKey, mcqEntryId: String(entry.id), mcqMediaKind: spec.kind, mcqMediaSchema: "2" }
+      };
+      if (!existing?.id) metadata.parents = [folders[spec.folder]];
+      const endpoint = existing?.id
+        ? `https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(existing.id)}?uploadType=multipart&fields=id,name,mimeType,size,md5Checksum,appProperties,parents`
+        : "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType,size,md5Checksum,appProperties,parents";
+      const form = new FormData();
+      form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
+      form.append("file", blob, metadata.name);
+      const res = await fetch(endpoint, { method: existing?.id ? "PATCH" : "POST", headers: { Authorization: `Bearer ${gDriveAccessToken}` }, body: form });
+      if (!res.ok) throw new Error(`Upload failed for ${spec.folder} (${res.status})`);
+      const uploaded = await res.json();
+      if (!uploaded.id) throw new Error("Drive did not return a media file ID");
+      const verify = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(uploaded.id)}?fields=id,name,mimeType,size,md5Checksum,appProperties,trashed`, { headers: { Authorization: `Bearer ${gDriveAccessToken}` } });
+      if (!verify.ok) throw new Error(`Could not verify uploaded media (${verify.status})`);
+      const verified = await verify.json();
+      if (verified.trashed || verified.id !== uploaded.id || !verified.appProperties || verified.appProperties.mcqMediaKey !== mediaKey) throw new Error("Uploaded media verification failed");
+      return verified.id;
+    }
+
+    async function loadDriveMedia(entry, spec, asDataUrl = false) {
+      if (entry?.[spec.field] && entry[spec.field].startsWith("data:")) return entry[spec.field];
+      const fileId = entry?.[spec.idField];
+      if (!fileId) return null;
+      if (!asDataUrl && mediaObjectUrlCache.has(fileId)) return mediaObjectUrlCache.get(fileId);
+      const cacheKey = `${fileId}:${asDataUrl ? "data" : "url"}`;
+      if (mediaLoadPromises.has(cacheKey)) return mediaLoadPromises.get(cacheKey);
+      const promise = (async () => {
+        const res = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media`, { headers: { Authorization: `Bearer ${gDriveAccessToken}` } });
+        if (!res.ok) throw new Error(`Could not download media (${res.status})`);
+        const blob = await res.blob();
+        if (asDataUrl) return await blobToDataUrl(blob);
+        const url = URL.createObjectURL(blob);
+        const old = mediaObjectUrlCache.get(fileId);
+        if (old && old.startsWith("blob:")) URL.revokeObjectURL(old);
+        mediaObjectUrlCache.set(fileId, url);
+        return url;
+      })().finally(() => mediaLoadPromises.delete(cacheKey));
+      mediaLoadPromises.set(cacheKey, promise);
+      return promise;
+    }
+
+    async function loadEntryMedia(entry) {
+      const tasks = MEDIA_SPECS.filter(spec => !entry?.[spec.field] && entry?.[spec.idField] && !mediaObjectUrlCache.has(entry[spec.idField])).map(spec => loadDriveMedia(entry, spec, false).then(() => true).catch(err => { console.warn("Media download failed", spec.kind, err); return false; }));
+      const results = await Promise.all(tasks);
+      return results.some(Boolean);
+    }
+
+    function createDrivePayload() {
+      const entries = errorEntries.map(entry => {
+        const copy = { ...entry };
+        // A media reference is published only after its data URL has been removed
+        // following a verified upload. Failed uploads remain embedded for safety.
+        MEDIA_SPECS.forEach(spec => { if (!copy[spec.field] && copy[spec.idField]) copy[spec.field] = null; });
+        return copy;
+      });
+      return { version: "6.2.0", storageSchemaVersion: 2, syncedAt: Date.now(), configUpdatedAt, appConfig, errorEntries: entries };
+    }
+
+    async function uploadPendingMedia(folders = null) {
+      const pending = [];
+      errorEntries.forEach(entry => {
+        if (!entry) return;
+        MEDIA_SPECS.forEach(spec => { if (typeof entry[spec.field] === "string" && entry[spec.field].startsWith("data:")) pending.push({ entry, spec }); });
+      });
+      if (!pending.length) return { uploaded: 0, failed: 0, total: 0 };
+      const mediaFolders = folders || await ensureMediaFolders();
+      let uploaded = 0, failed = 0;
+      for (let i = 0; i < pending.length; i++) {
+        const { entry, spec } = pending[i];
+        setSyncProgress(`Uploading media ${i + 1}/${pending.length}…`, Math.round((i / pending.length) * 80), "working");
+        try {
+          const id = await uploadOrUpdateDriveMedia(entry, spec, entry[spec.field], mediaFolders);
+          entry[spec.idField] = id;
+          entry[spec.field] = null;
+          uploaded++;
+        } catch (err) {
+          failed++;
+          console.error(`Media upload failed for entry ${entry.id} (${spec.kind})`, err);
+        }
+        saveLocalCache();
+      }
+      renderTable();
+      return { uploaded, failed, total: pending.length };
+    }
+
+    async function migrateMediaToDrive() {
+      const button = document.getElementById("migrateMediaBtn");
+      const result = document.getElementById("mediaMigrationResult");
+      if (!gDriveAccessToken) { showToast("Connect Google Drive first"); return; }
+      if (isSyncing) { showToast("Wait for the current sync to finish"); return; }
+      if (!confirm("Upload all embedded images and voice notes to Google Drive? After successful uploads, the existing tracker JSON file will be updated in place to store media file IDs instead of embedded data. Continue only if you have downloaded and checked the safe backup.")) return;
+      button.disabled = true; button.textContent = "Preparing Drive folders…";
+      result.classList.remove("hidden"); result.textContent = "Preparing media folders…";
+      isSyncing = true;
+      try {
+        const folders = await ensureMediaFolders();
+        const summary = await uploadPendingMedia(folders);
+        if (summary.failed) throw new Error(`${summary.uploaded} media file(s) uploaded; ${summary.failed} failed. Failed media remains embedded locally. Retry migration after checking connection and Drive permissions.`);
+        // Reuse the existing JSON file where possible; never delete the old file as part of migration.
+        await locateDriveSyncFile();
+        setSyncProgress("Saving media references to tracker data…", 90, "working");
+        const payload = createDrivePayload();
+        const ok = await uploadDriveSyncFile(payload);
+        if (!ok) throw new Error("Media uploaded, but the tracker metadata could not be saved to Drive. The local file IDs are retained; retry sync before removing any backup.");
+        localStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
+        updateDriveUI(true);
+        result.innerHTML = `<div class="font-bold text-emerald-500">Media migration completed</div><div>Files uploaded or updated: <b>${summary.uploaded}</b></div><div>Active entries: <b>${errorEntries.filter(x => !x.deleted).length}</b></div><div>Drive references were saved in the tracker JSON. Your separately downloaded safe backup remains unchanged.</div>`;
+        setSyncProgress("Media migrated and references saved", 100, "success");
+        showToast("Media migration complete");
+        renderTable();
+      } catch (err) {
+        console.error("Media migration failed", err);
+        result.innerHTML = `<div class="font-bold text-rose-500">Migration incomplete</div><div>${escapeHtml(err.message || "Unknown error")}</div><div>Do not delete your safe backup. Retry after resolving the issue.</div>`;
+        setSyncProgress("Media migration incomplete", null, "error");
+        showToast("Media migration incomplete");
+      } finally {
+        isSyncing = false;
+        button.disabled = false; button.textContent = "Migrate Media to Drive";
+      }
+    }
+
     async function syncWithGoogleDriveImmediate() {
       if (!gDriveAccessToken) { setSyncProgress("Drive not connected", null, "error"); return; }
       if (isSyncing) { syncRequestedWhileBusy = true; return; }
@@ -874,8 +1115,11 @@
           saveLocalCache();
           populateDropdowns(); renderTable();
         }
-        setSyncProgress("Uploading merged logs and settings…", 65);
-        const payload = { version: "6.1.0", syncedAt: Date.now(), configUpdatedAt, appConfig, errorEntries };
+        setSyncProgress("Uploading pending media…", 52);
+        const mediaSummary = await uploadPendingMedia();
+        if (mediaSummary.failed) throw new Error(`${mediaSummary.failed} media upload(s) failed. Their data remains embedded locally; retry sync before relying on another device.`);
+        setSyncProgress("Uploading logs and settings…", 82);
+        const payload = createDrivePayload();
         const ok = await uploadDriveSyncFile(payload);
         if (!ok) throw new Error("Drive upload failed. Check OAuth permissions, network, and Drive API configuration.");
         localStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
@@ -1011,10 +1255,13 @@
       activeDetailId = id;
       document.getElementById("detailTitle").textContent = `Question ${item.questionNum || "—"}`;
       const content = document.getElementById("detailContent");
-      const imageBlock = (src, label) => src ? `<div><div class="mb-1 text-xs font-bold text-slate-500">${label}</div><img src="${src}" alt="${label}" class="max-h-72 max-w-full rounded-xl border border-slate-700 object-contain cursor-zoom-in" onclick="viewLightbox('${item.id}','${label === 'Question image' ? 'question' : 'solution'}')"></div>` : "";
-      content.innerHTML = `<div class="grid grid-cols-2 gap-3"><div><div class="text-[10px] uppercase text-slate-500">Source</div><div class="font-semibold">${escapeHtml(item.source)}</div></div><div><div class="text-[10px] uppercase text-slate-500">Subject</div><div class="font-semibold">${escapeHtml(item.subject)}</div></div><div class="col-span-2"><div class="text-[10px] uppercase text-slate-500">Chapter</div><div class="font-semibold">${escapeHtml(item.chapter)}</div></div><div class="col-span-2"><div class="text-[10px] uppercase text-slate-500 mb-1">Error type</div>${getErrorTypeBadge(item.errorType)}</div><div class="col-span-2"><div class="text-[10px] uppercase text-slate-500 mb-1">Root cause / action</div><div class="whitespace-pre-wrap break-words rounded-xl bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border p-3">${escapeHtml(item.remedialAction)}</div></div><div><div class="text-[10px] uppercase text-slate-500">Review count</div><div class="font-bold">${Number(item.reviewCount || 0)}×</div></div><div><div class="text-[10px] uppercase text-slate-500">Flagged</div><div class="font-bold">${item.flagged ? "Yes 🚩" : "No"}</div></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${imageBlock(item.questionImage,"Question image")}${imageBlock(item.solutionImage,"Solution image")}</div>${item.audioData ? `<div><div class="text-xs font-bold text-slate-500 mb-1">Voice explanation</div><audio controls class="w-full" src="${item.audioData}"></audio></div>` : '<div class="text-xs italic text-slate-500">No voice note attached</div>'}`;
+      const qSrc = mediaFieldValue(item, "questionImage"), sSrc = mediaFieldValue(item, "solutionImage"), aSrc = mediaFieldValue(item, "audioData");
+      const imageBlock = (src, label, hasRef, type) => src ? `<div><div class="mb-1 text-xs font-bold text-slate-500">${label}</div><img src="${src}" alt="${label}" class="max-h-72 max-w-full rounded-xl border border-slate-700 object-contain cursor-zoom-in" onclick="viewLightbox('${item.id}','${type}')"></div>` : hasRef ? `<div class="text-xs text-slate-500">Loading ${label.toLowerCase()}…</div>` : "";
+      const hasAnyAudio = Boolean(item.audioData || item.audioDriveId);
+      content.innerHTML = `<div class="grid grid-cols-2 gap-3"><div><div class="text-[10px] uppercase text-slate-500">Source</div><div class="font-semibold">${escapeHtml(item.source)}</div></div><div><div class="text-[10px] uppercase text-slate-500">Subject</div><div class="font-semibold">${escapeHtml(item.subject)}</div></div><div class="col-span-2"><div class="text-[10px] uppercase text-slate-500">Chapter</div><div class="font-semibold">${escapeHtml(item.chapter)}</div></div><div class="col-span-2"><div class="text-[10px] uppercase text-slate-500 mb-1">Error type</div>${getErrorTypeBadge(item.errorType)}</div><div class="col-span-2"><div class="text-[10px] uppercase text-slate-500 mb-1">Root cause / action</div><div class="whitespace-pre-wrap break-words rounded-xl bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border p-3">${escapeHtml(item.remedialAction)}</div></div><div><div class="text-[10px] uppercase text-slate-500">Review count</div><div class="font-bold">${Number(item.reviewCount || 0)}×</div></div><div><div class="text-[10px] uppercase text-slate-500">Flagged</div><div class="font-bold">${item.flagged ? "Yes 🚩" : "No"}</div></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${imageBlock(qSrc,"Question image",Boolean(item.questionImageDriveId),"question")}${imageBlock(sSrc,"Solution image",Boolean(item.solutionImageDriveId),"solution")}</div>${aSrc ? `<div><div class="text-xs font-bold text-slate-500 mb-1">Voice explanation</div><audio controls class="w-full" src="${aSrc}"></audio></div>` : hasAnyAudio ? '<div class="text-xs text-slate-500">Loading voice explanation…</div>' : '<div class="text-xs italic text-slate-500">No voice note attached</div>'}`;
       document.getElementById("detailReviewBtn").textContent = Number(item.reviewCount || 0) > 0 ? "Review again (+1)" : "Mark reviewed";
       document.getElementById("detailModal").classList.remove("hidden");
+      if ((item.questionImageDriveId && !qSrc) || (item.solutionImageDriveId && !sSrc) || (item.audioDriveId && !aSrc)) loadEntryMedia(item).then(loaded => { if (loaded && activeDetailId === id) openDetail(id); });
       if (window.lucide) lucide.createIcons();
     }
 
@@ -1039,13 +1286,19 @@
       list.forEach(item => {
         const count = Number(item.reviewCount || 0); const isReviewed = count > 0;
         let visualsHtml = '<span class="text-slate-500 italic">None</span>';
-        if (item.questionImage || item.solutionImage) {
+        const questionSrc = mediaFieldValue(item, "questionImage");
+        const solutionSrc = mediaFieldValue(item, "solutionImage");
+        const audioSrc = mediaFieldValue(item, "audioData");
+        if (item.questionImage || item.solutionImage || item.questionImageDriveId || item.solutionImageDriveId) {
           visualsHtml = '<div class="flex flex-wrap items-center justify-center gap-2">';
-          if (item.questionImage) visualsHtml += `<button type="button" data-no-row="1" class="relative" onclick="viewLightbox('${item.id}','question')" aria-label="View question image"><img src="${item.questionImage}" alt="Question" class="w-9 h-9 rounded-lg object-cover border border-slate-300 dark:border-amoled-border"><span class="absolute -top-1 -right-1 bg-brand-600 text-white rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">Q</span></button>`;
-          if (item.solutionImage) visualsHtml += `<button type="button" data-no-row="1" class="relative" onclick="viewLightbox('${item.id}','solution')" aria-label="View solution image"><img src="${item.solutionImage}" alt="Solution" class="w-9 h-9 rounded-lg object-cover border border-slate-300 dark:border-amoled-border"><span class="absolute -top-1 -right-1 bg-emerald-600 text-white rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">S</span></button>`;
+          if (questionSrc) visualsHtml += `<button type="button" data-no-row="1" class="relative" onclick="viewLightbox('${item.id}','question')" aria-label="View question image"><img src="${questionSrc}" alt="Question" class="w-9 h-9 rounded-lg object-cover border border-slate-300 dark:border-amoled-border"><span class="absolute -top-1 -right-1 bg-brand-600 text-white rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">Q</span></button>`;
+          else if (item.questionImageDriveId) visualsHtml += '<span class="text-[10px] text-slate-400">Q…</span>';
+          if (solutionSrc) visualsHtml += `<button type="button" data-no-row="1" class="relative" onclick="viewLightbox('${item.id}','solution')" aria-label="View solution image"><img src="${solutionSrc}" alt="Solution" class="w-9 h-9 rounded-lg object-cover border border-slate-300 dark:border-amoled-border"><span class="absolute -top-1 -right-1 bg-emerald-600 text-white rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">S</span></button>`;
+          else if (item.solutionImageDriveId) visualsHtml += '<span class="text-[10px] text-slate-400">S…</span>';
           visualsHtml += '</div>';
         }
-        const audioHtml = item.audioData ? `<button type="button" data-no-row="1" onclick="playInlineAudio('${item.id}',this)" class="w-8 h-8 mx-auto rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/30 flex items-center justify-center" title="Play voice note"><i data-lucide="play" class="w-3.5 h-3.5 audio-play-icon"></i></button>` : '<span class="text-slate-500 italic">No audio</span>';
+        const audioHtml = (item.audioData || item.audioDriveId) ? `<button type="button" data-no-row="1" onclick="playInlineAudio('${item.id}',this)" class="w-8 h-8 mx-auto rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/30 flex items-center justify-center" title="Play voice note"><i data-lucide="play" class="w-3.5 h-3.5 audio-play-icon"></i></button>` : '<span class="text-slate-500 italic">No audio</span>';
+        if ((item.questionImageDriveId && !questionSrc) || (item.solutionImageDriveId && !solutionSrc) || (item.audioDriveId && !audioSrc)) loadEntryMedia(item).then(loaded => { if (loaded) renderTable(); });
         const tr = document.createElement("tr"); tr.dataset.id = item.id; tr.tabIndex = 0; tr.setAttribute("role","button"); tr.setAttribute("aria-label",`Open details for question ${item.questionNum}`);
         tr.className = "log-row hover:bg-slate-50 dark:hover:bg-[#0c1222] transition-colors border-b border-slate-100 dark:border-amoled-border";
         tr.innerHTML = `<td class="py-3 px-3 text-center"><div class="flex flex-col items-center gap-1.5"><button type="button" data-no-row="1" onclick="toggleReviewStatus('${item.id}')" title="Mark as reviewed (+1 each click)" class="inline-flex items-center justify-center w-6 h-6 rounded-full ${isReviewed?'text-emerald-500':'text-slate-400 hover:text-slate-200'}"><i data-lucide="${isReviewed?'check-circle-2':'circle'}" class="w-4 h-4"></i></button><span class="inline-flex rounded-md px-1.5 py-0.5 text-[9px] leading-3 font-extrabold ${isReviewed?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30':'bg-amber-500/10 text-amber-400 border border-amber-500/30'}">${isReviewed?count+'×':'NEW'}</span></div></td>
@@ -1074,30 +1327,23 @@
     }
     function hideContextMenu(){ document.getElementById("logContextMenu")?.classList.add("hidden"); }
 
-    window.playInlineAudio = (id, btn) => {
+    window.playInlineAudio = async (id, btn) => {
       const item = errorEntries.find(i => i.id === id);
-      if (!item || !item.audioData) return;
-
-      if (currentPlayingAudio && currentPlayingAudio.src === item.audioData) {
-        if (!currentPlayingAudio.paused) {
-          currentPlayingAudio.pause();
-          btn.querySelector('.audio-play-icon').setAttribute('data-lucide', 'play');
-          if (window.lucide) lucide.createIcons();
-          return;
-        }
+      if (!item) return;
+      let src = mediaFieldValue(item, "audioData");
+      if (!src && item.audioDriveId) {
+        try { src = await loadDriveMedia(item, MEDIA_SPECS.find(x => x.field === "audioData"), false); }
+        catch (err) { showToast("Could not download voice note. Sync Drive and retry."); return; }
       }
-
+      if (!src) return;
+      if (currentPlayingAudio && currentPlayingAudio.src === src) {
+        if (!currentPlayingAudio.paused) { currentPlayingAudio.pause(); btn.querySelector('.audio-play-icon')?.setAttribute('data-lucide', 'play'); if (window.lucide) lucide.createIcons(); return; }
+      }
       if (currentPlayingAudio) currentPlayingAudio.pause();
-
-      currentPlayingAudio = new Audio(item.audioData);
-      currentPlayingAudio.play();
-      btn.querySelector('.audio-play-icon').setAttribute('data-lucide', 'pause');
-      if (window.lucide) lucide.createIcons();
-
-      currentPlayingAudio.onended = () => {
-        btn.querySelector('.audio-play-icon').setAttribute('data-lucide', 'play');
-        if (window.lucide) lucide.createIcons();
-      };
+      currentPlayingAudio = new Audio(src);
+      try { await currentPlayingAudio.play(); } catch (err) { showToast("Audio playback failed"); return; }
+      btn.querySelector('.audio-play-icon')?.setAttribute('data-lucide', 'pause'); if (window.lucide) lucide.createIcons();
+      currentPlayingAudio.onended = () => { btn.querySelector('.audio-play-icon')?.setAttribute('data-lucide', 'play'); if (window.lucide) lucide.createIcons(); };
     };
 
     window.toggleReviewStatus = (id) => {
@@ -1130,7 +1376,7 @@
       }
     };
 
-    function openEntryModal(editId = null) {
+    async function openEntryModal(editId = null) {
       document.getElementById("entryForm").reset();
       document.getElementById("editEntryId").value = "";
       questionImgBase64 = null;
@@ -1160,22 +1406,22 @@
           document.getElementById("modalFlagged").checked = Boolean(item.flagged);
           renderErrorTypeRadioPills(item.errorType);
 
-          if (item.questionImage) {
-            questionImgBase64 = item.questionImage;
+          if (item.questionImage || item.questionImageDriveId) {
+            questionImgBase64 = item.questionImage || await loadDriveMedia(item, MEDIA_SPECS.find(x => x.field === "questionImage"), true);
             const qP = document.getElementById("modalQImgPreview");
             qP.src = questionImgBase64;
             qP.classList.remove("hidden");
             document.getElementById("modalRemoveQImgBtn").classList.remove("hidden");
           }
-          if (item.solutionImage) {
-            solutionImgBase64 = item.solutionImage;
+          if (item.solutionImage || item.solutionImageDriveId) {
+            solutionImgBase64 = item.solutionImage || await loadDriveMedia(item, MEDIA_SPECS.find(x => x.field === "solutionImage"), true);
             const sP = document.getElementById("modalSImgPreview");
             sP.src = solutionImgBase64;
             sP.classList.remove("hidden");
             document.getElementById("modalRemoveSImgBtn").classList.remove("hidden");
           }
-          if (item.audioData) {
-            recordedAudioBase64 = item.audioData;
+          if (item.audioData || item.audioDriveId) {
+            recordedAudioBase64 = item.audioData || await loadDriveMedia(item, MEDIA_SPECS.find(x => x.field === "audioData"), true);
             document.getElementById("modalAudioEl").src = recordedAudioBase64;
             document.getElementById("voicePlaybackContainer").classList.remove("hidden");
           }
@@ -1197,10 +1443,15 @@
       document.getElementById("entryModal").classList.add("hidden");
     }
 
-    window.viewLightbox = (id, type) => {
+    window.viewLightbox = async (id, type) => {
       const item = errorEntries.find(i => i.id === id);
       if (!item) return;
-      const url = type === "question" ? item.questionImage : item.solutionImage;
+      const spec = MEDIA_SPECS.find(x => x.field === (type === "question" ? "questionImage" : "solutionImage"));
+      let url = mediaFieldValue(item, spec.field);
+      if (!url && item[spec.idField]) {
+        try { url = await loadDriveMedia(item, spec, false); }
+        catch (err) { showToast("Could not download image. Sync Drive and retry."); return; }
+      }
       if (url) {
         document.getElementById("lightboxImg").src = url;
         document.getElementById("imageLightboxModal").classList.remove("hidden");
@@ -1322,6 +1573,9 @@
           questionImage: questionImgBase64,
           solutionImage: solutionImgBase64,
           audioData: recordedAudioBase64,
+          questionImageDriveId: questionImgBase64 ? (errorEntries.find(x => x.id === editId)?.questionImageDriveId || null) : null,
+          solutionImageDriveId: solutionImgBase64 ? (errorEntries.find(x => x.id === editId)?.solutionImageDriveId || null) : null,
+          audioDriveId: recordedAudioBase64 ? (errorEntries.find(x => x.id === editId)?.audioDriveId || null) : null,
           reviewCount: isEdit ? (errorEntries.find(x => x.id === editId)?.reviewCount || 0) : 0,
           createdAt: isEdit ? (errorEntries.find(x => x.id === editId)?.createdAt || Date.now()) : Date.now(),
           updatedAt: Date.now(),
@@ -1547,9 +1801,9 @@
         const ids = errorEntries.map(x => x?.id).filter(Boolean);
         const duplicateIds = ids.filter((id, i) => ids.indexOf(id) !== i);
         const missingIds = errorEntries.filter(x => !x || !x.id).length;
-        const questionImages = errorEntries.filter(x => x?.questionImage).length;
-        const solutionImages = errorEntries.filter(x => x?.solutionImage).length;
-        const audioFiles = errorEntries.filter(x => x?.audioData).length;
+        const questionImages = errorEntries.filter(x => x?.questionImage || x?.questionImageDriveId).length;
+        const solutionImages = errorEntries.filter(x => x?.solutionImage || x?.solutionImageDriveId).length;
+        const audioFiles = errorEntries.filter(x => x?.audioData || x?.audioDriveId).length;
         const mediaBytes = errorEntries.reduce((sum, x) => sum + dataUrlApproxBytes(x?.questionImage) + dataUrlApproxBytes(x?.solutionImage) + dataUrlApproxBytes(x?.audioData), 0);
         const malformedMedia = errorEntries.filter(x => [x?.questionImage, x?.solutionImage, x?.audioData].some(v => v != null && (typeof v !== "string" || !v.startsWith("data:")))).length;
         const result = document.getElementById("migrationAuditResult");
@@ -1572,6 +1826,7 @@
       }
 
       document.getElementById("migrationAuditBtn")?.addEventListener("click", runMigrationAudit);
+      document.getElementById("migrateMediaBtn")?.addEventListener("click", migrateMediaToDrive);
       document.getElementById("migrationBackupBtn")?.addEventListener("click", async () => {
         const btn = document.getElementById("migrationBackupBtn");
         try {
