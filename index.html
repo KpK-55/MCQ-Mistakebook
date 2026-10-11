@@ -734,42 +734,57 @@
       }
     }
 
+    // Cache change IDs discovered during the current sync. This avoids one Drive
+    // list request per queued change and makes normal syncs much faster.
+    let remoteChangeIdsThisSync = new Set();
     async function uploadImmutableChange(record, dataFolderId) {
+      if (remoteChangeIdsThisSync.has(String(record.changeId))) return;
       const fileName = `change_${record.changeId}.json`;
-      // Drive permits duplicate filenames, so check the immutable ID before retrying.
-      const escapedChangeId = String(record.changeId).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-      const existing = await driveListAllFiles(`appProperties has { key='mcqChangeId' and value='${escapedChangeId}' } and trashed = false`, "files(id,name,appProperties),nextPageToken");
-      if (existing.length) return;
       const metadata = { name: fileName, mimeType: "application/json", parents: [dataFolderId], appProperties: { mcqChangeId: record.changeId, mcqChangeSchema: String(CHANGE_SCHEMA_VERSION), mcqChangeClient: record.clientId } };
       const form = new FormData();
       form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
       form.append("file", new Blob([JSON.stringify(record)], { type: "application/json" }));
       const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,appProperties", { method: "POST", headers: { Authorization: `Bearer ${gDriveAccessToken}` }, body: form });
-      if (res.status === 409) return; // An idempotent retry may already exist.
+      if (res.status === 409) return;
       if (!res.ok) throw new Error(`Could not upload change record (${res.status})`);
+      remoteChangeIdsThisSync.add(String(record.changeId));
+    }
+
+    async function runWithConcurrency(items, limit, worker) {
+      let next = 0;
+      const count = Math.min(Math.max(1, limit), items.length);
+      await Promise.all(Array.from({ length: count }, async () => {
+        while (true) {
+          const index = next++;
+          if (index >= items.length) return;
+          await worker(items[index], index);
+        }
+      }));
     }
 
     async function flushChangeOutbox(dataFolderId) {
       await queuedWriteChain;
       const pending = await outboxAll();
       let uploaded = 0;
-      for (const record of pending) {
+      await runWithConcurrency(pending, 4, async record => {
         await uploadImmutableChange(record, dataFolderId);
         await outboxDelete(record.changeId);
         uploaded++;
-      }
+      });
       return { uploaded, remaining: (await outboxAll()).length };
     }
 
     async function downloadRemoteChanges(dataFolderId) {
       const files = await driveListAllFiles(`'${dataFolderId}' in parents and name contains 'change_' and trashed = false`, "files(id,name,appProperties,modifiedTime),nextPageToken");
+      remoteChangeIdsThisSync = new Set(files.map(file => String(file.appProperties?.mcqChangeId || "")).filter(Boolean));
       const changes = [];
-      for (const file of files) {
+      await runWithConcurrency(files, 8, async file => {
         try {
           const res = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, { headers: { Authorization: `Bearer ${gDriveAccessToken}` } });
           if (res.ok) changes.push(await res.json());
+          else console.warn("Skipped unreadable change record", file.name, res.status);
         } catch (err) { console.warn("Skipped unreadable change record", file.name, err); }
-      }
+      });
       return changes;
     }
 
