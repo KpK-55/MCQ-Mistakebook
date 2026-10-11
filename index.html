@@ -1,0 +1,2147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MCQ Error Tracker - 100% Free Cloud Sync</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Identity Services (100% Free Drive API client) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input, textarea, select {
+      user-select: text;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+    }
+    /* Elevated card styling */
+    .card-elevated {
+      transform: translateY(-3px) scale(1.008);
+      box-shadow: 0 16px 32px -8px rgba(79, 70, 229, 0.18), 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+      border-color: #6366f1 !important;
+      z-index: 20;
+    }
+    .dark .card-elevated {
+      box-shadow: 0 16px 32px -8px rgba(99, 102, 241, 0.28), 0 4px 12px -2px rgba(0, 0, 0, 0.5);
+    }
+    .pulse-ring {
+      animation: pulse-border 1.5s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+    }
+    @keyframes pulse-border {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+    .spin-fast {
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200">
+
+  <header class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
+      <!-- Title & Zero-Cost Cloud Badge -->
+      <div class="flex items-center gap-2.5 sm:gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-brand-500/20 shrink-0">
+          <i data-lucide="crosshair" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-sm sm:text-lg text-slate-900 dark:text-white leading-tight">MCQ Error Tracker</h1>
+            <span class="hidden md:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+              100% FREE SYNC
+            </span>
+          </div>
+          <div class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+            <span id="driveIndicatorDot" class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700 inline-block"></span>
+            <span id="syncStatusText" class="truncate max-w-[200px] sm:max-w-xs">Local Storage (Drive Unlinked)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <button id="themeToggleBtn" class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Toggle Dark/Light">
+          <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
+          <i data-lucide="sun" class="w-4 h-4 block dark:hidden"></i>
+        </button>
+
+        <button id="openTaxonomyBtn" class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition" title="Configure Subjects, Chapters & Sources">
+          <i data-lucide="sliders" class="w-4 h-4 text-brand-500"></i>
+          <span class="hidden sm:inline">Settings</span>
+        </button>
+
+        <button id="openDriveModalBtn" class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+          <i data-lucide="hard-drive" class="w-4 h-4 text-emerald-500"></i>
+          <span class="hidden sm:inline">Drive Sync</span>
+        </button>
+
+        <button id="openNewLogModalBtn" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-600 text-white text-xs sm:text-sm font-semibold hover:bg-brand-700 shadow-md shadow-brand-500/25 active:scale-95 transition">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>Log Error</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-3 sm:px-6 py-4 flex-1 w-full space-y-4">
+    <!-- Top 5 Metrics Cards: Total, Voice, Image, New, Already Reviewed -->
+    <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
+      <!-- Total Logs -->
+      <div class="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+          <span class="text-[11px] font-bold uppercase tracking-wider">Total Logs</span>
+          <i data-lucide="list-ordered" class="w-4 h-4 text-brand-500"></i>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span id="statTotalLogs" class="text-2xl font-black text-slate-900 dark:text-white">0</span>
+          <span class="text-[11px] text-slate-400">All questions</span>
+        </div>
+      </div>
+
+      <!-- Total Voice Notes -->
+      <div class="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+          <span class="text-[11px] font-bold uppercase tracking-wider">Voice Notes</span>
+          <i data-lucide="mic" class="w-4 h-4 text-violet-500"></i>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span id="statTotalVoice" class="text-2xl font-black text-violet-600 dark:text-violet-400">0</span>
+          <span class="text-[11px] text-violet-500 font-semibold">Explanations</span>
+        </div>
+      </div>
+
+      <!-- Total Images -->
+      <div class="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
+          <span class="text-[11px] font-bold uppercase tracking-wider">Images Attached</span>
+          <i data-lucide="image" class="w-4 h-4 text-sky-500"></i>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span id="statTotalImages" class="text-2xl font-black text-sky-600 dark:text-sky-400">0</span>
+          <span class="text-[11px] text-sky-500 font-semibold">Photos / Q&S</span>
+        </div>
+      </div>
+
+      <!-- New Logs (Unreviewed) -->
+      <div class="bg-amber-50/60 dark:bg-amber-950/20 p-3.5 rounded-2xl border border-amber-200/80 dark:border-amber-800/60 shadow-xs">
+        <div class="flex items-center justify-between text-amber-700 dark:text-amber-400">
+          <span class="text-[11px] font-bold uppercase tracking-wider">New Logs</span>
+          <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span id="statNewLogs" class="text-2xl font-black text-amber-600 dark:text-amber-300">0</span>
+          <span class="text-[11px] text-amber-600 dark:text-amber-400 font-medium">Not reviewed yet</span>
+        </div>
+      </div>
+
+      <!-- Already Reviewed Logs -->
+      <div class="col-span-2 sm:col-span-1 bg-emerald-50/60 dark:bg-emerald-950/20 p-3.5 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs">
+        <div class="flex items-center justify-between text-emerald-700 dark:text-emerald-400">
+          <span class="text-[11px] font-bold uppercase tracking-wider">Already Reviewed</span>
+          <i data-lucide="check-check" class="w-4 h-4 text-emerald-500"></i>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span id="statReviewedLogs" class="text-2xl font-black text-emerald-600 dark:text-emerald-300">0</span>
+          <span class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">≥ 1 Review cycle</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Search & Filter Controls -->
+    <section class="bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
+      <div class="relative flex-1">
+        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+        <input type="text" id="searchInput" placeholder="Search Q#, source, subject, chapter or notes..." class="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 text-slate-800 dark:text-slate-100">
+      </div>
+
+      <div class="flex flex-wrap sm:flex-nowrap gap-2 items-center">
+        <select id="filterSource" class="flex-1 sm:flex-none px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 focus:outline-none">
+          <option value="ALL">All Sources</option>
+        </select>
+
+        <select id="filterSubject" class="flex-1 sm:flex-none px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 focus:outline-none">
+          <option value="ALL">All Subjects</option>
+        </select>
+
+        <select id="filterReviewStatus" class="flex-1 sm:flex-none px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-300 focus:outline-none">
+          <option value="ALL">All Review Status</option>
+          <option value="NEW">New Logs Only (0 Reviews)</option>
+          <option value="REVIEWED">Reviewed Logs (≥1)</option>
+          <option value="FLAGGED">🚩 Red Flagged</option>
+        </select>
+
+        <button id="quickSyncHeaderBtn" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition" title="Trigger Instant Cloud Sync">
+          <i data-lucide="refresh-cw" class="w-4 h-4" id="syncSpinner"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- Tip bar for Touch / Long-press on Tablets -->
+    <div class="flex items-center justify-between px-3 py-1.5 rounded-xl bg-slate-100/70 dark:bg-slate-800/40 text-[11px] text-slate-500 dark:text-slate-400">
+      <span class="flex items-center gap-1.5 truncate">
+        <i data-lucide="info" class="w-3.5 h-3.5 text-brand-500 shrink-0"></i>
+        <span><strong>Tap</strong> card to elevate details & inspection. <strong>Long-press</strong> (or right-click) for Red Flag, Edit, or Delete.</span>
+      </span>
+      <span class="font-bold text-brand-600 dark:text-brand-400 shrink-0 hidden sm:inline">Newest Logs on Top</span>
+    </div>
+
+    <div id="logsContainer" class="space-y-2.5">
+      <!-- Dynamic cards rendered sequentially with newest logs first -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 py-16 px-4 text-center">
+      <div class="w-12 h-12 mx-auto rounded-2xl bg-brand-50 dark:bg-slate-800 flex items-center justify-center text-brand-500 mb-3">
+        <i data-lucide="inbox" class="w-6 h-6"></i>
+      </div>
+      <h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm">No Error Logs Found</h4>
+      <p class="text-xs text-slate-400 mt-1 mb-4">Start logging questions or reset the filter search criteria.</p>
+      <button onclick="document.getElementById('openNewLogModalBtn').click()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-600 text-white text-xs font-semibold hover:bg-brand-700 transition">
+        <i data-lucide="plus" class="w-4 h-4"></i> Add First Error Log
+      </button>
+    </div>
+  </main>
+
+  <!-- Long-press / Context Menu Popup -->
+  <div id="contextMenu" class="fixed z-50 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 py-1.5 w-48 hidden select-none animate-in fade-in zoom-in-95 duration-100">
+    <div class="px-3 py-1 border-b border-slate-100 dark:border-slate-800 text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate" id="contextMenuTitle">
+      Question Actions
+    </div>
+    <button id="cmFlagBtn" class="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-200">
+      <i data-lucide="flag" class="w-4 h-4 text-rose-500"></i>
+      <span id="cmFlagLabel">Toggle Red Flag</span>
+    </button>
+    <button id="cmReviewBtn" class="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+      <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+      <span>Mark Reviewed (+1)</span>
+    </button>
+    <button id="cmEditBtn" class="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-700 dark:text-slate-200">
+      <i data-lucide="edit-3" class="w-4 h-4 text-indigo-500"></i>
+      <span>Edit Entry</span>
+    </button>
+    <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
+    <button id="cmDeleteBtn" class="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 text-rose-600 dark:text-rose-400">
+      <i data-lucide="trash-2" class="w-4 h-4"></i>
+      <span>Delete Log</span>
+    </button>
+  </div>
+
+  <!-- Log Error Creation / Edit Modal -->
+  <div id="entryModal" class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800">
+      <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/50">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-brand-600 text-white flex items-center justify-center">
+            <i data-lucide="pen-tool" class="w-4 h-4"></i>
+          </div>
+          <h2 id="modalHeading" class="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Record MCQ Mistake</h2>
+        </div>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="entryForm" class="p-5 space-y-4 overflow-y-auto custom-scrollbar flex-1 text-xs sm:text-sm">
+        <input type="hidden" id="editEntryId" value="">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- Q# -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Question Number *</label>
+            <input type="text" id="modalQNum" placeholder="e.g. Q12 or Q45" required class="w-full px-3 py-2 text-xs sm:text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-slate-900 dark:text-white font-semibold">
+          </div>
+
+          <!-- SOURCE -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-bold text-slate-700 dark:text-slate-300">SOURCE *</label>
+              <button type="button" id="inlineAddSourceBtn" class="text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline inline-flex items-center gap-0.5">
+                <i data-lucide="plus" class="w-3 h-3"></i> Add Source
+              </button>
+            </div>
+            <select id="modalSource" required class="w-full px-3 py-2 text-xs sm:text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-slate-900 dark:text-white">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Subject & Dynamic Chapter -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Subject *</label>
+              <button type="button" id="inlineAddSubjectBtn" class="text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline inline-flex items-center gap-0.5">
+                <i data-lucide="plus" class="w-3 h-3"></i> Add Subject
+              </button>
+            </div>
+            <select id="modalSubject" required class="w-full px-3 py-2 text-xs sm:text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-slate-900 dark:text-white">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Chapter *</label>
+              <button type="button" id="inlineAddChapterBtn" class="text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline inline-flex items-center gap-0.5">
+                <i data-lucide="plus" class="w-3 h-3"></i> Add Chapter
+              </button>
+            </div>
+            <select id="modalChapter" required class="w-full px-3 py-2 text-xs sm:text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-slate-900 dark:text-white">
+              <!-- Cascading chapters -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Error Type Selection -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Error Classification *</label>
+            <button type="button" id="inlineAddErrorTypeBtn" class="text-[11px] font-bold text-brand-600 dark:text-brand-400 hover:underline inline-flex items-center gap-0.5">
+              <i data-lucide="plus" class="w-3 h-3"></i> Add Error Type
+            </button>
+          </div>
+          <div id="modalErrorTypesPillContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <!-- Dynamic radio pills -->
+          </div>
+        </div>
+
+        <!-- Root cause & Remedial Action -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Specific Root Cause & Remedial Action *</label>
+          <textarea id="modalRemedial" rows="3" required placeholder="What was the misconception? What rule/formula was applied incorrectly? What concrete fix did you take?" class="w-full px-3 py-2 text-xs sm:text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-slate-900 dark:text-white leading-relaxed"></textarea>
+        </div>
+
+        <!-- Photos: Question & Solution -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Question Image</label>
+            <div class="flex items-center gap-2">
+              <label class="flex-1 flex flex-col items-center justify-center p-3 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-brand-500 rounded-xl cursor-pointer bg-slate-50 dark:bg-slate-800/50 transition">
+                <i data-lucide="camera" class="w-5 h-5 text-slate-400 mb-1"></i>
+                <span id="modalQImgLabel" class="text-xs text-slate-500 font-medium truncate max-w-[150px]">Take snap or upload</span>
+                <input type="file" id="modalQImgInput" accept="image/*" class="hidden">
+              </label>
+              <button type="button" id="modalRemoveQImgBtn" class="hidden p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-lg">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+            <img id="modalQImgPreview" class="mt-2 w-full h-24 object-cover rounded-lg border border-slate-200 dark:border-slate-700 hidden">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Solution / Scratchpad Image</label>
+            <div class="flex items-center gap-2">
+              <label class="flex-1 flex flex-col items-center justify-center p-3 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-brand-500 rounded-xl cursor-pointer bg-slate-50 dark:bg-slate-800/50 transition">
+                <i data-lucide="file-check-2" class="w-5 h-5 text-slate-400 mb-1"></i>
+                <span id="modalSImgLabel" class="text-xs text-slate-500 font-medium truncate max-w-[150px]">Take snap or upload</span>
+                <input type="file" id="modalSImgInput" accept="image/*" class="hidden">
+              </label>
+              <button type="button" id="modalRemoveSImgBtn" class="hidden p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-lg">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+            <img id="modalSImgPreview" class="mt-2 w-full h-24 object-cover rounded-lg border border-slate-200 dark:border-slate-700 hidden">
+          </div>
+        </div>
+
+        <!-- Built-in Voice Explanation Recorder -->
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <i data-lucide="mic" class="w-4 h-4 text-brand-500"></i>
+              Voice Note Explanation
+            </span>
+            <span id="voiceTimer" class="text-xs font-mono font-bold text-slate-500">00:00</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" id="startVoiceRecBtn" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition flex items-center gap-1.5">
+              <i data-lucide="mic" class="w-3.5 h-3.5"></i> Record
+            </button>
+            <button type="button" id="stopVoiceRecBtn" disabled class="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-400 text-xs font-bold transition flex items-center gap-1.5 cursor-not-allowed">
+              <i data-lucide="square" class="w-3.5 h-3.5"></i> Stop
+            </button>
+            <div id="voicePlaybackContainer" class="flex-1 min-w-[200px] hidden">
+              <audio id="modalAudioEl" controls class="w-full h-8"></audio>
+            </div>
+            <button type="button" id="deleteVoiceBtn" class="hidden text-rose-500 hover:text-rose-700 text-xs font-bold px-2 py-1">
+              Remove
+            </button>
+          </div>
+        </div>
+
+        <!-- Initial Review Count & Red Flag options -->
+        <div class="flex items-center justify-between pt-1 text-xs">
+          <label class="flex items-center gap-2 cursor-pointer font-semibold text-rose-600 dark:text-rose-400">
+            <input type="checkbox" id="modalFlagged" class="w-4 h-4 text-rose-600 rounded-md border-slate-300 dark:border-slate-700 focus:ring-rose-500">
+            <span>Mark as 🚩 Red Flag (Needs urgent revisit)</span>
+          </label>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2">
+          <button type="button" id="cancelEntryModalBtn" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 shadow-md shadow-brand-500/20">
+            Save Log Entry
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 100% Free Google Drive Cloud Sync Modal -->
+  <div id="driveModal" class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[92vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800">
+      <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/50">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
+            <i data-lucide="hard-drive" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h2 class="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Free Google Drive Sync</h2>
+            <p class="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">100% Free Forever • Zero Server Costs</p>
+          </div>
+        </div>
+        <button id="closeDriveModalBtn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4 overflow-y-auto custom-scrollbar flex-1 text-xs">
+        <!-- 100% Free Cost Clarification Box -->
+        <div class="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl space-y-1.5 text-emerald-900 dark:text-emerald-200">
+          <div class="flex items-center gap-1.5 font-bold">
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
+            <span>Why is this 100% free of charge?</span>
+          </div>
+          <p class="text-[11px] leading-relaxed text-emerald-800 dark:text-emerald-300">
+            Google provides every user with <strong>15 GB of free Google Drive storage</strong>. This app talks directly from your browser to your own personal Google Drive via Google's free REST API. There are <strong>no paid servers, no monthly subscriptions, and no hidden databases</strong>.
+          </p>
+        </div>
+
+        <!-- Connection Status & Account Info -->
+        <div class="p-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-600 dark:text-slate-400">Connection State:</span>
+            <span id="driveStatusPill" class="font-bold text-slate-500">Unlinked</span>
+          </div>
+          <div id="driveEmailRow" class="hidden flex items-center justify-between">
+            <span class="font-bold text-slate-600 dark:text-slate-400">Google Account:</span>
+            <span id="driveUserEmail" class="font-mono text-brand-600 dark:text-brand-400 font-bold truncate max-w-[200px]"></span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-600 dark:text-slate-400">Last Synced:</span>
+            <span id="driveLastSyncTime" class="font-medium text-slate-500">Never</span>
+          </div>
+        </div>
+
+        <!-- Client ID Configuration -->
+        <div class="space-y-1.5">
+          <label class="block font-bold text-slate-700 dark:text-slate-300">
+            Your Free Google OAuth Client ID:
+          </label>
+          <input type="text" id="gDriveClientIdInput" placeholder="e.g. 123456789-abcdef.apps.googleusercontent.com" class="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-500/20 text-slate-900 dark:text-white">
+          <div class="text-[10px] text-slate-500 space-y-0.5 leading-relaxed pt-1">
+            <p>1. Open Google Cloud Console (<code class="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">console.cloud.google.com</code>) on any computer.</p>
+            <p>2. Create a free project, enable <strong>Google Drive API</strong>, configure OAuth Consent screen (External), and create an <strong>OAuth Client ID (Web Application)</strong>.</p>
+            <p>3. Paste your client ID above and authorize. All your Android tablets and PCs logging in with the same Google ID will sync automatically!</p>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2 pt-2">
+          <button id="authDriveBtn" class="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/20">
+            <i data-lucide="log-in" class="w-4 h-4"></i>
+            <span>Sign In & Sync with Google Drive</span>
+          </button>
+          <button id="disconnectDriveBtn" class="hidden py-2.5 px-3 border border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-xl font-bold transition">
+            Disconnect
+          </button>
+        </div>
+
+        <!-- 100% Free Offline Backup & Restore Fallback -->
+        <div class="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-700 dark:text-slate-300">Instant Local Backup (JSON)</span>
+            <span class="text-[10px] text-slate-400">Zero Internet Required</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="exportJsonBtn" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl font-semibold text-slate-700 dark:text-slate-300 transition flex items-center justify-center gap-1.5">
+              <i data-lucide="download" class="w-3.5 h-3.5 text-brand-500"></i> Download JSON
+            </button>
+            <label class="py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl font-semibold text-slate-700 dark:text-slate-300 transition flex items-center justify-center gap-1.5 cursor-pointer">
+              <i data-lucide="upload" class="w-3.5 h-3.5 text-emerald-500"></i> Restore JSON
+              <input type="file" id="importJsonInput" accept=".json" class="hidden">
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Taxonomy Settings Modal -->
+  <div id="taxonomyModal" class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800">
+      <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/50">
+        <div class="flex items-center gap-2">
+          <i data-lucide="sliders" class="w-5 h-5 text-brand-600"></i>
+          <h2 class="font-bold text-slate-900 dark:text-white text-base">Taxonomies & List Manager</h2>
+        </div>
+        <button id="closeTaxonomyBtn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="flex border-b border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-800/30 text-xs">
+        <button class="tax-tab px-4 py-2.5 font-bold border-b-2 border-brand-600 text-brand-600 dark:text-brand-400" data-tab="tab-sources">Sources</button>
+        <button class="tax-tab px-4 py-2.5 font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200" data-tab="tab-subjects">Subjects & Chapters</button>
+        <button class="tax-tab px-4 py-2.5 font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200" data-tab="tab-errortypes">Error Types</button>
+      </div>
+
+      <div class="p-5 flex-1 overflow-y-auto custom-scrollbar space-y-4 text-xs">
+        <!-- Sources Tab -->
+        <div id="tab-sources" class="tax-panel space-y-3">
+          <div class="flex gap-2">
+            <input type="text" id="newSourceInput" placeholder="New source name (e.g. Allen Minor 03, PW DPP 12)..." class="flex-1 px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+            <button id="addSourceBtn" class="px-4 py-2 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700">Add Source</button>
+          </div>
+          <div id="sourcesList" class="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl max-h-56 overflow-y-auto"></div>
+        </div>
+
+        <!-- Subjects & Chapters Tab -->
+        <div id="tab-subjects" class="tax-panel hidden space-y-3">
+          <div class="flex gap-2">
+            <input type="text" id="newSubjectInput" placeholder="New subject name..." class="flex-1 px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+            <button id="addSubjectBtn" class="px-4 py-2 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700">Add Subject</button>
+          </div>
+          <div class="pt-2 space-y-2">
+            <div class="flex items-center gap-2">
+              <label class="font-bold text-slate-600 dark:text-slate-400">Select Subject to manage Chapters:</label>
+              <select id="taxSubjectSelect" class="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg font-bold"></select>
+            </div>
+            <div class="flex gap-2">
+              <input type="text" id="newChapterInput" placeholder="Chapter name to add..." class="flex-1 px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+              <button id="addChapterBtn" class="px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl font-bold">Add Chapter</button>
+            </div>
+            <div id="chaptersList" class="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl max-h-52 overflow-y-auto"></div>
+          </div>
+        </div>
+
+        <!-- Error Types Tab -->
+        <div id="tab-errortypes" class="tax-panel hidden space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <input type="text" id="newErrorTypeName" placeholder="Error Label (e.g. Calculation Slip)" class="sm:col-span-2 px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+            <select id="newErrorTypeColor" class="px-3 py-2 font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+              <option value="red">Red (Concept Gap)</option>
+              <option value="amber">Amber (Silly Mistake)</option>
+              <option value="emerald">Green (Slow / Guess)</option>
+              <option value="blue">Blue (Calculation)</option>
+              <option value="purple">Purple (Misread)</option>
+            </select>
+          </div>
+          <button id="addErrorTypeBtn" class="w-full py-2 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700">Add Error Type</button>
+          <div id="errorTypesList" class="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl max-h-56 overflow-y-auto"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Lightbox Modal -->
+  <div id="imageLightboxModal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 hidden">
+    <div class="relative max-w-4xl max-h-[92vh] flex flex-col items-center">
+      <button id="closeLightboxBtn" class="absolute -top-10 right-0 text-white hover:text-slate-300 p-1">
+        <i data-lucide="x" class="w-7 h-7"></i>
+      </button>
+      <h3 id="lightboxTitle" class="text-white text-xs sm:text-sm font-semibold mb-2"></h3>
+      <img id="lightboxImg" src="" alt="Snapshot" class="max-h-[82vh] rounded-xl shadow-2xl object-contain border border-slate-800">
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastMessage" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-200 pointer-events-none bg-slate-900 dark:bg-slate-800 text-white text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 border border-slate-700">
+    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toastText">Action completed</span>
+  </div>
+
+  <script>
+    // System Constants & Local Storage Keys
+    const DRIVE_FILE_NAME = "mcq_mistake_log_free_sync.json";
+    const CLIENT_ID_KEY = "mcq_gdrive_client_id_free";
+    const DRIVE_TOKEN_KEY = "mcq_gdrive_token_free";
+    const DRIVE_EMAIL_KEY = "mcq_gdrive_email_free";
+    const LOCAL_DATA_KEY = "mcq_error_entries_v3";
+    const LOCAL_CONFIG_KEY = "mcq_app_config_v3";
+    const LAST_SYNC_KEY = "mcq_last_synced_v3";
+
+    const DEFAULT_CONFIG = {
+      sources: [
+        "MCQ Practice Session",
+        "Part Test 01",
+        "Grand Test",
+        "Allen Minor Test",
+        "PW DPP (Daily Practice)"
+      ],
+      subjects: {
+        Physics: [
+          "Units and Measurements",
+          "Motion in a Straight Line",
+          "Motion in a Plane (2D)",
+          "Laws of Motion",
+          "Work, Energy and Power",
+          "Rotational Motion",
+          "Gravitation",
+          "Thermodynamics",
+          "Current Electricity",
+          "Ray Optics",
+          "Modern Physics"
+        ],
+        Chemistry: [
+          "Mole Concept & Stoichiometry",
+          "Structure of Atom",
+          "Chemical Bonding",
+          "Equilibrium",
+          "Redox & Electrochemistry",
+          "Chemical Kinetics",
+          "Solutions",
+          "Organic Chemistry Basics (GOC)",
+          "Hydrocarbons"
+        ],
+        Botany: [
+          "Living World & Classification",
+          "Cell: The Unit of Life",
+          "Photosynthesis",
+          "Genetics & Variation",
+          "Molecular Basis of Inheritance"
+        ],
+        Zoology: [
+          "Animal Kingdom",
+          "Human Physiology: Digestion & Breathing",
+          "Circulation & Body Fluids",
+          "Neural Control & Coordination",
+          "Human Reproduction"
+        ],
+        Mathematics: [
+          "Sets & Relations",
+          "Trigonometry",
+          "Calculus: Differentiation",
+          "Calculus: Integration",
+          "Vectors and 3D Geometry",
+          "Coordinate Geometry"
+        ]
+      },
+      errorTypes: [
+        { id: "et_1", label: "Concept Gap / Blunder", color: "red", desc: "Theory gap" },
+        { id: "et_2", label: "Calculation / Silly Mistake", color: "amber", desc: "Slip in math" },
+        { id: "et_3", label: "Educated Guess / Slow", color: "emerald", desc: "Sluggish solve" },
+        { id: "et_4", label: "Formula Recall Mistake", color: "blue", desc: "Forgot formula" },
+        { id: "et_5", label: "Misread Question / Trap", color: "purple", desc: "Missed 'NOT' or unit" }
+      ]
+    };
+
+    // Primary State Variables
+    let appConfig = JSON.parse(localStorage.getItem(LOCAL_CONFIG_KEY) || "null") || DEFAULT_CONFIG;
+    let errorEntries = JSON.parse(localStorage.getItem(LOCAL_DATA_KEY) || "[]");
+    let gTokenClient = null;
+    let gDriveAccessToken = localStorage.getItem(DRIVE_TOKEN_KEY) || null;
+    let gDriveFileId = null;
+    let isSyncing = false;
+    let syncTimer = null;
+
+    // Selection & Long-Press Context Menu State
+    let activeElevatedId = null;
+    let contextMenuTargetId = null;
+    let longPressTimer = null;
+    let isLongPressTriggered = false;
+
+    // Audio & Image Attachments State
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let recordedAudioBase64 = null;
+    let recordInterval = null;
+    let recordSeconds = 0;
+    let questionImgBase64 = null;
+    let solutionImgBase64 = null;
+
+    function initGoogleClient() {
+      const clientId = localStorage.getItem(CLIENT_ID_KEY) || "";
+      document.getElementById("gDriveClientIdInput").value = clientId;
+
+      if (!clientId) {
+        updateDriveUI(false);
+        return;
+      }
+
+      if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+        try {
+          gTokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: clientId,
+            scope: "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email",
+            callback: async (tokenResponse) => {
+              if (tokenResponse && tokenResponse.access_token) {
+                gDriveAccessToken = tokenResponse.access_token;
+                localStorage.setItem(DRIVE_TOKEN_KEY, gDriveAccessToken);
+                await fetchGoogleUserInfo();
+                updateDriveUI(true);
+                showToast("Google Drive Connected (100% Free)");
+                syncWithGoogleDrive();
+              }
+            }
+          });
+
+          if (gDriveAccessToken) {
+            updateDriveUI(true);
+            fetchGoogleUserInfo().catch(() => {
+              gDriveAccessToken = null;
+              localStorage.removeItem(DRIVE_TOKEN_KEY);
+              updateDriveUI(false);
+            });
+          }
+        } catch (err) {
+          console.warn("Failed initializing Google client:", err);
+        }
+      }
+    }
+
+    async function fetchGoogleUserInfo() {
+      if (!gDriveAccessToken) return;
+      try {
+        const res = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+          headers: { Authorization: `Bearer ${gDriveAccessToken}` }
+        });
+        if (res.ok) {
+          const user = await res.json();
+          if (user.email) {
+            localStorage.setItem(DRIVE_EMAIL_KEY, user.email);
+            document.getElementById("driveUserEmail").textContent = user.email;
+            document.getElementById("driveEmailRow").classList.remove("hidden");
+          }
+        }
+      } catch (e) {
+        console.warn("User info fetch failed:", e);
+      }
+    }
+
+    function triggerGoogleAuth() {
+      const clientIdInput = document.getElementById("gDriveClientIdInput").value.trim();
+      if (!clientIdInput) {
+        showToast("Please enter your free Google OAuth Client ID");
+        return;
+      }
+      localStorage.setItem(CLIENT_ID_KEY, clientIdInput);
+
+      if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+        gTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: clientIdInput,
+          scope: "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email",
+          callback: async (tokenResponse) => {
+            if (tokenResponse && tokenResponse.access_token) {
+              gDriveAccessToken = tokenResponse.access_token;
+              localStorage.setItem(DRIVE_TOKEN_KEY, gDriveAccessToken);
+              await fetchGoogleUserInfo();
+              updateDriveUI(true);
+              showToast("Connected to Google Drive");
+              syncWithGoogleDrive();
+            }
+          }
+        });
+        gTokenClient.requestAccessToken({ prompt: 'consent' });
+      } else {
+        showToast("Google Identity library still loading, please retry");
+      }
+    }
+
+    function disconnectGoogleDrive() {
+      gDriveAccessToken = null;
+      gDriveFileId = null;
+      localStorage.removeItem(DRIVE_TOKEN_KEY);
+      localStorage.removeItem(DRIVE_EMAIL_KEY);
+      updateDriveUI(false);
+      showToast("Google Drive disconnected");
+    }
+
+    function updateDriveUI(connected) {
+      const dot = document.getElementById("driveIndicatorDot");
+      const statusText = document.getElementById("syncStatusText");
+      const statusPill = document.getElementById("driveStatusPill");
+      const disconnectBtn = document.getElementById("disconnectDriveBtn");
+      const email = localStorage.getItem(DRIVE_EMAIL_KEY) || "";
+      const lastSync = localStorage.getItem(LAST_SYNC_KEY);
+
+      if (connected && gDriveAccessToken) {
+        dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block";
+        statusText.textContent = email ? `Drive Synced (${email})` : "Drive Connected (Free)";
+        statusPill.textContent = "Connected & Active";
+        statusPill.className = "font-bold text-emerald-600 dark:text-emerald-400";
+        disconnectBtn.classList.remove("hidden");
+        if (email) {
+          document.getElementById("driveUserEmail").textContent = email;
+          document.getElementById("driveEmailRow").classList.remove("hidden");
+        }
+      } else {
+        dot.className = "w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700 inline-block";
+        statusText.textContent = "Local Storage (Drive Unlinked)";
+        statusPill.textContent = "Unlinked";
+        statusPill.className = "font-bold text-slate-500";
+        disconnectBtn.classList.add("hidden");
+        document.getElementById("driveEmailRow").classList.add("hidden");
+      }
+
+      if (lastSync) {
+        document.getElementById("driveLastSyncTime").textContent = new Date(parseInt(lastSync)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+    }
+
+    async function locateDriveSyncFile() {
+      if (!gDriveAccessToken) return null;
+      try {
+        const query = encodeURIComponent(`name = '${DRIVE_FILE_NAME}' and trashed = false`);
+        const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,modifiedTime)`, {
+          headers: { Authorization: `Bearer ${gDriveAccessToken}` }
+        });
+        if (res.status === 401) {
+          gDriveAccessToken = null;
+          localStorage.removeItem(DRIVE_TOKEN_KEY);
+          updateDriveUI(false);
+          return null;
+        }
+        const data = await res.json();
+        if (data.files && data.files.length > 0) {
+          gDriveFileId = data.files[0].id;
+          return data.files[0];
+        }
+        return null;
+      } catch (err) {
+        console.warn("Drive locate file error:", err);
+        return null;
+      }
+    }
+
+    async function downloadDriveSyncFile(fileId) {
+      if (!gDriveAccessToken) return null;
+      try {
+        const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+          headers: { Authorization: `Bearer ${gDriveAccessToken}` }
+        });
+        if (res.ok) return await res.json();
+      } catch (e) {
+        console.warn("Download drive file failed:", e);
+      }
+      return null;
+    }
+
+    async function uploadDriveSyncFile(payload) {
+      if (!gDriveAccessToken) return false;
+      const fileContent = JSON.stringify(payload);
+      try {
+        if (gDriveFileId) {
+          const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${gDriveFileId}?uploadType=media`, {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${gDriveAccessToken}`,
+              "Content-Type": "application/json"
+            },
+            body: fileContent
+          });
+          return res.ok;
+        } else {
+          const metadata = { name: DRIVE_FILE_NAME, mimeType: "application/json" };
+          const form = new FormData();
+          form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
+          form.append("file", new Blob([fileContent], { type: "application/json" }));
+
+          const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${gDriveAccessToken}` },
+            body: form
+          });
+          if (res.ok) {
+            const data = await res.json();
+            gDriveFileId = data.id;
+            return true;
+          }
+        }
+      } catch (err) {
+        console.warn("Upload drive file failed:", err);
+      }
+      return false;
+    }
+
+    async function syncWithGoogleDrive() {
+      if (!gDriveAccessToken || isSyncing) return;
+      isSyncing = true;
+      const spinner = document.getElementById("syncSpinner");
+      if (spinner) spinner.classList.add("spin-fast");
+
+      try {
+        const remoteMeta = await locateDriveSyncFile();
+        if (remoteMeta) {
+          const remoteData = await downloadDriveSyncFile(remoteMeta.id);
+          if (remoteData) {
+            // Merge by entry id and update timestamp
+            const localMap = new Map(errorEntries.map(e => [e.id, e]));
+            if (Array.isArray(remoteData.errorEntries)) {
+              remoteData.errorEntries.forEach(remoteEntry => {
+                const local = localMap.get(remoteEntry.id);
+                if (!local || (remoteEntry.updatedAt || 0) > (local.updatedAt || 0)) {
+                  localMap.set(remoteEntry.id, remoteEntry);
+                }
+              });
+            }
+            // Always keep newest logs first (descending timestamp)
+            errorEntries = Array.from(localMap.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+            // Merge Taxonomies
+            if (remoteData.appConfig) {
+              if (Array.isArray(remoteData.appConfig.sources)) {
+                remoteData.appConfig.sources.forEach(s => {
+                  if (!appConfig.sources.includes(s)) appConfig.sources.push(s);
+                });
+              }
+              if (remoteData.appConfig.subjects) {
+                Object.keys(remoteData.appConfig.subjects).forEach(sub => {
+                  if (!appConfig.subjects[sub]) {
+                    appConfig.subjects[sub] = remoteData.appConfig.subjects[sub];
+                  } else {
+                    remoteData.appConfig.subjects[sub].forEach(ch => {
+                      if (!appConfig.subjects[sub].includes(ch)) appConfig.subjects[sub].push(ch);
+                    });
+                  }
+                });
+              }
+              if (Array.isArray(remoteData.appConfig.errorTypes)) {
+                const existingLabels = new Set(appConfig.errorTypes.map(x => x.label));
+                remoteData.appConfig.errorTypes.forEach(et => {
+                  if (!existingLabels.has(et.label)) appConfig.errorTypes.push(et);
+                });
+              }
+            }
+
+            saveLocalCache();
+            populateDropdowns();
+            renderLogs();
+          }
+        }
+
+        const payload = {
+          version: "3.0.0",
+          syncedAt: Date.now(),
+          appConfig: appConfig,
+          errorEntries: errorEntries
+        };
+        const ok = await uploadDriveSyncFile(payload);
+        if (ok) {
+          localStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
+          updateDriveUI(true);
+          showToast("Synchronized with Google Drive");
+        }
+      } catch (err) {
+        console.error("Sync error:", err);
+      } finally {
+        isSyncing = false;
+        if (spinner) spinner.classList.remove("spin-fast");
+      }
+    }
+
+    function queueSync() {
+      if (!gDriveAccessToken) return;
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(syncWithGoogleDrive, 1200);
+    }
+
+    function saveLocalCache() {
+      localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(errorEntries));
+      localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(appConfig));
+    }
+
+    async function startVoiceRecording() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast("Microphone recording not supported on this browser");
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(audioChunks, { type: "audio/webm" });
+          const reader = new FileReader();
+          reader.onload = () => {
+            recordedAudioBase64 = reader.result;
+            const audioEl = document.getElementById("modalAudioEl");
+            audioEl.src = recordedAudioBase64;
+            document.getElementById("voicePlaybackContainer").classList.remove("hidden");
+            document.getElementById("deleteVoiceBtn").classList.remove("hidden");
+          };
+          reader.readAsDataURL(blob);
+
+          clearInterval(recordInterval);
+          document.getElementById("startVoiceRecBtn").disabled = false;
+          document.getElementById("startVoiceRecBtn").classList.remove("pulse-ring");
+          document.getElementById("stopVoiceRecBtn").disabled = true;
+          document.getElementById("stopVoiceRecBtn").classList.add("cursor-not-allowed");
+          showToast("Voice explanation recorded");
+        };
+
+        mediaRecorder.start();
+        recordSeconds = 0;
+        recordInterval = setInterval(() => {
+          recordSeconds++;
+          const m = Math.floor(recordSeconds / 60).toString().padStart(2, "0");
+          const s = (recordSeconds % 60).toString().padStart(2, "0");
+          document.getElementById("voiceTimer").textContent = `${m}:${s}`;
+        }, 1000);
+
+        document.getElementById("startVoiceRecBtn").disabled = true;
+        document.getElementById("startVoiceRecBtn").classList.add("pulse-ring");
+        document.getElementById("stopVoiceRecBtn").disabled = false;
+        document.getElementById("stopVoiceRecBtn").classList.remove("cursor-not-allowed");
+      } catch (err) {
+        console.error("Mic error:", err);
+        showToast("Microphone access permission was denied");
+      }
+    }
+
+    function stopVoiceRecording() {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(t => t.stop());
+      }
+    }
+
+    document.getElementById("startVoiceRecBtn").addEventListener("click", startVoiceRecording);
+    document.getElementById("stopVoiceRecBtn").addEventListener("click", stopVoiceRecording);
+    document.getElementById("deleteVoiceBtn").addEventListener("click", () => {
+      recordedAudioBase64 = null;
+      document.getElementById("modalAudioEl").src = "";
+      document.getElementById("voicePlaybackContainer").classList.add("hidden");
+      document.getElementById("deleteVoiceBtn").classList.add("hidden");
+      document.getElementById("voiceTimer").textContent = "00:00";
+    });
+
+    // Image compression utility
+    function compressImageFile(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            const maxW = 900;
+            const scale = Math.min(1, maxW / img.width);
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", 0.72));
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    document.getElementById("modalQImgInput").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        questionImgBase64 = await compressImageFile(file);
+        const prev = document.getElementById("modalQImgPreview");
+        prev.src = questionImgBase64;
+        prev.classList.remove("hidden");
+        document.getElementById("modalQImgLabel").textContent = file.name;
+        document.getElementById("modalRemoveQImgBtn").classList.remove("hidden");
+      }
+    });
+
+    document.getElementById("modalRemoveQImgBtn").addEventListener("click", () => {
+      questionImgBase64 = null;
+      document.getElementById("modalQImgInput").value = "";
+      document.getElementById("modalQImgPreview").src = "";
+      document.getElementById("modalQImgPreview").classList.add("hidden");
+      document.getElementById("modalQImgLabel").textContent = "Take snap or upload";
+      document.getElementById("modalRemoveQImgBtn").classList.add("hidden");
+    });
+
+    document.getElementById("modalSImgInput").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        solutionImgBase64 = await compressImageFile(file);
+        const prev = document.getElementById("modalSImgPreview");
+        prev.src = solutionImgBase64;
+        prev.classList.remove("hidden");
+        document.getElementById("modalSImgLabel").textContent = file.name;
+        document.getElementById("modalRemoveSImgBtn").classList.remove("hidden");
+      }
+    });
+
+    document.getElementById("modalRemoveSImgBtn").addEventListener("click", () => {
+      solutionImgBase64 = null;
+      document.getElementById("modalSImgInput").value = "";
+      document.getElementById("modalSImgPreview").src = "";
+      document.getElementById("modalSImgPreview").classList.add("hidden");
+      document.getElementById("modalSImgLabel").textContent = "Take snap or upload";
+      document.getElementById("modalRemoveSImgBtn").classList.add("hidden");
+    });
+
+    function populateDropdowns() {
+      // 1. Sources
+      const filterSource = document.getElementById("filterSource");
+      const modalSource = document.getElementById("modalSource");
+      const currFSrc = filterSource.value;
+      const currMSrc = modalSource.value;
+
+      filterSource.innerHTML = '<option value="ALL">All Sources</option>';
+      modalSource.innerHTML = '<option value="" disabled selected>Select Source...</option>';
+
+      appConfig.sources.forEach(src => {
+        const o1 = document.createElement("option");
+        o1.value = src;
+        o1.textContent = src;
+        filterSource.appendChild(o1);
+
+        const o2 = document.createElement("option");
+        o2.value = src;
+        o2.textContent = src;
+        modalSource.appendChild(o2);
+      });
+
+      if (currFSrc) filterSource.value = currFSrc;
+      if (currMSrc) modalSource.value = currMSrc;
+
+      // 2. Subjects
+      const filterSubj = document.getElementById("filterSubject");
+      const modalSubj = document.getElementById("modalSubject");
+      const taxSubj = document.getElementById("taxSubjectSelect");
+      const currFSubj = filterSubj.value;
+      const currMSubj = modalSubj.value;
+
+      filterSubj.innerHTML = '<option value="ALL">All Subjects</option>';
+      modalSubj.innerHTML = '<option value="" disabled selected>Select Subject...</option>';
+      taxSubj.innerHTML = '';
+
+      Object.keys(appConfig.subjects).forEach(subj => {
+        const o1 = document.createElement("option");
+        o1.value = subj;
+        o1.textContent = subj;
+        filterSubj.appendChild(o1);
+
+        const o2 = document.createElement("option");
+        o2.value = subj;
+        o2.textContent = subj;
+        modalSubj.appendChild(o2);
+
+        const o3 = document.createElement("option");
+        o3.value = subj;
+        o3.textContent = subj;
+        taxSubj.appendChild(o3);
+      });
+
+      if (currFSubj) filterSubj.value = currFSubj;
+      if (currMSubj) modalSubj.value = currMSubj;
+
+      updateChapterSelect(modalSubj.value);
+      renderErrorTypeRadioPills();
+      renderTaxonomyLists();
+    }
+
+    function updateChapterSelect(subject, selectedChap = "") {
+      const modalChapter = document.getElementById("modalChapter");
+      modalChapter.innerHTML = "";
+
+      if (!subject || !appConfig.subjects[subject]) {
+        modalChapter.disabled = true;
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "Select Subject First";
+        modalChapter.appendChild(opt);
+        return;
+      }
+
+      modalChapter.disabled = false;
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.disabled = true;
+      placeholder.selected = !selectedChap;
+      placeholder.textContent = "Select Chapter...";
+      modalChapter.appendChild(placeholder);
+
+      appConfig.subjects[subject].forEach(chap => {
+        const opt = document.createElement("option");
+        opt.value = chap;
+        opt.textContent = chap;
+        if (chap === selectedChap) opt.selected = true;
+        modalChapter.appendChild(opt);
+      });
+    }
+
+    document.getElementById("modalSubject").addEventListener("change", (e) => {
+      updateChapterSelect(e.target.value);
+    });
+
+    function renderErrorTypeRadioPills(selectedType = "") {
+      const container = document.getElementById("modalErrorTypesPillContainer");
+      container.innerHTML = "";
+
+      appConfig.errorTypes.forEach((et, idx) => {
+        const isChecked = selectedType ? (selectedType === et.label) : (idx === 0);
+        const label = document.createElement("label");
+
+        const colorClasses = {
+          red: "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 bg-red-500",
+          amber: "text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 bg-amber-500",
+          emerald: "text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 bg-emerald-500",
+          blue: "text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 bg-blue-500",
+          purple: "text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800 bg-purple-500"
+        }[et.color] || "text-brand-600 border-brand-200 bg-brand-500";
+
+        label.className = "flex items-center p-2 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer transition select-none hover:bg-slate-50 dark:hover:bg-slate-800/60";
+        label.innerHTML = `
+          <input type="radio" name="modalErrorTypeRadio" value="${escapeHtml(et.label)}" class="mr-2 text-brand-600 focus:ring-brand-500" ${isChecked ? "checked" : ""}>
+          <div class="truncate">
+            <span class="block text-xs font-bold leading-tight truncate text-slate-800 dark:text-slate-100">${escapeHtml(et.label)}</span>
+            <span class="text-[10px] text-slate-400 truncate">${escapeHtml(et.desc || et.color)}</span>
+          </div>
+        `;
+        container.appendChild(label);
+      });
+    }
+
+    function getErrorTypeBadge(errorTypeLabel) {
+      const et = appConfig.errorTypes.find(e => e.label === errorTypeLabel);
+      const color = et ? et.color : "indigo";
+
+      const styleClasses = {
+        red: "bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-300 border-red-200 dark:border-red-900/60 dot-red-500",
+        amber: "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-900/60 dot-amber-500",
+        emerald: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/60 dot-emerald-500",
+        blue: "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-900/60 dot-blue-500",
+        purple: "bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border-purple-200 dark:border-purple-900/60 dot-purple-500"
+      }[color] || "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border-indigo-200 dot-indigo-500";
+
+      const dotBg = {
+        red: "bg-red-500",
+        amber: "bg-amber-500",
+        emerald: "bg-emerald-500",
+        blue: "bg-blue-500",
+        purple: "bg-purple-500"
+      }[color] || "bg-brand-500";
+
+      return `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs font-semibold border ${styleClasses}">
+        <span class="w-1.5 h-1.5 rounded-full ${dotBg}"></span>
+        ${escapeHtml(errorTypeLabel)}
+      </span>`;
+    }
+
+    function renderLogs() {
+      // Metric Calculation
+      const totalLogs = errorEntries.length;
+      let totalVoice = 0;
+      let totalImages = 0;
+      let newLogs = 0;
+      let reviewedLogs = 0;
+
+      errorEntries.forEach(item => {
+        if (item.audioData) totalVoice++;
+        if (item.questionImage) totalImages++;
+        if (item.solutionImage) totalImages++;
+        if (!item.reviewCount || item.reviewCount === 0) {
+          newLogs++;
+        } else {
+          reviewedLogs++;
+        }
+      });
+
+      document.getElementById("statTotalLogs").textContent = totalLogs;
+      document.getElementById("statTotalVoice").textContent = totalVoice;
+      document.getElementById("statTotalImages").textContent = totalImages;
+      document.getElementById("statNewLogs").textContent = newLogs;
+      document.getElementById("statReviewedLogs").textContent = reviewedLogs;
+
+      // Filter Evaluation
+      const q = document.getElementById("searchInput").value.toLowerCase().trim();
+      const fSrc = document.getElementById("filterSource").value;
+      const fSubj = document.getElementById("filterSubject").value;
+      const fStatus = document.getElementById("filterReviewStatus").value;
+
+      // Entries are kept sorted newest first (descending createdAt)
+      const filtered = errorEntries.filter(item => {
+        if (fSrc !== "ALL" && item.source !== fSrc) return false;
+        if (fSubj !== "ALL" && item.subject !== fSubj) return false;
+        if (fStatus === "NEW" && (item.reviewCount || 0) > 0) return false;
+        if (fStatus === "REVIEWED" && (!item.reviewCount || item.reviewCount === 0)) return false;
+        if (fStatus === "FLAGGED" && !item.flagged) return false;
+
+        if (q) {
+          const matchQ = (item.questionNum || "").toLowerCase().includes(q);
+          const matchSrc = (item.source || "").toLowerCase().includes(q);
+          const matchSub = (item.subject || "").toLowerCase().includes(q);
+          const matchChap = (item.chapter || "").toLowerCase().includes(q);
+          const matchRem = (item.remedialAction || "").toLowerCase().includes(q);
+          if (!matchQ && !matchSrc && !matchSub && !matchChap && !matchRem) return false;
+        }
+        return true;
+      });
+
+      const container = document.getElementById("logsContainer");
+      container.innerHTML = "";
+
+      if (filtered.length === 0) {
+        document.getElementById("emptyState").classList.remove("hidden");
+      } else {
+        document.getElementById("emptyState").classList.add("hidden");
+      }
+
+      filtered.forEach(item => {
+        const isElevated = (activeElevatedId === item.id);
+        const card = document.createElement("div");
+        card.id = `card-${item.id}`;
+        card.className = `group bg-white dark:bg-slate-900 rounded-2xl border transition-all duration-200 cursor-pointer select-none overflow-hidden ${
+          isElevated ? "card-elevated border-brand-500" : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-xs"
+        } ${item.flagged ? "ring-2 ring-rose-500/80 bg-rose-50/20 dark:bg-rose-950/10" : ""}`;
+
+        // Review Count Badge
+        const rCount = item.reviewCount || 0;
+        const reviewBadgeHtml = rCount === 0
+          ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+               <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+               0 Reviews (New)
+             </span>`
+          : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+               <i data-lucide="check" class="w-3 h-3 text-emerald-600"></i>
+               Reviewed: ${rCount}x
+             </span>`;
+
+        // Media summary indicators
+        let mediaHtml = '<span class="text-[11px] text-slate-300 dark:text-slate-600 italic">No media</span>';
+        if (item.audioData || item.questionImage || item.solutionImage) {
+          mediaHtml = '<div class="flex items-center gap-1.5">';
+          if (item.audioData) {
+            mediaHtml += `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-800 text-[10px] font-bold" title="Voice note attached">
+              <i data-lucide="mic" class="w-3 h-3"></i> Voice
+            </span>`;
+          }
+          if (item.questionImage || item.solutionImage) {
+            const count = (item.questionImage ? 1 : 0) + (item.solutionImage ? 1 : 0);
+            mediaHtml += `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800 text-[10px] font-bold" title="Images attached">
+              <i data-lucide="image" class="w-3 h-3"></i> ${count} Photo${count > 1 ? 's' : ''}
+            </span>`;
+          }
+          mediaHtml += '</div>';
+        }
+
+        // Expanded Peek Panel (Shown only when card is clicked and elevated)
+        let elevatedSectionHtml = '';
+        if (isElevated) {
+          let voiceAudioBlock = '';
+          if (item.audioData) {
+            voiceAudioBlock = `
+              <div class="p-3 bg-violet-50/70 dark:bg-violet-950/30 rounded-xl border border-violet-100 dark:border-violet-900/50 flex flex-col gap-1.5">
+                <div class="flex items-center justify-between text-xs font-bold text-violet-700 dark:text-violet-400">
+                  <span class="flex items-center gap-1.5"><i data-lucide="mic" class="w-4 h-4"></i> Voice Note Explanation</span>
+                  <span class="text-[10px] uppercase tracking-wider font-extrabold text-violet-500">Audio Recorded</span>
+                </div>
+                <audio controls src="${item.audioData}" class="w-full h-8 mt-1"></audio>
+              </div>`;
+          }
+
+          let imagesBlock = '';
+          if (item.questionImage || item.solutionImage) {
+            imagesBlock = '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">';
+            if (item.questionImage) {
+              imagesBlock += `
+                <div class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
+                  <div class="flex items-center justify-between text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                    <span>Question Snapshot</span>
+                    <span class="text-brand-600 text-[10px] hover:underline cursor-pointer" onclick="event.stopPropagation(); window.viewImageLightbox('${item.id}', 'question')">Enlarge</span>
+                  </div>
+                  <img src="${item.questionImage}" onclick="event.stopPropagation(); window.viewImageLightbox('${item.id}', 'question')" class="w-full h-36 object-contain rounded-lg bg-black/5 cursor-zoom-in hover:opacity-90 transition">
+                </div>`;
+            }
+            if (item.solutionImage) {
+              imagesBlock += `
+                <div class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
+                  <div class="flex items-center justify-between text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                    <span>Solution / Rough Work</span>
+                    <span class="text-emerald-600 text-[10px] hover:underline cursor-pointer" onclick="event.stopPropagation(); window.viewImageLightbox('${item.id}', 'solution')">Enlarge</span>
+                  </div>
+                  <img src="${item.solutionImage}" onclick="event.stopPropagation(); window.viewImageLightbox('${item.id}', 'solution')" class="w-full h-36 object-contain rounded-lg bg-black/5 cursor-zoom-in hover:opacity-90 transition">
+                </div>`;
+            }
+            imagesBlock += '</div>';
+          }
+
+          elevatedSectionHtml = `
+            <div class="p-4 bg-slate-50/90 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 space-y-3 animate-in fade-in slide-in-from-top-1 duration-150" onclick="event.stopPropagation()">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Detailed Inspection</span>
+                  <span class="text-xs text-slate-400">• Logged: ${new Date(item.createdAt || Date.now()).toLocaleDateString()}</span>
+                </div>
+                <!-- Inline Quick Review Incrementor -->
+                <div class="flex items-center gap-2">
+                  <button onclick="window.incrementReview('${item.id}')" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-xs">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                    <span>+1 Mark Reviewed</span>
+                  </button>
+                  <button onclick="window.toggleFlag('${item.id}')" class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition ${item.flagged ? 'text-rose-600 bg-rose-50 dark:bg-rose-950/40' : 'text-slate-500'}">
+                    <i data-lucide="flag" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Full Root Cause -->
+              <div>
+                <span class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Root Cause & Remedial Plan:</span>
+                <p class="text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 whitespace-pre-wrap select-text">${escapeHtml(item.remedialAction)}</p>
+              </div>
+
+              ${voiceAudioBlock}
+              ${imagesBlock}
+            </div>
+          `;
+        }
+
+        // Primary Row Card Header
+        card.innerHTML = `
+          <div class="p-3 sm:p-4">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+              <!-- Q# & Main Badges -->
+              <div class="flex items-center gap-2.5 flex-wrap">
+                <span class="font-extrabold text-base text-slate-900 dark:text-white flex items-center gap-1.5">
+                  ${item.flagged ? '<i data-lucide="flag" class="w-4 h-4 text-rose-500 fill-rose-500"></i>' : ''}
+                  ${escapeHtml(item.questionNum)}
+                </span>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 truncate max-w-[140px]" title="Source">
+                  ${escapeHtml(item.source)}
+                </span>
+                <span class="text-xs font-bold text-slate-800 dark:text-slate-200 px-2 py-0.5 rounded-lg bg-brand-50/70 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300">
+                  ${escapeHtml(item.subject)}
+                </span>
+                <span class="text-xs text-slate-600 dark:text-slate-400 font-medium truncate max-w-[160px] sm:max-w-xs" title="Chapter">
+                  ${escapeHtml(item.chapter)}
+                </span>
+                ${getErrorTypeBadge(item.errorType)}
+              </div>
+
+              <!-- Review Count Badge & Media Indicators (No Action Column) -->
+              <div class="flex items-center gap-3 shrink-0 self-start lg:self-center">
+                ${reviewBadgeHtml}
+                ${mediaHtml}
+                <div class="text-slate-400 group-hover:text-brand-500 transition ml-1">
+                  <i data-lucide="${isElevated ? 'chevron-up' : 'chevron-down'}" class="w-4 h-4"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Root cause preview in closed state -->
+            ${!isElevated ? `
+              <div class="mt-2 text-xs text-slate-600 dark:text-slate-400 line-clamp-1 truncate font-normal">
+                ${escapeHtml(item.remedialAction)}
+              </div>
+            ` : ''}
+          </div>
+          ${elevatedSectionHtml}
+        `;
+
+        // Touch & Mouse Long-press / Click Event Bindings
+        bindCardInteractions(card, item.id);
+        container.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    function bindCardInteractions(element, itemId) {
+      // Click / Tap for Elevation Toggle
+      element.addEventListener("click", () => {
+        if (isLongPressTriggered) return;
+        activeElevatedId = (activeElevatedId === itemId) ? null : itemId;
+        renderLogs();
+      });
+
+      // Long-Press for Touch Devices (Android Tablet / Mobile)
+      element.addEventListener("touchstart", (e) => {
+        isLongPressTriggered = false;
+        longPressTimer = setTimeout(() => {
+          isLongPressTriggered = true;
+          const touch = e.touches[0];
+          showContextMenu(touch.clientX, touch.clientY, itemId);
+        }, 550);
+      }, { passive: true });
+
+      element.addEventListener("touchend", () => {
+        clearTimeout(longPressTimer);
+      });
+
+      element.addEventListener("touchmove", () => {
+        clearTimeout(longPressTimer);
+      });
+
+      // Right-Click for Desktop Context Menu
+      element.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        showContextMenu(e.clientX, e.clientY, itemId);
+      });
+    }
+
+    function showContextMenu(x, y, itemId) {
+      contextMenuTargetId = itemId;
+      const targetItem = errorEntries.find(i => i.id === itemId);
+      if (!targetItem) return;
+
+      const menu = document.getElementById("contextMenu");
+      document.getElementById("contextMenuTitle").textContent = `${targetItem.questionNum} Options`;
+      document.getElementById("cmFlagLabel").textContent = targetItem.flagged ? "Remove Red Flag" : "Mark as 🚩 Red Flag";
+
+      // Keep menu within screen boundaries
+      const screenW = window.innerWidth;
+      const screenH = window.innerHeight;
+      const menuW = 195;
+      const menuH = 175;
+
+      const posX = Math.min(x, screenW - menuW - 10);
+      const posY = Math.min(y, screenH - menuH - 10);
+
+      menu.style.left = `${Math.max(10, posX)}px`;
+      menu.style.top = `${Math.max(10, posY)}px`;
+      menu.classList.remove("hidden");
+    }
+
+    function hideContextMenu() {
+      document.getElementById("contextMenu").classList.add("hidden");
+      contextMenuTargetId = null;
+    }
+
+    document.addEventListener("click", (e) => {
+      if (!document.getElementById("contextMenu").contains(e.target)) {
+        hideContextMenu();
+      }
+    });
+
+    window.toggleFlag = (id) => {
+      const item = errorEntries.find(i => i.id === id);
+      if (item) {
+        item.flagged = !item.flagged;
+        item.updatedAt = Date.now();
+        saveLocalCache();
+        renderLogs();
+        queueSync();
+        showToast(item.flagged ? "Marked with 🚩 Red Flag" : "Red Flag removed");
+      }
+    };
+
+    window.incrementReview = (id) => {
+      const item = errorEntries.find(i => i.id === id);
+      if (item) {
+        item.reviewCount = (item.reviewCount || 0) + 1;
+        item.lastReviewedAt = Date.now();
+        item.updatedAt = Date.now();
+        saveLocalCache();
+        renderLogs();
+        queueSync();
+        showToast(`Reviewed! (Count: ${item.reviewCount}x)`);
+      }
+    };
+
+    // Context Menu Button Handlers
+    document.getElementById("cmFlagBtn").addEventListener("click", () => {
+      if (contextMenuTargetId) window.toggleFlag(contextMenuTargetId);
+      hideContextMenu();
+    });
+
+    document.getElementById("cmReviewBtn").addEventListener("click", () => {
+      if (contextMenuTargetId) window.incrementReview(contextMenuTargetId);
+      hideContextMenu();
+    });
+
+    document.getElementById("cmEditBtn").addEventListener("click", () => {
+      if (contextMenuTargetId) openEntryModal(contextMenuTargetId);
+      hideContextMenu();
+    });
+
+    document.getElementById("cmDeleteBtn").addEventListener("click", () => {
+      if (contextMenuTargetId) {
+        const id = contextMenuTargetId;
+        const idx = errorEntries.findIndex(i => i.id === id);
+        if (idx !== -1) {
+          errorEntries.splice(idx, 1);
+          if (activeElevatedId === id) activeElevatedId = null;
+          saveLocalCache();
+          renderLogs();
+          queueSync();
+          showToast("Error log deleted");
+        }
+      }
+      hideContextMenu();
+    });
+
+    function openEntryModal(editId = null) {
+      document.getElementById("entryForm").reset();
+      document.getElementById("editEntryId").value = "";
+      questionImgBase64 = null;
+      solutionImgBase64 = null;
+      recordedAudioBase64 = null;
+
+      document.getElementById("modalQImgPreview").classList.add("hidden");
+      document.getElementById("modalSImgPreview").classList.add("hidden");
+      document.getElementById("modalRemoveQImgBtn").classList.add("hidden");
+      document.getElementById("modalRemoveSImgBtn").classList.add("hidden");
+      document.getElementById("voicePlaybackContainer").classList.add("hidden");
+      document.getElementById("deleteVoiceBtn").classList.add("hidden");
+      document.getElementById("voiceTimer").textContent = "00:00";
+      document.getElementById("modalFlagged").checked = false;
+
+      populateDropdowns();
+
+      if (editId) {
+        const item = errorEntries.find(i => i.id === editId);
+        if (item) {
+          document.getElementById("modalHeading").textContent = "Edit Error Log";
+          document.getElementById("editEntryId").value = item.id;
+          document.getElementById("modalQNum").value = item.questionNum;
+          document.getElementById("modalSource").value = item.source || "";
+          document.getElementById("modalSubject").value = item.subject || "";
+          updateChapterSelect(item.subject, item.chapter);
+          document.getElementById("modalRemedial").value = item.remedialAction || "";
+          document.getElementById("modalFlagged").checked = Boolean(item.flagged);
+
+          renderErrorTypeRadioPills(item.errorType);
+
+          if (item.questionImage) {
+            questionImgBase64 = item.questionImage;
+            document.getElementById("modalQImgPreview").src = questionImgBase64;
+            document.getElementById("modalQImgPreview").classList.remove("hidden");
+            document.getElementById("modalRemoveQImgBtn").classList.remove("hidden");
+          }
+          if (item.solutionImage) {
+            solutionImgBase64 = item.solutionImage;
+            document.getElementById("modalSImgPreview").src = solutionImgBase64;
+            document.getElementById("modalSImgPreview").classList.remove("hidden");
+            document.getElementById("modalRemoveSImgBtn").classList.remove("hidden");
+          }
+          if (item.audioData) {
+            recordedAudioBase64 = item.audioData;
+            document.getElementById("modalAudioEl").src = recordedAudioBase64;
+            document.getElementById("voicePlaybackContainer").classList.remove("hidden");
+            document.getElementById("deleteVoiceBtn").classList.remove("hidden");
+          }
+        }
+      } else {
+        document.getElementById("modalHeading").textContent = "Record MCQ Mistake";
+        renderErrorTypeRadioPills();
+      }
+
+      document.getElementById("entryModal").classList.remove("hidden");
+      lucide.createIcons();
+    }
+
+    function closeEntryModal() {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(t => t.stop());
+      }
+      document.getElementById("entryModal").classList.add("hidden");
+    }
+
+    document.getElementById("openNewLogModalBtn").addEventListener("click", () => openEntryModal());
+    document.getElementById("closeModalBtn").addEventListener("click", closeEntryModal);
+    document.getElementById("cancelEntryModalBtn").addEventListener("click", closeEntryModal);
+
+    document.getElementById("entryForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const editId = document.getElementById("editEntryId").value;
+      const isEdit = Boolean(editId);
+      const chosenRadio = document.querySelector('input[name="modalErrorTypeRadio"]:checked');
+
+      const entry = {
+        id: isEdit ? editId : ("err_" + Date.now()),
+        questionNum: document.getElementById("modalQNum").value.trim(),
+        source: document.getElementById("modalSource").value,
+        subject: document.getElementById("modalSubject").value,
+        chapter: document.getElementById("modalChapter").value,
+        errorType: chosenRadio ? chosenRadio.value : "General Mistake",
+        remedialAction: document.getElementById("modalRemedial").value.trim(),
+        flagged: document.getElementById("modalFlagged").checked,
+        questionImage: questionImgBase64,
+        solutionImage: solutionImgBase64,
+        audioData: recordedAudioBase64,
+        reviewCount: isEdit ? (errorEntries.find(x => x.id === editId)?.reviewCount || 0) : 0,
+        createdAt: isEdit ? (errorEntries.find(x => x.id === editId)?.createdAt || Date.now()) : Date.now(),
+        updatedAt: Date.now()
+      };
+
+      if (isEdit) {
+        const idx = errorEntries.findIndex(x => x.id === editId);
+        if (idx !== -1) errorEntries[idx] = entry;
+      } else {
+        // Sequentially placed with newly added logs first
+        errorEntries.unshift(entry);
+      }
+
+      saveLocalCache();
+      closeEntryModal();
+      activeElevatedId = entry.id; // automatically elevate newly logged item for immediate inspection
+      renderLogs();
+      queueSync();
+      showToast(isEdit ? "Entry updated" : "New error logged");
+    });
+
+    document.getElementById("inlineAddSourceBtn").addEventListener("click", () => {
+      const name = prompt("Enter new SOURCE name (e.g. Allen Minor 05, PW DPP 02):");
+      if (name && name.trim()) {
+        const val = name.trim();
+        if (!appConfig.sources.includes(val)) {
+          appConfig.sources.push(val);
+          saveLocalCache();
+          populateDropdowns();
+          document.getElementById("modalSource").value = val;
+          queueSync();
+          showToast(`Added source: ${val}`);
+        }
+      }
+    });
+
+    document.getElementById("inlineAddSubjectBtn").addEventListener("click", () => {
+      const name = prompt("Enter new Subject name:");
+      if (name && name.trim()) {
+        const val = name.trim();
+        if (!appConfig.subjects[val]) {
+          appConfig.subjects[val] = [];
+          saveLocalCache();
+          populateDropdowns();
+          document.getElementById("modalSubject").value = val;
+          updateChapterSelect(val);
+          queueSync();
+          showToast(`Added subject: ${val}`);
+        }
+      }
+    });
+
+    document.getElementById("inlineAddChapterBtn").addEventListener("click", () => {
+      const curSubj = document.getElementById("modalSubject").value;
+      if (!curSubj) {
+        showToast("Select a Subject first!");
+        return;
+      }
+      const name = prompt(`Enter new chapter for ${curSubj}:`);
+      if (name && name.trim()) {
+        const val = name.trim();
+        if (!appConfig.subjects[curSubj].includes(val)) {
+          appConfig.subjects[curSubj].push(val);
+          saveLocalCache();
+          updateChapterSelect(curSubj, val);
+          queueSync();
+          showToast(`Added chapter to ${curSubj}`);
+        }
+      }
+    });
+
+    document.getElementById("inlineAddErrorTypeBtn").addEventListener("click", () => {
+      const label = prompt("Enter new Error classification label:");
+      if (label && label.trim()) {
+        const colors = ["red", "amber", "emerald", "blue", "purple"];
+        const chosen = colors[Math.floor(Math.random() * colors.length)];
+        appConfig.errorTypes.push({
+          id: "et_" + Date.now(),
+          label: label.trim(),
+          color: chosen,
+          desc: "Custom error"
+        });
+        saveLocalCache();
+        populateDropdowns();
+        renderErrorTypeRadioPills(label.trim());
+        queueSync();
+        showToast(`Added error type: ${label.trim()}`);
+      }
+    });
+
+    // Taxonomy Settings Modal Logic
+    document.getElementById("openTaxonomyBtn").addEventListener("click", () => {
+      renderTaxonomyLists();
+      document.getElementById("taxonomyModal").classList.remove("hidden");
+    });
+    document.getElementById("closeTaxonomyBtn").addEventListener("click", () => {
+      document.getElementById("taxonomyModal").classList.add("hidden");
+    });
+
+    document.querySelectorAll(".tax-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tax-tab").forEach(b => {
+          b.classList.remove("border-brand-600", "text-brand-600", "dark:text-brand-400");
+          b.classList.add("border-transparent", "text-slate-500");
+        });
+        tab.classList.add("border-brand-600", "text-brand-600", "dark:text-brand-400");
+        tab.classList.remove("border-transparent", "text-slate-500");
+
+        document.querySelectorAll(".tax-panel").forEach(p => p.classList.add("hidden"));
+        document.getElementById(tab.dataset.tab).classList.remove("hidden");
+      });
+    });
+
+    function renderTaxonomyLists() {
+      // Sources
+      const sList = document.getElementById("sourcesList");
+      sList.innerHTML = "";
+      appConfig.sources.forEach((src, idx) => {
+        const d = document.createElement("div");
+        d.className = "flex items-center justify-between p-2.5 bg-white dark:bg-slate-900";
+        d.innerHTML = `
+          <span class="font-medium text-slate-700 dark:text-slate-300">${escapeHtml(src)}</span>
+          <button onclick="window.removeTaxSource(${idx})" class="text-rose-500 hover:text-rose-700 p-1">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+        `;
+        sList.appendChild(d);
+      });
+
+      // Chapters
+      const selectedSub = document.getElementById("taxSubjectSelect").value;
+      const cList = document.getElementById("chaptersList");
+      cList.innerHTML = "";
+      if (selectedSub && appConfig.subjects[selectedSub]) {
+        appConfig.subjects[selectedSub].forEach((ch, idx) => {
+          const d = document.createElement("div");
+          d.className = "flex items-center justify-between p-2.5 bg-white dark:bg-slate-900";
+          d.innerHTML = `
+            <span class="font-medium text-slate-700 dark:text-slate-300">${escapeHtml(ch)}</span>
+            <button onclick="window.removeTaxChapter('${escapeHtml(selectedSub)}', ${idx})" class="text-rose-500 hover:text-rose-700 p-1">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          `;
+          cList.appendChild(d);
+        });
+      }
+
+      // Error Types
+      const eList = document.getElementById("errorTypesList");
+      eList.innerHTML = "";
+      appConfig.errorTypes.forEach((et, idx) => {
+        const d = document.createElement("div");
+        d.className = "flex items-center justify-between p-2.5 bg-white dark:bg-slate-900";
+        d.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-${et.color}-500"></span>
+            <span class="font-bold text-slate-800 dark:text-slate-200">${escapeHtml(et.label)}</span>
+          </div>
+          <button onclick="window.removeTaxErrorType(${idx})" class="text-rose-500 hover:text-rose-700 p-1">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+        `;
+        eList.appendChild(d);
+      });
+
+      lucide.createIcons();
+    }
+
+    document.getElementById("taxSubjectSelect").addEventListener("change", renderTaxonomyLists);
+
+    window.removeTaxSource = (idx) => {
+      appConfig.sources.splice(idx, 1);
+      saveLocalCache();
+      populateDropdowns();
+      queueSync();
+      showToast("Source removed");
+    };
+
+    window.removeTaxChapter = (subj, idx) => {
+      if (appConfig.subjects[subj]) {
+        appConfig.subjects[subj].splice(idx, 1);
+        saveLocalCache();
+        populateDropdowns();
+        queueSync();
+        showToast("Chapter removed");
+      }
+    };
+
+    window.removeTaxErrorType = (idx) => {
+      if (appConfig.errorTypes.length <= 1) {
+        showToast("At least one error category is required");
+        return;
+      }
+      appConfig.errorTypes.splice(idx, 1);
+      saveLocalCache();
+      populateDropdowns();
+      queueSync();
+      showToast("Error type removed");
+    };
+
+    document.getElementById("addSourceBtn").addEventListener("click", () => {
+      const input = document.getElementById("newSourceInput");
+      const val = input.value.trim();
+      if (val && !appConfig.sources.includes(val)) {
+        appConfig.sources.push(val);
+        input.value = "";
+        saveLocalCache();
+        populateDropdowns();
+        queueSync();
+        showToast("Source added");
+      }
+    });
+
+    document.getElementById("addSubjectBtn").addEventListener("click", () => {
+      const input = document.getElementById("newSubjectInput");
+      const val = input.value.trim();
+      if (val && !appConfig.subjects[val]) {
+        appConfig.subjects[val] = [];
+        input.value = "";
+        saveLocalCache();
+        populateDropdowns();
+        queueSync();
+        showToast("Subject added");
+      }
+    });
+
+    document.getElementById("addChapterBtn").addEventListener("click", () => {
+      const subj = document.getElementById("taxSubjectSelect").value;
+      const input = document.getElementById("newChapterInput");
+      const val = input.value.trim();
+      if (subj && val && appConfig.subjects[subj] && !appConfig.subjects[subj].includes(val)) {
+        appConfig.subjects[subj].push(val);
+        input.value = "";
+        saveLocalCache();
+        populateDropdowns();
+        queueSync();
+        showToast("Chapter added");
+      }
+    });
+
+    document.getElementById("addErrorTypeBtn").addEventListener("click", () => {
+      const name = document.getElementById("newErrorTypeName").value.trim();
+      const col = document.getElementById("newErrorTypeColor").value;
+      if (name) {
+        appConfig.errorTypes.push({
+          id: "et_" + Date.now(),
+          label: name,
+          color: col,
+          desc: "Custom error"
+        });
+        document.getElementById("newErrorTypeName").value = "";
+        saveLocalCache();
+        populateDropdowns();
+        queueSync();
+        showToast("Error type added");
+      }
+    });
+
+    // Lightbox modal handler
+    window.viewImageLightbox = (id, type) => {
+      const item = errorEntries.find(i => i.id === id);
+      if (!item) return;
+      const url = type === "question" ? item.questionImage : item.solutionImage;
+      if (url) {
+        document.getElementById("lightboxImg").src = url;
+        document.getElementById("lightboxTitle").textContent = `${item.questionNum} (${item.source}) - ${type === "question" ? "Question Snap" : "Solution / Rough Work"}`;
+        document.getElementById("imageLightboxModal").classList.remove("hidden");
+      }
+    };
+
+    document.getElementById("closeLightboxBtn").addEventListener("click", () => {
+      document.getElementById("imageLightboxModal").classList.add("hidden");
+    });
+    document.getElementById("imageLightboxModal").addEventListener("click", (e) => {
+      if (e.target === document.getElementById("imageLightboxModal")) {
+        document.getElementById("imageLightboxModal").classList.add("hidden");
+      }
+    });
+
+    // Drive Modal listeners
+    document.getElementById("openDriveModalBtn").addEventListener("click", () => {
+      document.getElementById("driveModal").classList.remove("hidden");
+    });
+    document.getElementById("closeDriveModalBtn").addEventListener("click", () => {
+      document.getElementById("driveModal").classList.add("hidden");
+    });
+    document.getElementById("authDriveBtn").addEventListener("click", triggerGoogleAuth);
+    document.getElementById("disconnectDriveBtn").addEventListener("click", disconnectGoogleDrive);
+    document.getElementById("quickSyncHeaderBtn").addEventListener("click", () => {
+      if (!gDriveAccessToken) {
+        document.getElementById("driveModal").classList.remove("hidden");
+      } else {
+        syncWithGoogleDrive();
+      }
+    });
+
+    // Free Offline JSON Backup & Restore
+    document.getElementById("exportJsonBtn").addEventListener("click", () => {
+      const data = { appConfig, errorEntries, exportedAt: new Date().toISOString() };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `MCQ_Error_Tracker_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("Offline JSON backup saved");
+    });
+
+    document.getElementById("importJsonInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const parsed = JSON.parse(evt.target.result);
+          if (parsed.appConfig && parsed.errorEntries) {
+            appConfig = parsed.appConfig;
+            errorEntries = parsed.errorEntries;
+            saveLocalCache();
+            populateDropdowns();
+            renderLogs();
+            queueSync();
+            showToast("Backup restored successfully");
+          }
+        } catch (err) {
+          showToast("Invalid JSON file");
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = "";
+    });
+
+    // Search and filter triggers
+    [
+      document.getElementById("searchInput"),
+      document.getElementById("filterSource"),
+      document.getElementById("filterSubject"),
+      document.getElementById("filterReviewStatus")
+    ].forEach(el => {
+      el.addEventListener("input", renderLogs);
+      el.addEventListener("change", renderLogs);
+    });
+
+    // Dark Mode Toggle
+    document.getElementById("themeToggleBtn").addEventListener("click", () => {
+      document.documentElement.classList.toggle("dark");
+      localStorage.setItem("mcq_theme_mode", document.documentElement.classList.contains("dark") ? "dark" : "light");
+      lucide.createIcons();
+    });
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str).replace(/[&<>"']/g, (m) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[m]));
+    }
+
+    function showToast(text) {
+      const t = document.getElementById("toastMessage");
+      document.getElementById("toastText").textContent = text;
+      t.classList.remove("translate-y-20", "opacity-0");
+      t.classList.add("translate-y-0", "opacity-100");
+      setTimeout(() => {
+        t.classList.add("translate-y-20", "opacity-0");
+        t.classList.remove("translate-y-0", "opacity-100");
+      }, 2500);
+    }
+
+    // App Initialization
+    window.addEventListener("DOMContentLoaded", () => {
+      if (localStorage.getItem("mcq_theme_mode") === "dark" || (!localStorage.getItem("mcq_theme_mode") && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+        document.documentElement.classList.add("dark");
+      }
+
+      // Seed starter entries if empty
+      if (errorEntries.length === 0) {
+        errorEntries = [
+          {
+            id: "err_seed_1",
+            questionNum: "Q12",
+            source: "Part Test 01",
+            subject: "Physics",
+            chapter: "Motion in a Plane (2D)",
+            errorType: "Calculation / Silly Mistake",
+            remedialAction: "Used sin θ instead of cos θ for horizontal component. Solved 5 similar variants and re-checked coordinate origin.",
+            reviewCount: 0,
+            flagged: false,
+            questionImage: null,
+            solutionImage: null,
+            audioData: null,
+            createdAt: Date.now() - 600000,
+            updatedAt: Date.now() - 600000
+          },
+          {
+            id: "err_seed_2",
+            questionNum: "Q45",
+            source: "Grand Test",
+            subject: "Chemistry",
+            chapter: "Redox & Electrochemistry",
+            errorType: "Concept Gap / Blunder",
+            remedialAction: "Completely forgot Faraday's second law ratio with equivalent weights. Re-watched 20-min module and made sticky note formula chart.",
+            reviewCount: 2,
+            flagged: true,
+            questionImage: null,
+            solutionImage: null,
+            audioData: null,
+            createdAt: Date.now() - 1200000,
+            updatedAt: Date.now() - 1200000
+          }
+        ];
+        saveLocalCache();
+      }
+
+      // Ensure newest logs are placed first
+      errorEntries.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+      populateDropdowns();
+      renderLogs();
+      lucide.createIcons();
+
+      setTimeout(initGoogleClient, 350);
+    });
+  </script>
+</body>
+</html>
