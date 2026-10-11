@@ -1196,11 +1196,24 @@
 
     async function uploadPendingMedia(folders = null) {
       const pending = [];
+      let skippedExisting = 0;
       errorEntries.forEach(entry => {
         if (!entry) return;
-        MEDIA_SPECS.forEach(spec => { if (typeof entry[spec.field] === "string" && entry[spec.field].startsWith("data:")) pending.push({ entry, spec }); });
+        MEDIA_SPECS.forEach(spec => {
+          if (typeof entry[spec.field] !== "string" || !entry[spec.field].startsWith("data:")) return;
+          // A Drive ID means this media is already stored. Do not re-upload the
+          // same attachment on every sync; publish the reference only. If the
+          // user replaces an attachment, its old Drive ID must be cleared first.
+          if (entry[spec.idField]) {
+            entry[spec.field] = null;
+            skippedExisting++;
+            return;
+          }
+          pending.push({ entry, spec });
+        });
       });
-      if (!pending.length) return { uploaded: 0, failed: 0, total: 0 };
+      if (skippedExisting) saveLocalCache();
+      if (!pending.length) return { uploaded: 0, failed: 0, total: 0, skipped: skippedExisting };
       const mediaFolders = folders || await ensureMediaFolders();
       let uploaded = 0, failed = 0;
       for (let i = 0; i < pending.length; i++) {
@@ -1218,7 +1231,7 @@
         saveLocalCache();
       }
       renderTable();
-      return { uploaded, failed, total: pending.length };
+      return { uploaded, failed, total: pending.length, skipped: skippedExisting };
     }
 
     async function migrateMediaToDrive() {
@@ -1897,8 +1910,8 @@
           document.getElementById(removeId).classList.add("hidden");
         });
       };
-      bindImageInput("modalQImgInput", "modalQImgPreview", "modalQImgLabel", "modalRemoveQImgBtn", value => questionImgBase64 = value);
-      bindImageInput("modalSImgInput", "modalSImgPreview", "modalSImgLabel", "modalRemoveSImgBtn", value => solutionImgBase64 = value);
+      bindImageInput("modalQImgInput", "modalQImgPreview", "modalQImgLabel", "modalRemoveQImgBtn", value => { questionImgBase64 = value; if (value) { const id = document.getElementById("editEntryId").value; const entry = errorEntries.find(x => x.id === id); if (entry) entry.questionImageDriveId = null; } });
+      bindImageInput("modalSImgInput", "modalSImgPreview", "modalSImgLabel", "modalRemoveSImgBtn", value => { solutionImgBase64 = value; if (value) { const id = document.getElementById("editEntryId").value; const entry = errorEntries.find(x => x.id === id); if (entry) entry.solutionImageDriveId = null; } });
 
       document.getElementById("modalAudioInput")?.addEventListener("change", async e => {
         const file = e.target.files?.[0]; if (!file) return;
@@ -1906,6 +1919,7 @@
         if (file.size > 1500000) { showToast("Audio file is over 1.5 MB. Trim/compress it first to avoid browser storage limits."); e.target.value = ""; return; }
         try {
           recordedAudioBase64 = await readAsDataUrl(file);
+          { const id = document.getElementById("editEntryId").value; const entry = errorEntries.find(x => x.id === id); if (entry) entry.audioDriveId = null; }
           const audio = document.getElementById("modalAudioEl"); audio.src = recordedAudioBase64;
           document.getElementById("voicePlaybackContainer").classList.remove("hidden");
           showToast("Audio attached");
@@ -1925,6 +1939,7 @@
             try {
               const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || "audio/webm" });
               recordedAudioBase64 = await readAsDataUrl(new File([blob], "voice-note.webm", {type: blob.type}));
+              { const id = document.getElementById("editEntryId").value; const entry = errorEntries.find(x => x.id === id); if (entry) entry.audioDriveId = null; }
               document.getElementById("modalAudioEl").src = recordedAudioBase64;
               document.getElementById("voicePlaybackContainer").classList.remove("hidden");
             } catch (err) { showToast("Could not save recording"); }
