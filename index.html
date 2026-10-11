@@ -769,4 +769,697 @@
           const blob = new Blob(audioChunks, { type: "audio/webm" });
           const reader = new FileReader();
           reader.onload = () => {
-            recordedAudioBase
+            recordedAudioBase64 = reader.result;
+            document.getElementById("modalAudioEl").src = recordedAudioBase64;
+            document.getElementById("voicePlaybackContainer").classList.remove("hidden");
+          };
+          reader.readAsDataURL(blob);
+          clearInterval(recordInterval);
+          document.getElementById("startVoiceRecBtn").disabled = false;
+          document.getElementById("stopVoiceRecBtn").disabled = true;
+          document.getElementById("stopVoiceRecBtn").classList.add("cursor-not-allowed");
+        };
+        mediaRecorder.start();
+        recordSeconds = 0;
+        recordInterval = setInterval(() => {
+          recordSeconds++;
+          const m = Math.floor(recordSeconds / 60).toString().padStart(2, "0");
+          const s = (recordSeconds % 60).toString().padStart(2, "0");
+          document.getElementById("voiceTimer").textContent = `${m}:${s}`;
+        }, 1000);
+        document.getElementById("startVoiceRecBtn").disabled = true;
+        document.getElementById("stopVoiceRecBtn").disabled = false;
+        document.getElementById("stopVoiceRecBtn").classList.remove("cursor-not-allowed");
+      } catch (err) {
+        showToast("Mic permission denied");
+      }
+    }
+
+    function stopVoiceRecording() {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(t => t.stop());
+      }
+    }
+
+    document.getElementById("startVoiceRecBtn").addEventListener("click", startVoiceRecording);
+    document.getElementById("stopVoiceRecBtn").addEventListener("click", stopVoiceRecording);
+    document.getElementById("deleteVoiceBtn").addEventListener("click", () => {
+      recordedAudioBase64 = null;
+      document.getElementById("modalAudioEl").src = "";
+      document.getElementById("voicePlaybackContainer").classList.add("hidden");
+      document.getElementById("voiceTimer").textContent = "00:00";
+    });
+
+    // Populate selects
+    function populateDropdowns() {
+      const fSrc = document.getElementById("filterSource");
+      const mSrc = document.getElementById("modalSource");
+      fSrc.innerHTML = '<option value="ALL">All Sources</option>';
+      mSrc.innerHTML = '<option value="" disabled selected>Select Source...</option>';
+      appConfig.sources.forEach(src => {
+        fSrc.innerHTML += `<option value="${escapeHtml(src)}">${escapeHtml(src)}</option>`;
+        mSrc.innerHTML += `<option value="${escapeHtml(src)}">${escapeHtml(src)}</option>`;
+      });
+
+      const fSub = document.getElementById("filterSubject");
+      const mSub = document.getElementById("modalSubject");
+      const tSub = document.getElementById("taxSubjectSelect");
+      fSub.innerHTML = '<option value="ALL">All Subjects</option>';
+      mSub.innerHTML = '<option value="" disabled selected>Select Subject...</option>';
+      tSub.innerHTML = '';
+      Object.keys(appConfig.subjects).forEach(sub => {
+        fSub.innerHTML += `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`;
+        mSub.innerHTML += `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`;
+        tSub.innerHTML += `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`;
+      });
+
+      updateChapterSelect(mSub.value);
+      renderErrorTypeRadioPills();
+      renderTaxonomyLists();
+    }
+
+    function updateChapterSelect(sub, sel = "") {
+      const mChap = document.getElementById("modalChapter");
+      mChap.innerHTML = "";
+      if (!sub || !appConfig.subjects[sub]) {
+        mChap.innerHTML = '<option value="">Select Subject First</option>';
+        mChap.disabled = true;
+        return;
+      }
+      mChap.disabled = false;
+      mChap.innerHTML = '<option value="" disabled selected>Select Chapter...</option>';
+      appConfig.subjects[sub].forEach(c => {
+        mChap.innerHTML += `<option value="${escapeHtml(c)}" ${c === sel ? 'selected' : ''}>${escapeHtml(c)}</option>`;
+      });
+    }
+
+    document.getElementById("modalSubject").addEventListener("change", (e) => updateChapterSelect(e.target.value));
+
+    function renderErrorTypeRadioPills(sel = "") {
+      const c = document.getElementById("modalErrorTypesPillContainer");
+      c.innerHTML = "";
+      appConfig.errorTypes.forEach((et, idx) => {
+        const isChecked = sel ? (sel === et.label) : (idx === 0);
+        const colorStyles = {
+          red: "text-red-500 border-red-500/30",
+          amber: "text-amber-500 border-amber-500/30",
+          emerald: "text-emerald-500 border-emerald-500/30",
+          blue: "text-blue-500 border-blue-500/30",
+          purple: "text-purple-500 border-purple-500/30"
+        }[et.color] || "text-brand-500 border-brand-500/30";
+
+        c.innerHTML += `
+          <label class="flex items-center p-2 rounded-xl border ${colorStyles} bg-slate-50 dark:bg-amoled-surface cursor-pointer select-none">
+            <input type="radio" name="modalErrorTypeRadio" value="${escapeHtml(et.label)}" class="mr-2" ${isChecked ? 'checked' : ''}>
+            <span class="text-xs font-bold truncate text-black dark:text-white">${escapeHtml(et.label)}</span>
+          </label>
+        `;
+      });
+    }
+
+    function getErrorTypeBadge(label) {
+      const et = appConfig.errorTypes.find(e => e.label === label);
+      const color = et ? et.color : "blue";
+      const pillMap = {
+        blue: "border-blue-500/40 text-blue-400 bg-blue-500/10",
+        amber: "border-amber-500/40 text-amber-400 bg-amber-500/10",
+        red: "border-red-500/40 text-red-400 bg-red-500/10",
+        emerald: "border-emerald-500/40 text-emerald-400 bg-emerald-500/10",
+        purple: "border-purple-500/40 text-purple-400 bg-purple-500/10"
+      }[color] || "border-blue-500/40 text-blue-400 bg-blue-500/10";
+
+      const dotMap = {
+        blue: "bg-blue-400",
+        amber: "bg-amber-400",
+        red: "bg-red-400",
+        emerald: "bg-emerald-400",
+        purple: "bg-purple-400"
+      }[color] || "bg-blue-400";
+
+      return `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${pillMap}">
+        <span class="w-1.5 h-1.5 rounded-full ${dotMap}"></span>
+        ${escapeHtml(label)}
+      </span>`;
+    }
+
+    // Render Table View (Matching Screenshot)
+    function renderTable() {
+      const tbody = document.getElementById("logsTableBody");
+      tbody.innerHTML = "";
+
+      const q = document.getElementById("searchInput").value.toLowerCase().trim();
+      const fSrc = document.getElementById("filterSource").value;
+      const fSub = document.getElementById("filterSubject").value;
+      const fStatus = document.getElementById("filterReviewStatus").value;
+
+      // Filter non-deleted entries
+      const list = errorEntries
+        .filter(item => !item.deleted)
+        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+        .filter(item => {
+          if (fSrc !== "ALL" && item.source !== fSrc) return false;
+          if (fSub !== "ALL" && item.subject !== fSub) return false;
+          if (fStatus === "NEW" && (item.reviewCount || 0) > 0) return false;
+          if (fStatus === "REVIEWED" && (!item.reviewCount || item.reviewCount === 0)) return false;
+          if (fStatus === "FLAGGED" && !item.flagged) return false;
+          if (q) {
+            const m = (item.questionNum || "") + (item.source || "") + (item.subject || "") + (item.chapter || "") + (item.remedialAction || "");
+            if (!m.toLowerCase().includes(q)) return false;
+          }
+          return true;
+        });
+
+      if (list.length === 0) {
+        document.getElementById("emptyTableState").classList.remove("hidden");
+      } else {
+        document.getElementById("emptyTableState").classList.add("hidden");
+      }
+
+      list.forEach(item => {
+        const isReviewed = (item.reviewCount || 0) > 0;
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50/80 dark:hover:bg-amoled-surface/40 transition-colors border-b border-slate-100 dark:border-amoled-border/40";
+
+        // Visuals Column (Thumbnails labeled Q and S)
+        let visualsHtml = '<span class="text-slate-400 dark:text-slate-600 italic">None</span>';
+        if (item.questionImage || item.solutionImage) {
+          visualsHtml = '<div class="flex items-center justify-center gap-1.5">';
+          if (item.questionImage) {
+            visualsHtml += `
+              <div class="relative cursor-pointer group" onclick="viewLightbox('${item.id}', 'question')">
+                <img src="${item.questionImage}" class="w-8 h-8 rounded-lg object-cover border border-slate-300 dark:border-amoled-border group-hover:scale-105 transition">
+                <span class="absolute -top-1 -right-1 bg-brand-600 text-white rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">Q</span>
+              </div>`;
+          }
+          if (item.solutionImage) {
+            visualsHtml += `
+              <div class="relative cursor-pointer group" onclick="viewLightbox('${item.id}', 'solution')">
+                <img src="${item.solutionImage}" class="w-8 h-8 rounded-lg object-cover border border-slate-300 dark:border-amoled-border group-hover:scale-105 transition">
+                <span class="absolute -top-1 -right-1 bg-emerald-600 text-white rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">S</span>
+              </div>`;
+          }
+          visualsHtml += '</div>';
+        }
+
+        // Voice note column: Audio play symbol only
+        let audioHtml = '<span class="text-slate-400 dark:text-slate-600 italic">No audio</span>';
+        if (item.audioData) {
+          audioHtml = `
+            <button onclick="playInlineAudio('${item.id}', this)" class="w-7 h-7 mx-auto rounded-full bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/30 flex items-center justify-center transition">
+              <i data-lucide="play" class="w-3.5 h-3.5 ml-0.5 audio-play-icon"></i>
+            </button>`;
+        }
+
+        tr.innerHTML = `
+          <!-- Status Indicator Toggle -->
+          <td class="py-3 px-3 text-center">
+            <button onclick="toggleReviewStatus('${item.id}')" title="Click to mark reviewed" class="inline-flex items-center justify-center w-5 h-5 rounded-full transition ${isReviewed ? 'text-emerald-500' : 'text-slate-400 hover:text-slate-300'}">
+              <i data-lucide="${isReviewed ? 'check-circle-2' : 'circle'}" class="w-4 h-4"></i>
+            </button>
+          </td>
+
+          <!-- Q# -->
+          <td class="py-3 px-3 font-extrabold text-black dark:text-white">
+            ${item.flagged ? '<span class="text-rose-500 mr-1">🚩</span>' : ''}${escapeHtml(item.questionNum)}
+          </td>
+
+          <!-- Source Badge -->
+          <td class="py-3 px-3">
+            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-amoled-surface border border-slate-200 dark:border-amoled-border text-slate-700 dark:text-slate-300">
+              ${escapeHtml(item.source)}
+            </span>
+          </td>
+
+          <!-- Subject -->
+          <td class="py-3 px-3 font-bold text-black dark:text-white">
+            ${escapeHtml(item.subject)}
+          </td>
+
+          <!-- Chapter -->
+          <td class="py-3 px-3 text-slate-600 dark:text-slate-300">
+            ${escapeHtml(item.chapter)}
+          </td>
+
+          <!-- Error Type Badge -->
+          <td class="py-3 px-3">
+            ${getErrorTypeBadge(item.errorType)}
+          </td>
+
+          <!-- Root Cause -->
+          <td class="py-3 px-4 max-w-xs truncate text-slate-700 dark:text-slate-300" title="${escapeHtml(item.remedialAction)}">
+            ${escapeHtml(item.remedialAction)}
+          </td>
+
+          <!-- Visuals -->
+          <td class="py-3 px-3 text-center">
+            ${visualsHtml}
+          </td>
+
+          <!-- Voice Note -->
+          <td class="py-3 px-3 text-center">
+            ${audioHtml}
+          </td>
+
+          <!-- Action Buttons -->
+          <td class="py-3 px-3 text-right">
+            <div class="inline-flex items-center gap-1.5 text-slate-400">
+              <button onclick="editEntry('${item.id}')" class="p-1 hover:text-brand-500 transition" title="Edit">
+                <i data-lucide="edit-2" class="w-4 h-4"></i>
+              </button>
+              <button onclick="deleteEntry('${item.id}')" class="p-1 hover:text-rose-500 transition" title="Delete">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      lucide.createIcons();
+    }
+
+    // Audio Playback
+    window.playInlineAudio = (id, btn) => {
+      const item = errorEntries.find(i => i.id === id);
+      if (!item || !item.audioData) return;
+
+      if (currentPlayingAudio && currentPlayingAudio.src === item.audioData) {
+        if (!currentPlayingAudio.paused) {
+          currentPlayingAudio.pause();
+          btn.querySelector('.audio-play-icon').setAttribute('data-lucide', 'play');
+          lucide.createIcons();
+          return;
+        }
+      }
+
+      if (currentPlayingAudio) {
+        currentPlayingAudio.pause();
+      }
+
+      currentPlayingAudio = new Audio(item.audioData);
+      currentPlayingAudio.play();
+      btn.querySelector('.audio-play-icon').setAttribute('data-lucide', 'pause');
+      lucide.createIcons();
+
+      currentPlayingAudio.onended = () => {
+        btn.querySelector('.audio-play-icon').setAttribute('data-lucide', 'play');
+        lucide.createIcons();
+      };
+    };
+
+    // Review Status Toggle (Immediate Sync)
+    window.toggleReviewStatus = (id) => {
+      const item = errorEntries.find(i => i.id === id);
+      if (item) {
+        item.reviewCount = (item.reviewCount && item.reviewCount > 0) ? 0 : 1;
+        item.updatedAt = Date.now();
+        saveLocalCache();
+        renderTable();
+        syncWithGoogleDriveImmediate();
+      }
+    };
+
+    // Edit Log
+    window.editEntry = (id) => {
+      const item = errorEntries.find(i => i.id === id);
+      if (!item) return;
+      openEntryModal(item.id);
+    };
+
+    // Robust Delete with Immediate Tombstone Cloud Propagation
+    window.deleteEntry = (id) => {
+      if (!confirm("Are you sure you want to delete this log?")) return;
+      const item = errorEntries.find(i => i.id === id);
+      if (item) {
+        item.deleted = true;
+        item.updatedAt = Date.now();
+        saveLocalCache();
+        renderTable();
+        syncWithGoogleDriveImmediate();
+        showToast("Log deleted");
+      }
+    };
+
+    // Modal logic
+    function openEntryModal(editId = null) {
+      document.getElementById("entryForm").reset();
+      document.getElementById("editEntryId").value = "";
+      questionImgBase64 = null;
+      solutionImgBase64 = null;
+      recordedAudioBase64 = null;
+
+      document.getElementById("modalQImgPreview").classList.add("hidden");
+      document.getElementById("modalSImgPreview").classList.add("hidden");
+      document.getElementById("modalRemoveQImgBtn").classList.add("hidden");
+      document.getElementById("modalRemoveSImgBtn").classList.add("hidden");
+      document.getElementById("voicePlaybackContainer").classList.add("hidden");
+      document.getElementById("voiceTimer").textContent = "00:00";
+      document.getElementById("modalFlagged").checked = false;
+
+      populateDropdowns();
+
+      if (editId) {
+        const item = errorEntries.find(i => i.id === editId);
+        if (item) {
+          document.getElementById("modalHeading").textContent = "Edit Error Log";
+          document.getElementById("editEntryId").value = item.id;
+          document.getElementById("modalQNum").value = item.questionNum;
+          document.getElementById("modalSource").value = item.source || "";
+          document.getElementById("modalSubject").value = item.subject || "";
+          updateChapterSelect(item.subject, item.chapter);
+          document.getElementById("modalRemedial").value = item.remedialAction || "";
+          document.getElementById("modalFlagged").checked = Boolean(item.flagged);
+          renderErrorTypeRadioPills(item.errorType);
+
+          if (item.questionImage) {
+            questionImgBase64 = item.questionImage;
+            document.getElementById("modalQImgPreview").src = questionImgBase64;
+            document.getElementById("modalQImgPreview").classList.remove("hidden");
+            document.getElementById("modalRemoveQImgBtn").classList.remove("hidden");
+          }
+          if (item.solutionImage) {
+            solutionImgBase64 = item.solutionImage;
+            document.getElementById("modalSImgPreview").src = solutionImgBase64;
+            document.getElementById("modalSImgPreview").classList.remove("hidden");
+            document.getElementById("modalRemoveSImgBtn").classList.remove("hidden");
+          }
+          if (item.audioData) {
+            recordedAudioBase64 = item.audioData;
+            document.getElementById("modalAudioEl").src = recordedAudioBase64;
+            document.getElementById("voicePlaybackContainer").classList.remove("hidden");
+          }
+        }
+      } else {
+        document.getElementById("modalHeading").textContent = "Record MCQ Mistake";
+        renderErrorTypeRadioPills();
+      }
+
+      document.getElementById("entryModal").classList.remove("hidden");
+      lucide.createIcons();
+    }
+
+    function closeEntryModal() {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(t => t.stop());
+      }
+      document.getElementById("entryModal").classList.add("hidden");
+    }
+
+    document.getElementById("openNewLogModalBtn").addEventListener("click", () => openEntryModal());
+    document.getElementById("closeModalBtn").addEventListener("click", closeEntryModal);
+    document.getElementById("cancelEntryModalBtn").addEventListener("click", closeEntryModal);
+
+    // Save Form (Add or Edit) -> Immediate Auto-Sync
+    document.getElementById("entryForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const editId = document.getElementById("editEntryId").value;
+      const isEdit = Boolean(editId);
+      const chosenRadio = document.querySelector('input[name="modalErrorTypeRadio"]:checked');
+
+      const entry = {
+        id: isEdit ? editId : ("err_" + Date.now()),
+        questionNum: document.getElementById("modalQNum").value.trim(),
+        source: document.getElementById("modalSource").value,
+        subject: document.getElementById("modalSubject").value,
+        chapter: document.getElementById("modalChapter").value,
+        errorType: chosenRadio ? chosenRadio.value : "Calculation / Silly Mistake",
+        remedialAction: document.getElementById("modalRemedial").value.trim(),
+        flagged: document.getElementById("modalFlagged").checked,
+        questionImage: questionImgBase64,
+        solutionImage: solutionImgBase64,
+        audioData: recordedAudioBase64,
+        reviewCount: isEdit ? (errorEntries.find(x => x.id === editId)?.reviewCount || 0) : 0,
+        createdAt: isEdit ? (errorEntries.find(x => x.id === editId)?.createdAt || Date.now()) : Date.now(),
+        updatedAt: Date.now(),
+        deleted: false
+      };
+
+      if (isEdit) {
+        const idx = errorEntries.findIndex(x => x.id === editId);
+        if (idx !== -1) errorEntries[idx] = entry;
+      } else {
+        errorEntries.unshift(entry);
+      }
+
+      saveLocalCache();
+      closeEntryModal();
+      renderTable();
+      syncWithGoogleDriveImmediate();
+      showToast(isEdit ? "Entry updated" : "Logged question");
+    });
+
+    // Lightbox
+    window.viewLightbox = (id, type) => {
+      const item = errorEntries.find(i => i.id === id);
+      if (!item) return;
+      const url = type === "question" ? item.questionImage : item.solutionImage;
+      if (url) {
+        document.getElementById("lightboxImg").src = url;
+        document.getElementById("imageLightboxModal").classList.remove("hidden");
+      }
+    };
+    document.getElementById("closeLightboxBtn").addEventListener("click", () => {
+      document.getElementById("imageLightboxModal").classList.add("hidden");
+    });
+
+    // Settings Modal
+    document.getElementById("openSettingsModalBtn").addEventListener("click", () => {
+      document.getElementById("settingsModal").classList.remove("hidden");
+    });
+    document.getElementById("closeSettingsBtn").addEventListener("click", () => {
+      document.getElementById("settingsModal").classList.add("hidden");
+    });
+
+    // Settings tab switcher
+    document.querySelectorAll(".setting-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".setting-tab").forEach(b => {
+          b.classList.remove("border-brand-600", "text-brand-600", "dark:text-brand-400");
+          b.classList.add("border-transparent", "text-slate-500");
+        });
+        tab.classList.add("border-brand-600", "text-brand-600", "dark:text-brand-400");
+        tab.classList.remove("border-transparent", "text-slate-500");
+        document.querySelectorAll(".setting-panel").forEach(p => p.classList.add("hidden"));
+        document.getElementById(tab.dataset.tab).classList.remove("hidden");
+      });
+    });
+
+    function renderTaxonomyLists() {
+      const sList = document.getElementById("sourcesList");
+      sList.innerHTML = "";
+      appConfig.sources.forEach((src, idx) => {
+        sList.innerHTML += `
+          <div class="flex items-center justify-between p-2 bg-white dark:bg-amoled-surface">
+            <span class="text-black dark:text-slate-200">${escapeHtml(src)}</span>
+            <button onclick="removeTaxSource(${idx})" class="text-rose-500 hover:text-rose-700 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+          </div>`;
+      });
+
+      const selectedSub = document.getElementById("taxSubjectSelect").value;
+      const cList = document.getElementById("chaptersList");
+      cList.innerHTML = "";
+      if (selectedSub && appConfig.subjects[selectedSub]) {
+        appConfig.subjects[selectedSub].forEach((ch, idx) => {
+          cList.innerHTML += `
+            <div class="flex items-center justify-between p-2 bg-white dark:bg-amoled-surface">
+              <span class="text-black dark:text-slate-200">${escapeHtml(ch)}</span>
+              <button onclick="removeTaxChapter('${escapeHtml(selectedSub)}', ${idx})" class="text-rose-500 hover:text-rose-700 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            </div>`;
+        });
+      }
+
+      const eList = document.getElementById("errorTypesList");
+      eList.innerHTML = "";
+      appConfig.errorTypes.forEach((et, idx) => {
+        eList.innerHTML += `
+          <div class="flex items-center justify-between p-2 bg-white dark:bg-amoled-surface">
+            <span class="text-black dark:text-slate-200 font-bold">${escapeHtml(et.label)}</span>
+            <button onclick="removeTaxErrorType(${idx})" class="text-rose-500 hover:text-rose-700 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+          </div>`;
+      });
+      lucide.createIcons();
+    }
+
+    window.removeTaxSource = (idx) => {
+      appConfig.sources.splice(idx, 1);
+      saveLocalCache();
+      populateDropdowns();
+      syncWithGoogleDriveImmediate();
+    };
+    window.removeTaxChapter = (subj, idx) => {
+      if (appConfig.subjects[subj]) {
+        appConfig.subjects[subj].splice(idx, 1);
+        saveLocalCache();
+        populateDropdowns();
+        syncWithGoogleDriveImmediate();
+      }
+    };
+    window.removeTaxErrorType = (idx) => {
+      if (appConfig.errorTypes.length <= 1) return;
+      appConfig.errorTypes.splice(idx, 1);
+      saveLocalCache();
+      populateDropdowns();
+      syncWithGoogleDriveImmediate();
+    };
+
+    document.getElementById("addSourceBtn").addEventListener("click", () => {
+      const val = document.getElementById("newSourceInput").value.trim();
+      if (val && !appConfig.sources.includes(val)) {
+        appConfig.sources.push(val);
+        document.getElementById("newSourceInput").value = "";
+        saveLocalCache();
+        populateDropdowns();
+        syncWithGoogleDriveImmediate();
+      }
+    });
+
+    document.getElementById("addSubjectBtn").addEventListener("click", () => {
+      const val = document.getElementById("newSubjectInput").value.trim();
+      if (val && !appConfig.subjects[val]) {
+        appConfig.subjects[val] = [];
+        document.getElementById("newSubjectInput").value = "";
+        saveLocalCache();
+        populateDropdowns();
+        syncWithGoogleDriveImmediate();
+      }
+    });
+
+    document.getElementById("addChapterBtn").addEventListener("click", () => {
+      const subj = document.getElementById("taxSubjectSelect").value;
+      const val = document.getElementById("newChapterInput").value.trim();
+      if (subj && val && appConfig.subjects[subj] && !appConfig.subjects[subj].includes(val)) {
+        appConfig.subjects[subj].push(val);
+        document.getElementById("newChapterInput").value = "";
+        saveLocalCache();
+        populateDropdowns();
+        syncWithGoogleDriveImmediate();
+      }
+    });
+
+    document.getElementById("addErrorTypeBtn").addEventListener("click", () => {
+      const name = document.getElementById("newErrorTypeName").value.trim();
+      const col = document.getElementById("newErrorTypeColor").value;
+      if (name) {
+        appConfig.errorTypes.push({ id: "et_" + Date.now(), label: name, color: col });
+        document.getElementById("newErrorTypeName").value = "";
+        saveLocalCache();
+        populateDropdowns();
+        syncWithGoogleDriveImmediate();
+      }
+    });
+
+    document.getElementById("taxSubjectSelect").addEventListener("change", renderTaxonomyLists);
+
+    // Drive modal events
+    document.getElementById("authDriveBtn").addEventListener("click", triggerGoogleAuth);
+    document.getElementById("disconnectDriveBtn").addEventListener("click", disconnectGoogleDrive);
+    document.getElementById("quickSyncBtn").addEventListener("click", syncWithGoogleDriveImmediate);
+
+    // JSON export/import
+    document.getElementById("exportJsonBtn").addEventListener("click", () => {
+      const data = { appConfig, errorEntries, exportedAt: new Date().toISOString() };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `mcq_backup_${Date.now()}.json`;
+      a.click();
+      showToast("JSON exported");
+    });
+
+    document.getElementById("importJsonInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const parsed = JSON.parse(evt.target.result);
+          if (parsed.appConfig && parsed.errorEntries) {
+            appConfig = parsed.appConfig;
+            errorEntries = parsed.errorEntries;
+            saveLocalCache();
+            populateDropdowns();
+            renderTable();
+            syncWithGoogleDriveImmediate();
+            showToast("Backup restored");
+          }
+        } catch (err) {
+          showToast("Invalid JSON");
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    // Theme toggle
+    document.getElementById("themeToggleBtn").addEventListener("click", () => {
+      document.documentElement.classList.toggle("dark");
+      localStorage.setItem("mcq_theme_mode", document.documentElement.classList.contains("dark") ? "dark" : "light");
+      lucide.createIcons();
+    });
+
+    // Filter listeners
+    [document.getElementById("searchInput"), document.getElementById("filterSource"), document.getElementById("filterSubject"), document.getElementById("filterReviewStatus")].forEach(el => {
+      el.addEventListener("input", renderTable);
+      el.addEventListener("change", renderTable);
+    });
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str).replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[m]);
+    }
+
+    function showToast(text) {
+      const t = document.getElementById("toastMessage");
+      document.getElementById("toastText").textContent = text;
+      t.classList.remove("translate-y-20", "opacity-0");
+      t.classList.add("translate-y-0", "opacity-100");
+      setTimeout(() => {
+        t.classList.add("translate-y-20", "opacity-0");
+        t.classList.remove("translate-y-0", "opacity-100");
+      }, 2000);
+    }
+
+    // Startup
+    window.addEventListener("DOMContentLoaded", () => {
+      const savedTheme = localStorage.getItem("mcq_theme_mode");
+      if (savedTheme === "dark" || !savedTheme) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+
+      // Seed data if empty
+      if (errorEntries.length === 0) {
+        errorEntries = [
+          {
+            id: "seed_43",
+            questionNum: "43",
+            source: "MCQ Practice Session",
+            subject: "Chemistry",
+            chapter: "Mole Concept & Stoichiometry",
+            errorType: "Formula Recall Mistake",
+            remedialAction: "Test 2",
+            reviewCount: 0,
+            flagged: false,
+            questionImage: null,
+            solutionImage: null,
+            audioData: null,
+            createdAt: Date.now() - 3000,
+            updatedAt: Date.now() - 3000,
+            deleted: false
+          },
+          {
+            id: "seed_12",
+            questionNum: "Q12",
+            source: "Part Test",
+            subject: "Physics",
+            chapter: "Motion in a Plane (2D)",
+            errorType: "Calculation / Silly Mistake",
+            remedialAction: "Used sin θ instead of cos θ for horizontal component. Solved 5 variants.",
+            reviewCount: 0,
+            flagged: false,
+            questionImage: null,
+            solutionImage: null,
+            audioData: null,
+            createdAt: Date.now() - 20
