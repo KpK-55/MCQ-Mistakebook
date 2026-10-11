@@ -59,10 +59,18 @@
     .spin-fast {
       animation: spin 0.8s linear infinite;
     }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    /* Table layout: text wraps inside each bounded cell instead of stretching the row. */
+    #logsTable { table-layout: fixed; min-width: 1120px; }
+    #logsTable th, #logsTable td { white-space: normal; overflow-wrap: anywhere; word-break: normal; vertical-align: middle; }
+    #logsTable tbody tr.log-row { cursor: pointer; }
+    #logsTable tbody tr.log-row:focus { outline: 2px solid #6366f1; outline-offset: -2px; }
+    .sync-track { height: 4px; background: #1e293b; overflow: hidden; }
+    .sync-fill { height: 100%; width: 0%; background: linear-gradient(90deg,#6366f1,#22c55e); transition: width .2s ease; }
+    .sync-fill.indeterminate { width: 35%; animation: sync-slide 1.1s ease-in-out infinite alternate; }
+    @keyframes sync-slide { from { transform: translateX(0); } to { transform: translateX(185%); } }
+    .log-context-menu { position: fixed; z-index: 100; min-width: 150px; }
+    @media (max-width: 640px) { #logsTable { min-width: 1050px; } }
   </style>
 </head>
 <body class="bg-slate-50 dark:bg-amoled-bg text-black dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200">
@@ -110,7 +118,26 @@
     </div>
   </header>
 
+  <div id="syncProgressWrap" class="hidden sticky top-16 z-20 bg-slate-100 dark:bg-[#0a0f1e] border-b border-slate-200 dark:border-amoled-border">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-1.5 flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400">
+      <span id="syncProgressLabel" class="shrink-0">Syncing…</span>
+      <div class="sync-track flex-1 rounded-full"><div id="syncProgressBar" class="sync-fill"></div></div>
+      <span id="syncProgressPercent" class="w-8 text-right tabular-nums">—</span>
+    </div>
+  </div>
+
   <main class="max-w-7xl mx-auto px-3 sm:px-6 py-4 flex-1 w-full space-y-4">
+    <!-- Dashboard -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-2.5" aria-label="Mistake log statistics">
+      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Total Logs</div><div id="statTotalLogs" class="text-2xl font-extrabold mt-1">0</div><div class="text-[10px] text-slate-500">All active entries</div></div>
+      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-[10px] uppercase tracking-wider font-bold text-slate-500">New / Unreviewed</div><div id="statNewLogs" class="text-2xl font-extrabold text-amber-400 mt-1">0</div><div class="text-[10px] text-slate-500">Not reviewed yet</div></div>
+      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Reviewed</div><div id="statReviewedLogs" class="text-2xl font-extrabold text-emerald-400 mt-1">0</div><div class="text-[10px] text-slate-500">At least one review</div></div>
+      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Error Types</div><div id="statErrorTypes" class="text-2xl font-extrabold mt-1">0</div><div class="text-[10px] text-slate-500">Types currently configured</div></div>
+    </section>
+    <section class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3">
+      <div class="flex items-center justify-between gap-2 mb-2"><h2 class="text-xs font-extrabold">Logs by mistake type</h2><span class="text-[10px] text-slate-500">Active entries</span></div>
+      <div id="errorTypeStats" class="flex flex-wrap gap-2"><span class="text-xs text-slate-500">No logs yet</span></div>
+    </section>
     <!-- Search & Filters -->
     <section class="bg-white dark:bg-amoled-card p-3 rounded-2xl border border-slate-200 dark:border-amoled-border shadow-xs flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
       <div class="relative flex-1">
@@ -139,7 +166,10 @@
     <!-- Table Container -->
     <div class="bg-white dark:bg-amoled-card rounded-2xl border border-slate-200 dark:border-amoled-border overflow-hidden shadow-xs">
       <div class="overflow-x-auto custom-scrollbar">
-        <table class="w-full text-left text-xs whitespace-nowrap">
+        <table id="logsTable" class="w-full text-left text-xs">
+          <colgroup>
+            <col style="width:6%"><col style="width:7%"><col style="width:11%"><col style="width:8%"><col style="width:13%"><col style="width:12%"><col style="width:19%"><col style="width:9%"><col style="width:7%"><col style="width:8%">
+          </colgroup>
           <thead class="bg-slate-100/80 dark:bg-[#0a0f1e] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold text-[10px] border-b border-slate-200 dark:border-amoled-border">
             <tr>
               <th scope="col" class="py-3 px-3 w-10 text-center">Status</th>
@@ -393,6 +423,16 @@
       </form>
     </div>
   </div>
+
+  <!-- Detailed log view -->
+  <div id="detailModal" class="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 hidden" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+    <div class="bg-white dark:bg-amoled-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-slate-200 dark:border-amoled-border">
+      <div class="px-5 py-3.5 border-b border-slate-200 dark:border-amoled-border flex items-center justify-between"><div><div class="text-[10px] uppercase tracking-wider text-slate-500">Mistake details</div><h2 id="detailTitle" class="font-extrabold text-base">Question</h2></div><button id="closeDetailBtn" class="p-2 text-slate-400 hover:text-white" type="button" aria-label="Close details"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+      <div id="detailContent" class="p-4 sm:p-5 overflow-y-auto custom-scrollbar space-y-4 text-sm"></div>
+      <div class="p-3 border-t border-slate-200 dark:border-amoled-border flex flex-wrap justify-end gap-2"><button id="detailReviewBtn" type="button" class="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold">Mark reviewed</button><button id="detailEditBtn" type="button" class="px-3 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold">Edit</button><button id="detailDeleteBtn" type="button" class="px-3 py-2 rounded-xl border border-rose-500/40 text-rose-500 text-xs font-bold">Delete</button></div>
+    </div>
+  </div>
+  <div id="logContextMenu" class="log-context-menu hidden rounded-xl border border-slate-700 bg-[#0c1222] p-1 shadow-2xl"><button id="contextEditBtn" type="button" class="block w-full rounded-lg px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800">✎ Edit log</button><button id="contextDeleteBtn" type="button" class="block w-full rounded-lg px-3 py-2 text-left text-xs text-rose-400 hover:bg-slate-800">⌫ Delete log</button></div>
 
   <!-- Image Lightbox Modal -->
   <div id="imageLightboxModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 hidden">
@@ -746,43 +786,72 @@
       return false;
     }
 
+    function setSyncProgress(label, percent = null, state = "working") {
+      const wrap = document.getElementById("syncProgressWrap");
+      const bar = document.getElementById("syncProgressBar");
+      const labelEl = document.getElementById("syncProgressLabel");
+      const percentEl = document.getElementById("syncProgressPercent");
+      if (!wrap || !bar || !labelEl || !percentEl) return;
+      wrap.classList.remove("hidden"); labelEl.textContent = label;
+      bar.classList.toggle("indeterminate", percent === null && state === "working");
+      if (percent !== null) { bar.style.width = Math.max(0, Math.min(100, percent)) + "%"; percentEl.textContent = Math.round(percent) + "%"; }
+      else { bar.style.width = state === "working" ? "35%" : "100%"; percentEl.textContent = state === "working" ? "…" : "100%"; }
+      if (state === "success") bar.style.background = "#22c55e";
+      else if (state === "error") bar.style.background = "#f43f5e";
+      else bar.style.background = "linear-gradient(90deg,#6366f1,#22c55e)";
+      if (state !== "working") setTimeout(() => { if (!isSyncing) wrap.classList.add("hidden"); }, 2600);
+    }
+
+    function mergeAppConfig(remote = {}) {
+      const merged = { sources: [], subjects: {}, errorTypes: [] };
+      const local = appConfig || DEFAULT_CONFIG;
+      merged.sources = [...new Set([...(remote.sources || []), ...(local.sources || [])])];
+      const subjectNames = new Set([...Object.keys(remote.subjects || {}), ...Object.keys(local.subjects || {})]);
+      subjectNames.forEach(name => merged.subjects[name] = [...new Set([...(remote.subjects?.[name] || []), ...(local.subjects?.[name] || [])])]);
+      const types = new Map();
+      [...(remote.errorTypes || []), ...(local.errorTypes || [])].forEach(et => { if (et?.label) { const key = et.id || et.label; if (!types.has(key)) types.set(key, et); else if (!types.get(key).color && et.color) types.set(key, et); } });
+      merged.errorTypes = [...types.values()];
+      if (!merged.errorTypes.length) merged.errorTypes = DEFAULT_CONFIG.errorTypes.map(x => ({...x}));
+      return merged;
+    }
+
     async function syncWithGoogleDriveImmediate() {
-      if (!gDriveAccessToken || isSyncing) return;
+      if (!gDriveAccessToken) { setSyncProgress("Drive not connected", null, "error"); showToast("Connect Google Drive first"); return; }
+      if (isSyncing) return;
       isSyncing = true;
       const spinner = document.getElementById("syncSpinner");
       if (spinner) spinner.classList.add("spin-fast");
-
+      setSyncProgress("Checking Drive…", 8);
       try {
         const remoteMeta = await locateDriveSyncFile();
-        if (remoteMeta) {
-          const remoteData = await downloadDriveSyncFile(remoteMeta.id);
-          if (remoteData && Array.isArray(remoteData.errorEntries)) {
-            const map = new Map(errorEntries.map(e => [e.id, e]));
-            remoteData.errorEntries.forEach(remoteEntry => {
-              const local = map.get(remoteEntry.id);
-              if (!local || (remoteEntry.updatedAt || 0) > (local.updatedAt || 0)) {
-                map.set(remoteEntry.id, remoteEntry);
-              }
-            });
-            errorEntries = Array.from(map.values());
-            saveLocalCache();
-            renderTable();
-          }
+        setSyncProgress("Downloading latest data…", 30);
+        let remoteData = null;
+        if (remoteMeta) remoteData = await downloadDriveSyncFile(remoteMeta.id);
+        if (remoteData) {
+          // Merge records by stable ID and newest update timestamp; retain deletion tombstones.
+          const map = new Map(errorEntries.map(e => [e.id, e]));
+          (Array.isArray(remoteData.errorEntries) ? remoteData.errorEntries : []).forEach(remoteEntry => {
+            if (!remoteEntry?.id) return;
+            const local = map.get(remoteEntry.id);
+            if (!local || (remoteEntry.updatedAt || 0) > (local.updatedAt || 0)) map.set(remoteEntry.id, remoteEntry);
+          });
+          errorEntries = Array.from(map.values());
+          appConfig = mergeAppConfig(remoteData.appConfig || {});
+          saveLocalCache();
+          populateDropdowns(); renderTable();
         }
-
-        const payload = {
-          version: "5.0.0",
-          syncedAt: Date.now(),
-          appConfig: appConfig,
-          errorEntries: errorEntries
-        };
+        setSyncProgress("Uploading merged logs and settings…", 65);
+        const payload = { version: "6.0.0", syncedAt: Date.now(), appConfig, errorEntries };
         const ok = await uploadDriveSyncFile(payload);
-        if (ok) {
-          localStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
-          updateDriveUI(true);
-        }
+        if (!ok) throw new Error("Drive upload failed. Check OAuth permissions, network, and Drive API configuration.");
+        localStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
+        updateDriveUI(true);
+        setSyncProgress("Synced successfully", 100, "success");
+        showToast("Drive sync complete");
       } catch (e) {
-        console.error(e);
+        console.error("Google Drive sync failed:", e);
+        setSyncProgress("Sync failed — retry when online", null, "error");
+        showToast(e?.message?.includes("401") ? "Drive session expired. Sign in again." : "Sync failed. Check connection and permissions.");
       } finally {
         isSyncing = false;
         if (spinner) spinner.classList.remove("spin-fast");
@@ -818,6 +887,7 @@
       if (mSub) updateChapterSelect(mSub.value);
       renderErrorTypeRadioPills();
       renderTaxonomyLists();
+      if (typeof updateDashboard === "function") updateDashboard();
     }
 
     function updateChapterSelect(sub, sel = "") {
@@ -877,107 +947,86 @@
     }
 
     // Main Table Render
-    function renderTable() {
-      const tbody = document.getElementById("logsTableBody");
-      if (!tbody) return;
-      tbody.innerHTML = "";
+    let activeDetailId = null;
+    let contextEntryId = null;
+    function updateDashboard() {
+      const active = errorEntries.filter(x => !x.deleted);
+      const reviewed = active.filter(x => Number(x.reviewCount || 0) > 0).length;
+      document.getElementById("statTotalLogs").textContent = active.length;
+      document.getElementById("statNewLogs").textContent = active.length - reviewed;
+      document.getElementById("statReviewedLogs").textContent = reviewed;
+      document.getElementById("statErrorTypes").textContent = appConfig.errorTypes.length;
+      const holder = document.getElementById("errorTypeStats");
+      const counts = new Map(); active.forEach(x => counts.set(x.errorType, (counts.get(x.errorType) || 0) + 1));
+      holder.innerHTML = appConfig.errorTypes.map(et => `<span class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-amoled-border bg-slate-50 dark:bg-[#0c1222] px-2.5 py-1.5 text-[11px]"><span class="font-semibold text-slate-600 dark:text-slate-300">${escapeHtml(et.label)}</span><span class="rounded-full bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 font-extrabold text-slate-800 dark:text-white">${counts.get(et.label) || 0}</span></span>`).join("") || '<span class="text-xs text-slate-500">No error types configured</span>';
+    }
 
+    function openDetail(id) {
+      const item = errorEntries.find(x => x.id === id && !x.deleted); if (!item) return;
+      activeDetailId = id;
+      document.getElementById("detailTitle").textContent = `Question ${item.questionNum || "—"}`;
+      const content = document.getElementById("detailContent");
+      const imageBlock = (src, label) => src ? `<div><div class="mb-1 text-xs font-bold text-slate-500">${label}</div><img src="${src}" alt="${label}" class="max-h-72 max-w-full rounded-xl border border-slate-700 object-contain cursor-zoom-in" onclick="viewLightbox('${item.id}','${label === 'Question image' ? 'question' : 'solution'}')"></div>` : "";
+      content.innerHTML = `<div class="grid grid-cols-2 gap-3"><div><div class="text-[10px] uppercase text-slate-500">Source</div><div class="font-semibold">${escapeHtml(item.source)}</div></div><div><div class="text-[10px] uppercase text-slate-500">Subject</div><div class="font-semibold">${escapeHtml(item.subject)}</div></div><div class="col-span-2"><div class="text-[10px] uppercase text-slate-500">Chapter</div><div class="font-semibold">${escapeHtml(item.chapter)}</div></div><div class="col-span-2"><div class="text-[10px] uppercase text-slate-500 mb-1">Error type</div>${getErrorTypeBadge(item.errorType)}</div><div class="col-span-2"><div class="text-[10px] uppercase text-slate-500 mb-1">Root cause / action</div><div class="whitespace-pre-wrap break-words rounded-xl bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border p-3">${escapeHtml(item.remedialAction)}</div></div><div><div class="text-[10px] uppercase text-slate-500">Review count</div><div class="font-bold">${Number(item.reviewCount || 0)}×</div></div><div><div class="text-[10px] uppercase text-slate-500">Flagged</div><div class="font-bold">${item.flagged ? "Yes 🚩" : "No"}</div></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${imageBlock(item.questionImage,"Question image")}${imageBlock(item.solutionImage,"Solution image")}</div>${item.audioData ? `<div><div class="text-xs font-bold text-slate-500 mb-1">Voice explanation</div><audio controls class="w-full" src="${item.audioData}"></audio></div>` : '<div class="text-xs italic text-slate-500">No voice note attached</div>'}`;
+      document.getElementById("detailReviewBtn").textContent = Number(item.reviewCount || 0) > 0 ? "Review again (+1)" : "Mark reviewed";
+      document.getElementById("detailModal").classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("logsTableBody"); if (!tbody) return;
+      tbody.innerHTML = "";
       const q = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
       const fSrc = document.getElementById("filterSource")?.value || "ALL";
       const fSub = document.getElementById("filterSubject")?.value || "ALL";
       const fStatus = document.getElementById("filterReviewStatus")?.value || "ALL";
-
-      const list = errorEntries
-        .filter(item => !item.deleted)
-        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
-        .filter(item => {
-          if (fSrc !== "ALL" && item.source !== fSrc) return false;
-          if (fSub !== "ALL" && item.subject !== fSub) return false;
-          if (fStatus === "NEW" && (item.reviewCount || 0) > 0) return false;
-          if (fStatus === "REVIEWED" && (!item.reviewCount || item.reviewCount === 0)) return false;
-          if (fStatus === "FLAGGED" && !item.flagged) return false;
-          if (q) {
-            const m = (item.questionNum || "") + (item.source || "") + (item.subject || "") + (item.chapter || "") + (item.remedialAction || "");
-            if (!m.toLowerCase().includes(q)) return false;
-          }
-          return true;
-        });
-
-      const emptyEl = document.getElementById("emptyTableState");
-      if (emptyEl) {
-        if (list.length === 0) emptyEl.classList.remove("hidden");
-        else emptyEl.classList.add("hidden");
-      }
-
+      const list = errorEntries.filter(item => !item.deleted).sort((a,b) => (b.createdAt||0)-(a.createdAt||0)).filter(item => {
+        if (fSrc !== "ALL" && item.source !== fSrc) return false;
+        if (fSub !== "ALL" && item.subject !== fSub) return false;
+        if (fStatus === "NEW" && Number(item.reviewCount||0) > 0) return false;
+        if (fStatus === "REVIEWED" && Number(item.reviewCount||0) === 0) return false;
+        if (fStatus === "FLAGGED" && !item.flagged) return false;
+        if (q && ![item.questionNum,item.source,item.subject,item.chapter,item.remedialAction,item.errorType].join(" ").toLowerCase().includes(q)) return false;
+        return true;
+      });
+      document.getElementById("emptyTableState")?.classList.toggle("hidden", list.length !== 0);
       list.forEach(item => {
-        const isReviewed = (item.reviewCount || 0) > 0;
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-slate-50 dark:hover:bg-[#0c1222] transition-colors border-b border-slate-100 dark:border-amoled-border";
-
-        let visualsHtml = '<span class="text-slate-400 dark:text-slate-600 italic">None</span>';
+        const count = Number(item.reviewCount || 0); const isReviewed = count > 0;
+        let visualsHtml = '<span class="text-slate-500 italic">None</span>';
         if (item.questionImage || item.solutionImage) {
-          visualsHtml = '<div class="flex items-center justify-center gap-1.5">';
-          if (item.questionImage) {
-            visualsHtml += `
-              <div class="relative cursor-pointer group" onclick="viewLightbox('${item.id}', 'question')">
-                <img src="${item.questionImage}" class="w-8 h-8 rounded-lg object-cover border border-slate-300 dark:border-amoled-border group-hover:scale-105 transition">
-                <span class="absolute -top-1 -right-1 bg-brand-600 text-white rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">Q</span>
-              </div>`;
-          }
-          if (item.solutionImage) {
-            visualsHtml += `
-              <div class="relative cursor-pointer group" onclick="viewLightbox('${item.id}', 'solution')">
-                <img src="${item.solutionImage}" class="w-8 h-8 rounded-lg object-cover border border-slate-300 dark:border-amoled-border group-hover:scale-105 transition">
-                <span class="absolute -top-1 -right-1 bg-emerald-600 text-white rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">S</span>
-              </div>`;
-          }
+          visualsHtml = '<div class="flex flex-wrap items-center justify-center gap-2">';
+          if (item.questionImage) visualsHtml += `<button type="button" data-no-row="1" class="relative" onclick="viewLightbox('${item.id}','question')" aria-label="View question image"><img src="${item.questionImage}" alt="Question" class="w-9 h-9 rounded-lg object-cover border border-slate-300 dark:border-amoled-border"><span class="absolute -top-1 -right-1 bg-brand-600 text-white rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">Q</span></button>`;
+          if (item.solutionImage) visualsHtml += `<button type="button" data-no-row="1" class="relative" onclick="viewLightbox('${item.id}','solution')" aria-label="View solution image"><img src="${item.solutionImage}" alt="Solution" class="w-9 h-9 rounded-lg object-cover border border-slate-300 dark:border-amoled-border"><span class="absolute -top-1 -right-1 bg-emerald-600 text-white rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">S</span></button>`;
           visualsHtml += '</div>';
         }
-
-        let audioHtml = '<span class="text-slate-400 dark:text-slate-600 italic">No audio</span>';
-        if (item.audioData) {
-          audioHtml = `
-            <button type="button" onclick="playInlineAudio('${item.id}', this)" class="w-7 h-7 mx-auto rounded-full bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/30 flex items-center justify-center transition">
-              <i data-lucide="play" class="w-3.5 h-3.5 ml-0.5 audio-play-icon"></i>
-            </button>`;
-        }
-
-        tr.innerHTML = `
-          <td class="py-3 px-3 text-center">
-            <button type="button" onclick="toggleReviewStatus('${item.id}')" title="Click to mark reviewed" class="inline-flex items-center justify-center w-5 h-5 rounded-full transition ${isReviewed ? 'text-emerald-500' : 'text-slate-400 hover:text-slate-300'}">
-              <i data-lucide="${isReviewed ? 'check-circle-2' : 'circle'}" class="w-4 h-4"></i>
-            </button>
-          </td>
-          <td class="py-3 px-3 font-extrabold text-black dark:text-white">
-            ${item.flagged ? '<span class="text-rose-500 mr-1">🚩</span>' : ''}${escapeHtml(item.questionNum)}
-          </td>
-          <td class="py-3 px-3">
-            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border text-slate-700 dark:text-slate-300">
-              ${escapeHtml(item.source)}
-            </span>
-          </td>
+        const audioHtml = item.audioData ? `<button type="button" data-no-row="1" onclick="playInlineAudio('${item.id}',this)" class="w-8 h-8 mx-auto rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/30 flex items-center justify-center" title="Play voice note"><i data-lucide="play" class="w-3.5 h-3.5 audio-play-icon"></i></button>` : '<span class="text-slate-500 italic">No audio</span>';
+        const tr = document.createElement("tr"); tr.dataset.id = item.id; tr.tabIndex = 0; tr.setAttribute("role","button"); tr.setAttribute("aria-label",`Open details for question ${item.questionNum}`);
+        tr.className = "log-row hover:bg-slate-50 dark:hover:bg-[#0c1222] transition-colors border-b border-slate-100 dark:border-amoled-border";
+        tr.innerHTML = `<td class="py-3 px-3 text-center"><div class="flex flex-col items-center gap-1.5"><button type="button" data-no-row="1" onclick="toggleReviewStatus('${item.id}')" title="Mark as reviewed (+1 each click)" class="inline-flex items-center justify-center w-6 h-6 rounded-full ${isReviewed?'text-emerald-500':'text-slate-400 hover:text-slate-200'}"><i data-lucide="${isReviewed?'check-circle-2':'circle'}" class="w-4 h-4"></i></button><span class="inline-flex rounded-md px-1.5 py-0.5 text-[9px] leading-3 font-extrabold ${isReviewed?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30':'bg-amber-500/10 text-amber-400 border border-amber-500/30'}">${isReviewed?count+'×':'NEW'}</span></div></td>
+          <td class="py-3 px-3 font-extrabold text-black dark:text-white">${item.flagged?'<span class="text-rose-500 mr-1">🚩</span>':''}${escapeHtml(item.questionNum)}</td>
+          <td class="py-3 px-3"><span class="inline-block max-w-full px-2 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border text-slate-700 dark:text-slate-300 break-words">${escapeHtml(item.source)}</span></td>
           <td class="py-3 px-3 font-bold text-black dark:text-white">${escapeHtml(item.subject)}</td>
           <td class="py-3 px-3 text-slate-600 dark:text-slate-300">${escapeHtml(item.chapter)}</td>
           <td class="py-3 px-3">${getErrorTypeBadge(item.errorType)}</td>
-          <td class="py-3 px-4 max-w-xs truncate text-slate-700 dark:text-slate-300" title="${escapeHtml(item.remedialAction)}">${escapeHtml(item.remedialAction)}</td>
-          <td class="py-3 px-3 text-center">${visualsHtml}</td>
-          <td class="py-3 px-3 text-center">${audioHtml}</td>
-          <td class="py-3 px-3 text-right">
-            <div class="inline-flex items-center gap-1.5 text-slate-400">
-              <button type="button" onclick="editEntry('${item.id}')" class="p-1 hover:text-brand-500 transition" title="Edit">
-                <i data-lucide="edit-2" class="w-4 h-4"></i>
-              </button>
-              <button type="button" onclick="deleteEntry('${item.id}')" class="p-1 hover:text-rose-500 transition" title="Delete">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-              </button>
-            </div>
-          </td>
-        `;
+          <td class="py-3 px-4 text-slate-700 dark:text-slate-300"><div class="whitespace-pre-wrap break-words line-clamp-4" title="${escapeHtml(item.remedialAction)}">${escapeHtml(item.remedialAction)}</div></td>
+          <td class="py-3 px-3 text-center">${visualsHtml}</td><td class="py-3 px-3 text-center">${audioHtml}</td>
+          <td class="py-3 px-3 text-right"><div class="inline-flex items-center gap-1 text-slate-400"><button type="button" data-no-row="1" onclick="editEntry('${item.id}')" class="p-1 hover:text-brand-500" title="Edit"><i data-lucide="edit-2" class="w-4 h-4"></i></button><button type="button" data-no-row="1" onclick="deleteEntry('${item.id}')" class="p-1 hover:text-rose-500" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></td>`;
+        tr.addEventListener("click", e => { if (!e.target.closest('[data-no-row="1"]') && !e.target.closest("button")) openDetail(item.id); });
+        tr.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target === tr) { e.preventDefault(); openDetail(item.id); } });
+        tr.addEventListener("contextmenu", e => { e.preventDefault(); showContextMenu(item.id,e.clientX,e.clientY); });
+        let pressTimer; tr.addEventListener("touchstart", e => { const touch=e.touches[0]; pressTimer=setTimeout(()=>showContextMenu(item.id,touch.clientX,touch.clientY),600); },{passive:true});
+        ["touchend","touchmove","touchcancel"].forEach(ev=>tr.addEventListener(ev,()=>clearTimeout(pressTimer),{passive:true}));
         tbody.appendChild(tr);
       });
-
+      updateDashboard();
       if (window.lucide) lucide.createIcons();
     }
+
+    function showContextMenu(id,x,y) {
+      contextEntryId = id; const menu=document.getElementById("logContextMenu");
+      menu.classList.remove("hidden"); menu.style.left=Math.min(x,window.innerWidth-170)+"px"; menu.style.top=Math.min(y,window.innerHeight-100)+"px";
+    }
+    function hideContextMenu(){ document.getElementById("logContextMenu")?.classList.add("hidden"); }
 
     window.playInlineAudio = (id, btn) => {
       const item = errorEntries.find(i => i.id === id);
@@ -1008,7 +1057,7 @@
     window.toggleReviewStatus = (id) => {
       const item = errorEntries.find(i => i.id === id);
       if (item) {
-        item.reviewCount = (item.reviewCount && item.reviewCount > 0) ? 0 : 1;
+        item.reviewCount = Number(item.reviewCount || 0) + 1;
         item.updatedAt = Date.now();
         saveLocalCache();
         renderTable();
@@ -1359,6 +1408,17 @@
           el.addEventListener("change", renderTable);
         }
       });
+
+      document.getElementById("closeDetailBtn")?.addEventListener("click", () => document.getElementById("detailModal").classList.add("hidden"));
+      document.getElementById("detailReviewBtn")?.addEventListener("click", () => { if (activeDetailId) { window.toggleReviewStatus(activeDetailId); openDetail(activeDetailId); } });
+      document.getElementById("detailEditBtn")?.addEventListener("click", () => { const id=activeDetailId; document.getElementById("detailModal").classList.add("hidden"); if(id) openEntryModal(id); });
+      document.getElementById("detailDeleteBtn")?.addEventListener("click", () => { const id=activeDetailId; document.getElementById("detailModal").classList.add("hidden"); if(id) window.deleteEntry(id); });
+      document.getElementById("contextEditBtn")?.addEventListener("click", () => { const id=contextEntryId; hideContextMenu(); if(id) openEntryModal(id); });
+      document.getElementById("contextDeleteBtn")?.addEventListener("click", () => { const id=contextEntryId; hideContextMenu(); if(id) window.deleteEntry(id); });
+      document.addEventListener("click", e => { if (!e.target.closest("#logContextMenu")) hideContextMenu(); });
+      document.addEventListener("keydown", e => { if (e.key === "Escape") { hideContextMenu(); document.getElementById("detailModal")?.classList.add("hidden"); } });
+      window.addEventListener("online", () => { if (gDriveAccessToken) syncWithGoogleDriveImmediate(); });
+      document.addEventListener("visibilitychange", () => { if (!document.hidden && gDriveAccessToken) syncWithGoogleDriveImmediate(); });
 
       // Render Everything
       populateDropdowns();
