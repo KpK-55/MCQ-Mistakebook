@@ -266,6 +266,18 @@
               </label>
             </div>
           </div>
+
+          <div class="pt-3 border-t border-slate-200 dark:border-amoled-border space-y-2">
+            <div>
+              <span class="font-bold text-black dark:text-slate-300 block">Migration Preparation — Step 1</span>
+              <p class="mt-1 text-slate-500 dark:text-slate-400 leading-relaxed">Audit the current data and export a checksum-verified backup before changing the Drive storage format. This step does not migrate or modify Drive data.</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="migrationAuditBtn" type="button" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-[#0c1222] dark:hover:bg-slate-800 rounded-xl font-semibold text-black dark:text-slate-300 transition">Check Data</button>
+              <button id="migrationBackupBtn" type="button" class="py-2 px-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold text-white transition">Export Safe Backup</button>
+            </div>
+            <div id="migrationAuditResult" class="hidden rounded-xl border border-slate-200 dark:border-amoled-border bg-slate-50 dark:bg-[#0c1222] p-3 text-slate-600 dark:text-slate-300 space-y-1" aria-live="polite"></div>
+          </div>
         </div>
 
         <!-- Sources Tab -->
@@ -547,17 +559,20 @@
 
     let errorEntries = [];
     try {
+      // Only seed demo records on a genuinely new install. An intentionally empty
+      // array is valid user data and must never cause deleted/demo rows to return.
       const stored = localStorage.getItem(LOCAL_DATA_KEY);
-      if (stored) {
-        errorEntries = JSON.parse(stored);
-      }
-      if (!Array.isArray(errorEntries) || errorEntries.length === 0) {
-        errorEntries = INITIAL_SEEDS;
+      if (stored !== null) {
+        const parsed = JSON.parse(stored);
+        if (!Array.isArray(parsed)) throw new Error("Stored entry data is not an array");
+        errorEntries = parsed;
+      } else {
+        errorEntries = INITIAL_SEEDS.map(entry => ({ ...entry }));
         localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(errorEntries));
       }
     } catch(e) {
-      errorEntries = INITIAL_SEEDS;
-      localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(errorEntries));
+      console.error("Could not read local entries; preserving the existing stored value for recovery.", e);
+      errorEntries = [];
     }
 
     let gTokenClient = null;
@@ -1517,6 +1532,64 @@
         w.document.open(); w.document.write(printHtml); w.document.close();
       });
 
+      // Migration preparation: audit and checksum-protected full backup.
+      function dataUrlApproxBytes(value) {
+        if (typeof value !== "string" || !value.startsWith("data:")) return 0;
+        const comma = value.indexOf(",");
+        if (comma < 0) return 0;
+        const body = value.slice(comma + 1);
+        return Math.max(0, Math.floor(body.length * 3 / 4) - (body.endsWith("==") ? 2 : body.endsWith("=") ? 1 : 0));
+      }
+
+      function runMigrationAudit() {
+        const active = errorEntries.filter(x => x && !x.deleted);
+        const deleted = errorEntries.filter(x => x && x.deleted);
+        const ids = errorEntries.map(x => x?.id).filter(Boolean);
+        const duplicateIds = ids.filter((id, i) => ids.indexOf(id) !== i);
+        const missingIds = errorEntries.filter(x => !x || !x.id).length;
+        const questionImages = errorEntries.filter(x => x?.questionImage).length;
+        const solutionImages = errorEntries.filter(x => x?.solutionImage).length;
+        const audioFiles = errorEntries.filter(x => x?.audioData).length;
+        const mediaBytes = errorEntries.reduce((sum, x) => sum + dataUrlApproxBytes(x?.questionImage) + dataUrlApproxBytes(x?.solutionImage) + dataUrlApproxBytes(x?.audioData), 0);
+        const malformedMedia = errorEntries.filter(x => [x?.questionImage, x?.solutionImage, x?.audioData].some(v => v != null && (typeof v !== "string" || !v.startsWith("data:")))).length;
+        const result = document.getElementById("migrationAuditResult");
+        if (!result) return;
+        result.classList.remove("hidden");
+        const fmt = n => new Intl.NumberFormat().format(n);
+        const mb = (mediaBytes / 1024 / 1024).toFixed(2);
+        const issues = [];
+        if (duplicateIds.length) issues.push(`${duplicateIds.length} duplicate entry ID(s)`);
+        if (missingIds) issues.push(`${missingIds} entry/entries without an ID`);
+        if (malformedMedia) issues.push(`${malformedMedia} entry/entries with media fields that are not data URLs`);
+        result.innerHTML = `<div class="font-bold ${issues.length ? 'text-amber-500' : 'text-emerald-500'}">${issues.length ? 'Review needed before migration' : 'Basic checks passed'}</div><div>Active entries: <b>${fmt(active.length)}</b> · Deletion records: <b>${fmt(deleted.length)}</b></div><div>Question images: <b>${fmt(questionImages)}</b> · Solution images: <b>${fmt(solutionImages)}</b> · Audio: <b>${fmt(audioFiles)}</b></div><div>Estimated embedded media size: <b>${mb} MB</b></div><div>Settings: <b>${fmt(appConfig.sources.length)} sources</b> · <b>${fmt(Object.keys(appConfig.subjects).length)} subjects</b> · <b>${fmt(appConfig.errorTypes.length)} error types</b></div>${issues.length ? `<div class="pt-1 text-amber-500">${issues.map(escapeHtml).join("; ")}</div>` : '<div class="pt-1 text-slate-500">This is a preflight check, not a full migration validation.</div>'}`;
+      }
+
+      async function sha256Hex(text) {
+        if (!window.crypto?.subtle) throw new Error("Secure checksum is unavailable in this browser context. Open the app over HTTPS.");
+        const bytes = new TextEncoder().encode(text);
+        const hash = await crypto.subtle.digest("SHA-256", bytes);
+        return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, "0")).join("");
+      }
+
+      document.getElementById("migrationAuditBtn")?.addEventListener("click", runMigrationAudit);
+      document.getElementById("migrationBackupBtn")?.addEventListener("click", async () => {
+        const btn = document.getElementById("migrationBackupBtn");
+        try {
+          btn.disabled = true; btn.textContent = "Preparing backup…";
+          const payload = { appConfig, errorEntries, localMetadata: { configUpdatedAt, lastSync: localStorage.getItem(LAST_SYNC_KEY) || null } };
+          const payloadText = JSON.stringify(payload);
+          const backup = { format: "mcq-error-tracker-migration-backup", schemaVersion: 1, exportedAt: new Date().toISOString(), sha256: await sha256Hex(payloadText), payload };
+          const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob); const a = document.createElement("a");
+          a.href = url; a.download = `mcq_migration_backup_${new Date().toISOString().replace(/[:.]/g, "-")}.json`; a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 30000);
+          showToast("Safe migration backup exported");
+          runMigrationAudit();
+        } catch (err) {
+          console.error("Migration backup failed:", err); showToast(err.message || "Backup failed");
+        } finally { btn.disabled = false; btn.textContent = "Export Safe Backup"; }
+      });
+
       // JSON backup
       document.getElementById("exportJsonBtn")?.addEventListener("click", () => {
         const data = { appConfig, errorEntries, exportedAt: new Date().toISOString() };
@@ -1532,21 +1605,28 @@
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (evt) => {
+        reader.onload = async (evt) => {
           try {
             const parsed = JSON.parse(evt.target.result);
-            if (parsed.appConfig && parsed.errorEntries) {
-              appConfig = parsed.appConfig;
-              errorEntries = parsed.errorEntries;
-              saveLocalCache(true);
-              populateDropdowns();
-              renderTable();
-              syncWithGoogleDriveImmediate();
-              showToast("Backup restored");
+            let payload = parsed;
+            if (parsed?.format === "mcq-error-tracker-migration-backup" && parsed.payload) {
+              const actualHash = await sha256Hex(JSON.stringify(parsed.payload));
+              if (actualHash !== parsed.sha256) throw new Error("Backup checksum mismatch; import cancelled");
+              payload = parsed.payload;
             }
+            if (!payload || !payload.appConfig || !Array.isArray(payload.errorEntries)) throw new Error("Backup format not recognized");
+            if (!confirm(`Replace this device's current tracker data with ${payload.errorEntries.length} entries from the backup? This will then sync to Google Drive if connected.`)) return;
+            appConfig = normalizeConfig(payload.appConfig);
+            errorEntries = payload.errorEntries;
+            saveLocalCache(true);
+            populateDropdowns();
+            renderTable();
+            await syncWithGoogleDriveImmediate();
+            showToast("Backup restored");
           } catch (err) {
-            showToast("Invalid JSON");
-          }
+            console.error("Backup import failed:", err);
+            showToast(err.message || "Invalid JSON");
+          } finally { e.target.value = ""; }
         };
         reader.readAsText(file);
       });
