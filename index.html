@@ -773,6 +773,20 @@
       return changes;
     }
 
+    // Media uploads happen after a record change may already have been queued.
+    // When two copies have the same record timestamp, merge media references from
+    // both copies instead of letting whichever copy is processed first hide them.
+    function mergeEqualTimestampMediaRefs(winner, other) {
+      if (!winner || !other) return winner;
+      if (Number(winner.updatedAt || 0) !== Number(other.updatedAt || 0)) return winner;
+      const merged = { ...winner };
+      MEDIA_SPECS.forEach(spec => {
+        if (!merged[spec.idField] && other[spec.idField]) merged[spec.idField] = other[spec.idField];
+        if (!merged[spec.field] && other[spec.field] && String(other[spec.field]).startsWith("data:")) merged[spec.field] = other[spec.field];
+      });
+      return merged;
+    }
+
     function applyRemoteChanges(changes) {
       const byId = new Map(errorEntries.filter(e => e && e.id).map(e => [String(e.id), e]));
       let latestConfig = null;
@@ -782,7 +796,13 @@
         if ((change.type === "entry.upsert" || change.type === "entry.delete") && change.payload?.entry?.id) {
           const incoming = change.payload.entry;
           const existing = byId.get(String(incoming.id));
-          if (!existing || Number(incoming.updatedAt || change.changedAt || 0) > Number(existing.updatedAt || 0)) byId.set(String(incoming.id), incoming);
+          const incomingTime = Number(incoming.updatedAt || change.changedAt || 0);
+          const existingTime = Number(existing?.updatedAt || 0);
+          if (!existing || incomingTime > existingTime) {
+            byId.set(String(incoming.id), incoming);
+          } else if (incomingTime === existingTime) {
+            byId.set(String(incoming.id), mergeEqualTimestampMediaRefs(existing, incoming));
+          }
         }
       }
       errorEntries = Array.from(byId.values());
@@ -1259,7 +1279,13 @@
           (Array.isArray(remoteData.errorEntries) ? remoteData.errorEntries : []).forEach(remoteEntry => {
             if (!remoteEntry?.id) return;
             const local = map.get(remoteEntry.id);
-            if (!local || (remoteEntry.updatedAt || 0) > (local.updatedAt || 0)) map.set(remoteEntry.id, remoteEntry);
+            const remoteTime = Number(remoteEntry.updatedAt || 0);
+            const localTime = Number(local?.updatedAt || 0);
+            if (!local || remoteTime > localTime) {
+              map.set(remoteEntry.id, remoteEntry);
+            } else if (remoteTime === localTime) {
+              map.set(remoteEntry.id, mergeEqualTimestampMediaRefs(local, remoteEntry));
+            }
           });
           errorEntries = Array.from(map.values());
           const remoteConfigTime = Number(remoteData.configUpdatedAt || remoteData.syncedAt || 0);
