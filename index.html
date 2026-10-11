@@ -626,18 +626,173 @@
       }, 2000);
     }
 
+    // Phase 3: durable IndexedDB outbox + immutable Drive change records.
+    // The legacy snapshot remains as a compatibility/recovery checkpoint.
+    const CHANGE_DB_NAME = "mcq_error_tracker_sync_v3";
+    const CHANGE_DB_VERSION = 1;
+    const CHANGE_OUTBOX_STORE = "outbox";
+    const CHANGE_BASELINE_KEY = "mcq_sync_v3_baseline";
+    const CHANGE_SCHEMA_VERSION = 3;
+    let changeDbPromise = null;
+    let localMutationSequence = 0;
+    let suppressChangeQueue = false;
+    let queuedWriteChain = Promise.resolve();
+
+    function openChangeDb() {
+      if (changeDbPromise) return changeDbPromise;
+      changeDbPromise = new Promise((resolve, reject) => {
+        if (!window.indexedDB) return reject(new Error("IndexedDB is not available in this browser"));
+        const request = indexedDB.open(CHANGE_DB_NAME, CHANGE_DB_VERSION);
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains(CHANGE_OUTBOX_STORE)) db.createObjectStore(CHANGE_OUTBOX_STORE, { keyPath: "changeId" });
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("Could not open sync queue"));
+      });
+      return changeDbPromise;
+    }
+
+    async function outboxPut(record) {
+      const db = await openChangeDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(CHANGE_OUTBOX_STORE, "readwrite");
+        tx.objectStore(CHANGE_OUTBOX_STORE).put(record);
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error || new Error("Could not queue sync change"));
+        tx.onabort = () => reject(tx.error || new Error("Sync queue write aborted"));
+      });
+    }
+
+    async function outboxAll() {
+      const db = await openChangeDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(CHANGE_OUTBOX_STORE, "readonly");
+        const req = tx.objectStore(CHANGE_OUTBOX_STORE).getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error || new Error("Could not read sync queue"));
+      });
+    }
+
+    async function outboxDelete(changeId) {
+      const db = await openChangeDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(CHANGE_OUTBOX_STORE, "readwrite");
+        tx.objectStore(CHANGE_OUTBOX_STORE).delete(changeId);
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error || new Error("Could not acknowledge sync change"));
+      });
+    }
+
+    function queueLocalChange(type, entityId, payload) {
+      const record = {
+        changeId: (crypto.randomUUID ? crypto.randomUUID() : `chg_${Date.now()}_${Math.random().toString(36).slice(2)}`),
+        schemaVersion: CHANGE_SCHEMA_VERSION,
+        clientId: getOrCreateSyncClientId(),
+        sequence: ++localMutationSequence,
+        type, entityId: String(entityId || "config"),
+        changedAt: Date.now(), payload
+      };
+      queuedWriteChain = queuedWriteChain.then(() => outboxPut(record)).catch(err => {
+        console.error("Could not persist sync change in IndexedDB", err);
+        showToast("Sync queue unavailable. Export a backup before continuing.");
+      });
+    }
+
+    const SYNC_CLIENT_ID_KEY = "mcq_sync_client_id_v3";
+    function getOrCreateSyncClientId() {
+      let id = localStorage.getItem(SYNC_CLIENT_ID_KEY);
+      if (!id) {
+        id = (crypto.randomUUID ? crypto.randomUUID() : `client_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+        localStorage.setItem(SYNC_CLIENT_ID_KEY, id);
+      }
+      return id;
+    }
+
     function saveLocalCache(configChanged = false) {
       try {
+        const previousRaw = localStorage.getItem(LOCAL_DATA_KEY);
+        const previous = previousRaw ? JSON.parse(previousRaw) : [];
+        const previousById = new Map((Array.isArray(previous) ? previous : []).filter(x => x && x.id).map(x => [String(x.id), x]));
+        const currentById = new Map(errorEntries.filter(x => x && x.id).map(x => [String(x.id), x]));
         localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(errorEntries));
         localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(appConfig));
+        if (!suppressChangeQueue) {
+          for (const [id, entry] of currentById) {
+            const before = previousById.get(id);
+            if (!before || JSON.stringify(before) !== JSON.stringify(entry)) queueLocalChange(entry.deleted ? "entry.delete" : "entry.upsert", id, { entry: { ...entry } });
+          }
+        }
         if (configChanged) {
           configUpdatedAt = Date.now();
           localStorage.setItem(CONFIG_UPDATED_KEY, String(configUpdatedAt));
+          if (!suppressChangeQueue) queueLocalChange("config.upsert", "config", { appConfig: JSON.parse(JSON.stringify(appConfig)), configUpdatedAt });
         }
       } catch (e) {
         console.error("Storage error:", e);
         showToast("Storage full. Export backup and reduce image/audio size.");
       }
+    }
+
+    async function uploadImmutableChange(record, dataFolderId) {
+      const fileName = `change_${record.changeId}.json`;
+      // Drive permits duplicate filenames, so check the immutable ID before retrying.
+      const escapedChangeId = String(record.changeId).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+      const existing = await driveListAllFiles(`appProperties has { key='mcqChangeId' and value='${escapedChangeId}' } and trashed = false`, "files(id,name,appProperties),nextPageToken");
+      if (existing.length) return;
+      const metadata = { name: fileName, mimeType: "application/json", parents: [dataFolderId], appProperties: { mcqChangeId: record.changeId, mcqChangeSchema: String(CHANGE_SCHEMA_VERSION), mcqChangeClient: record.clientId } };
+      const form = new FormData();
+      form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
+      form.append("file", new Blob([JSON.stringify(record)], { type: "application/json" }));
+      const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,appProperties", { method: "POST", headers: { Authorization: `Bearer ${gDriveAccessToken}` }, body: form });
+      if (res.status === 409) return; // An idempotent retry may already exist.
+      if (!res.ok) throw new Error(`Could not upload change record (${res.status})`);
+    }
+
+    async function flushChangeOutbox(dataFolderId) {
+      await queuedWriteChain;
+      const pending = await outboxAll();
+      let uploaded = 0;
+      for (const record of pending) {
+        await uploadImmutableChange(record, dataFolderId);
+        await outboxDelete(record.changeId);
+        uploaded++;
+      }
+      return { uploaded, remaining: (await outboxAll()).length };
+    }
+
+    async function downloadRemoteChanges(dataFolderId) {
+      const files = await driveListAllFiles(`'${dataFolderId}' in parents and name contains 'change_' and trashed = false`, "files(id,name,appProperties,modifiedTime),nextPageToken");
+      const changes = [];
+      for (const file of files) {
+        try {
+          const res = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(file.id)}?alt=media`, { headers: { Authorization: `Bearer ${gDriveAccessToken}` } });
+          if (res.ok) changes.push(await res.json());
+        } catch (err) { console.warn("Skipped unreadable change record", file.name, err); }
+      }
+      return changes;
+    }
+
+    function applyRemoteChanges(changes) {
+      const byId = new Map(errorEntries.filter(e => e && e.id).map(e => [String(e.id), e]));
+      let latestConfig = null;
+      for (const change of changes.sort((a,b) => (a.changedAt || 0) - (b.changedAt || 0))) {
+        if (!change || change.schemaVersion !== CHANGE_SCHEMA_VERSION) continue;
+        if (change.type === "config.upsert" && change.payload?.appConfig && Number(change.payload.configUpdatedAt || 0) > configUpdatedAt) latestConfig = change.payload;
+        if ((change.type === "entry.upsert" || change.type === "entry.delete") && change.payload?.entry?.id) {
+          const incoming = change.payload.entry;
+          const existing = byId.get(String(incoming.id));
+          if (!existing || Number(incoming.updatedAt || change.changedAt || 0) > Number(existing.updatedAt || 0)) byId.set(String(incoming.id), incoming);
+        }
+      }
+      errorEntries = Array.from(byId.values());
+      if (latestConfig) {
+        appConfig = normalizeConfig(latestConfig.appConfig);
+        configUpdatedAt = Number(latestConfig.configUpdatedAt || 0);
+        localStorage.setItem(CONFIG_UPDATED_KEY, String(configUpdatedAt));
+        localStorage.setItem(LOCAL_CONFIG_KEY, JSON.stringify(appConfig));
+      }
+      saveLocalCache();
     }
 
     function initGoogleClient() {
@@ -1091,6 +1246,10 @@
       setSyncProgress("Checking Drive…", 8);
       try {
         const remoteMeta = await locateDriveSyncFile();
+        setSyncProgress("Preparing change log…", 18);
+        const folders = await ensureMediaFolders();
+        const remoteChanges = await downloadRemoteChanges(folders.Data);
+        if (remoteChanges.length) applyRemoteChanges(remoteChanges);
         setSyncProgress("Downloading latest data…", 30);
         let remoteData = null;
         if (remoteMeta) remoteData = await downloadDriveSyncFile(remoteMeta.id);
@@ -1122,6 +1281,9 @@
         const payload = createDrivePayload();
         const ok = await uploadDriveSyncFile(payload);
         if (!ok) throw new Error("Drive upload failed. Check OAuth permissions, network, and Drive API configuration.");
+        setSyncProgress("Publishing change log…", 92);
+        const outboxResult = await flushChangeOutbox(folders.Data);
+        if (outboxResult.remaining) throw new Error(`${outboxResult.remaining} change(s) remain queued and will retry on the next sync.`);
         localStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
         updateDriveUI(true);
         setSyncProgress("Synced successfully", 100, "success");
