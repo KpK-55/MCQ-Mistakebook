@@ -42,9 +42,12 @@
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
     }
-    .dark body {
-      background-color: #030712 !important;
-    }
+    .dark body { background-color: #000000 !important; color: #BCBCBC !important; }
+    /* Requested AMOLED palette: true black surfaces and consistent grey text. */
+    html.dark body { color: #BCBCBC !important; background: #000000 !important; }
+    html.dark body .bg-amoled-bg, html.dark body .dark\:bg-amoled-bg, html.dark body .dark\:bg-amoled-card, html.dark body .dark\:bg-\[\#0c1222\], html.dark body .dark\:bg-\[\#0a0f1e\] { background-color: #000000 !important; }
+    html.dark body .text-white, html.dark body .dark\:text-white, html.dark body .dark\:text-slate-100, html.dark body .dark\:text-slate-200, html.dark body .dark\:text-slate-300, html.dark body .dark\:text-slate-400 { color: #BCBCBC !important; }
+    html:not(.dark) #logsTable td:nth-child(7), html:not(.dark) #logsTable td:nth-child(7) * { color: #000000 !important; }
     .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -56,9 +59,8 @@
       background: #1e293b;
       border-radius: 9999px;
     }
-    .spin-fast {
-      animation: spin 0.8s linear infinite;
-    }
+    .spin-fast { animation: spin 0.8s linear infinite !important; }
+    #quickSyncBtn.syncing #syncSpinner { animation: spin .8s linear infinite !important; transform-origin: center; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     /* Table layout: text wraps inside each bounded cell instead of stretching the row. */
     #logsTable { table-layout: fixed; min-width: 1120px; }
@@ -91,8 +93,7 @@
       #logsTable th:nth-child(3), #logsTable td:nth-child(3),
       #logsTable th:nth-child(4), #logsTable td:nth-child(4),
       #logsTable th:nth-child(7), #logsTable td:nth-child(7),
-      #logsTable th:nth-child(8), #logsTable td:nth-child(8),
-      #logsTable th:nth-child(10), #logsTable td:nth-child(10) { display: none !important; }
+      #logsTable th:nth-child(8), #logsTable td:nth-child(8) { display: none !important; }
       #logsTable th:nth-child(5), #logsTable td:nth-child(5) { width: 47%; }
       #logsTable th:nth-child(6), #logsTable td:nth-child(6) { width: 37%; }
       #logsTable th:nth-child(9), #logsTable td:nth-child(9) { width: 16%; text-align: center !important; }
@@ -100,6 +101,10 @@
       #logsTable td:nth-child(6) > * { max-width: 100%; white-space: normal; }
       #logsTable td:nth-child(9) button { width: 2rem !important; height: 2rem !important; }
       #logsTable td:nth-child(9) span { font-size: 9px !important; }
+      #searchFilterSection { display: block !important; }
+      #searchFilterControls { display: grid !important; grid-template-columns: repeat(5,minmax(0,1fr)); gap: .3rem !important; width: 100%; }
+      #searchFilterControls select, #searchFilterControls button { min-width: 0 !important; width: 100% !important; padding: .5rem .15rem !important; font-size: 9px !important; text-overflow: ellipsis; }
+      #exportPdfBtn { white-space: normal !important; }
       #logsTable tbody tr.log-row { min-height: 48px; }
       #filteredLogsModal { padding: 0 !important; align-items: stretch !important; }
       #filteredLogsModal > div { width: 100% !important; max-width: none !important; max-height: 100dvh !important; height: 100dvh !important; border-radius: 0 !important; }
@@ -191,18 +196,13 @@
       <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Reviewed</div><div id="statReviewedLogs" class="text-2xl font-extrabold text-emerald-400 mt-1">0</div><div class="text-[10px] text-slate-500">At least one review</div></div>
       <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Error Types</div><div id="statErrorTypes" class="text-2xl font-extrabold mt-1">0</div><div class="text-[10px] text-slate-500">Types currently configured</div></div>
     </section>
-    <section class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3">
-      <div class="flex items-center justify-between gap-2 mb-2"><h2 class="text-xs font-extrabold">Logs by mistake type</h2><span class="text-[10px] text-slate-500">Active entries</span></div>
-      <div id="errorTypeStats" class="flex flex-wrap gap-2"><span class="text-xs text-slate-500">No logs yet</span></div>
+    <section id="mistakeTypeSection" class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3">
+      <div class="flex items-center justify-between gap-2"><h2 class="text-xs font-extrabold">Logs by mistake type</h2><button id="toggleMistakeTypeStatsBtn" type="button" class="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-amoled-border px-2.5 py-1.5 text-[11px] font-bold"><i data-lucide="chevron-down" class="w-4 h-4"></i><span>Show active entries</span></button></div>
+      <div id="errorTypeStats" class="hidden flex-wrap gap-2 mt-3"><span class="text-xs text-slate-500">No logs yet</span></div>
     </section>
     <!-- Search & Filters -->
-    <section class="bg-white dark:bg-amoled-card p-3 rounded-2xl border border-slate-200 dark:border-amoled-border shadow-xs flex flex-col md:flex-row gap-2.5 items-stretch md:items-center justify-between">
-      <div class="relative flex-1">
-        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-        <input type="text" id="searchInput" placeholder="Search Q#, source, subject, chapter or notes..." class="w-full pl-9 pr-3 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl focus:outline-none focus:ring-1 focus:ring-brand-500 text-black dark:text-white">
-      </div>
-
-      <div class="flex flex-wrap sm:flex-nowrap gap-2 items-center">
+    <section id="searchFilterSection" class="bg-white dark:bg-amoled-card p-3 rounded-2xl border border-slate-200 dark:border-amoled-border shadow-xs">
+      <div id="searchFilterControls" class="flex flex-wrap sm:flex-nowrap gap-2 items-center">
         <select id="filterSource" class="flex-1 sm:flex-none px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-slate-300 focus:outline-none">
           <option value="ALL">All Sources</option>
         </select>
@@ -213,17 +213,16 @@
         <select id="filterChapter" class="flex-1 sm:flex-none px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-slate-300 focus:outline-none">
           <option value="ALL">All Chapters</option>
         </select>
-        <button id="exportPdfBtn" type="button" class="px-3 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white whitespace-nowrap">Export PDF</button>
-
         <select id="filterReviewStatus" class="flex-1 sm:flex-none px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-slate-300 focus:outline-none">
           <option value="ALL">All Status</option>
           <option value="NEW">Unreviewed (0 Reviews)</option>
           <option value="REVIEWED">Reviewed (≥1)</option>
           <option value="FLAGGED">🚩 Flagged</option>
         </select>
+        <button id="exportPdfBtn" type="button" class="px-3 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white whitespace-nowrap">Export PDF</button>
       </div>
     </section>
-    <div class="flex justify-center sm:justify-end -mt-2">
+    <div class="flex justify-center -mt-2">
       <button id="showFilteredLogsBtn" type="button" class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-extrabold text-sm px-5 py-2.5 shadow-md shadow-blue-600/20 w-full sm:w-auto">
         <i data-lucide="check" class="w-5 h-5"></i><span>Show filtered logs</span><span id="filteredLogsCount" class="rounded-full bg-white/20 px-2 py-0.5 text-xs">0</span>
       </button>
@@ -234,7 +233,7 @@
       <div class="overflow-x-auto custom-scrollbar">
         <table id="logsTable" class="w-full text-left text-xs">
           <colgroup>
-            <col style="width:6%"><col style="width:7%"><col style="width:11%"><col style="width:8%"><col style="width:13%"><col style="width:12%"><col style="width:19%"><col style="width:9%"><col style="width:7%"><col style="width:8%">
+            <col style="width:6%"><col style="width:7%"><col style="width:11%"><col style="width:8%"><col style="width:13%"><col style="width:12%"><col style="width:19%"><col style="width:9%"><col style="width:7%">
           </colgroup>
           <thead class="bg-slate-100/80 dark:bg-[#0a0f1e] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold text-[10px] border-b border-slate-200 dark:border-amoled-border">
             <tr>
@@ -247,7 +246,6 @@
               <th scope="col" class="py-3 px-4 min-w-[260px]">Root Cause / Action</th>
               <th scope="col" class="py-3 px-3 text-center">Visuals</th>
               <th scope="col" class="py-3 px-3 text-center">Voice Note</th>
-              <th scope="col" class="py-3 px-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody id="logsTableBody" class="divide-y divide-slate-100 dark:divide-amoled-border">
@@ -1472,6 +1470,8 @@
       syncNeedsSilentReauth = false;
       updateUploadSizeUI();
       const spinner = document.getElementById("syncSpinner");
+      const syncButton = document.getElementById("quickSyncBtn");
+      syncButton?.classList.add("syncing");
       if (spinner) spinner.classList.add("spin-fast");
       setSyncProgress("Checking Drive…", 8);
       try {
@@ -1567,7 +1567,8 @@
         if (!unauthorized) showToast(e.message || "Sync failed. Check connection and permissions.");
       } finally {
         isSyncing = false;
-        if (spinner) spinner.classList.remove("spin-fast");
+        if (spinner) { spinner.classList.remove("spin-fast"); spinner.style.animation = "none"; void spinner.getBoundingClientRect(); spinner.style.animation = ""; }
+        syncButton?.classList.remove("syncing");
         updateUploadSizeUI();
         if (syncNeedsSilentReauth) {
           syncNeedsSilentReauth = false;
@@ -1779,8 +1780,7 @@
           <td class="py-3 px-3 text-slate-600 dark:text-slate-300">${escapeHtml(item.chapter)}</td>
           <td class="py-3 px-3">${getErrorTypeBadge(item.errorType)}</td>
           <td class="py-3 px-4 text-slate-700 dark:text-slate-300"><div class="whitespace-pre-wrap break-words line-clamp-4" title="${escapeHtml(item.remedialAction)}">${escapeHtml(item.remedialAction)}</div></td>
-          <td class="py-3 px-3 text-center">${visualsHtml}</td><td class="py-3 px-3 text-center">${audioHtml}</td>
-          <td class="py-3 px-3 text-right"><div class="inline-flex items-center gap-1 text-slate-400"><button type="button" data-no-row="1" onclick="editEntry('${item.id}')" class="p-1 hover:text-brand-500" title="Edit"><i data-lucide="edit-2" class="w-4 h-4"></i></button><button type="button" data-no-row="1" onclick="deleteEntry('${item.id}')" class="p-1 hover:text-rose-500" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></td>`;
+          <td class="py-3 px-3 text-center">${visualsHtml}</td><td class="py-3 px-3 text-center">${audioHtml}</td>`;
         tr.addEventListener("click", e => { if (!e.target.closest('[data-no-row="1"]') && !e.target.closest("button")) openDetail(item.id); });
         tr.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target === tr) { e.preventDefault(); openDetail(item.id); } });
         tr.addEventListener("contextmenu", e => { e.preventDefault(); showContextMenu(item.id,e.clientX,e.clientY); });
@@ -2012,7 +2012,11 @@
       document.getElementById("mobileMenuSettingsBtn")?.addEventListener("click", () => { menuPanel.classList.add("hidden"); document.getElementById("openSettingsModalBtn")?.click(); });
       const toggleTheme = () => { document.documentElement.classList.toggle("dark"); localStorage.setItem("mcq_theme_mode", document.documentElement.classList.contains("dark") ? "dark" : "light"); if (window.lucide) lucide.createIcons(); };
       document.getElementById("mobileMenuThemeBtn")?.addEventListener("click", () => { menuPanel.classList.add("hidden"); toggleTheme(); });
-      document.getElementById("mobileMenuMistakeTypesBtn")?.addEventListener("click", () => { menuPanel.classList.add("hidden"); document.getElementById("errorTypeStats")?.scrollIntoView({behavior:"smooth",block:"start"}); });
+      const mistakeStats = document.getElementById("errorTypeStats");
+      const mistakeToggle = document.getElementById("toggleMistakeTypeStatsBtn");
+      const setMistakeStatsOpen = open => { mistakeStats?.classList.toggle("hidden", !open); mistakeStats?.classList.toggle("flex", open); const span = mistakeToggle?.querySelector("span"); if (span) span.textContent = open ? "Hide active entries" : "Show active entries"; const icon = mistakeToggle?.querySelector("i"); if (icon) icon.setAttribute("data-lucide", open ? "chevron-up" : "chevron-down"); if (window.lucide) lucide.createIcons(); };
+      mistakeToggle?.addEventListener("click", () => setMistakeStatsOpen(mistakeStats?.classList.contains("hidden")));
+      document.getElementById("mobileMenuMistakeTypesBtn")?.addEventListener("click", () => { menuPanel.classList.add("hidden"); setMistakeStatsOpen(true); document.getElementById("mistakeTypeSection")?.scrollIntoView({behavior:"smooth",block:"start"}); });
       const showFiltered = () => { renderFilteredLogsPopup(); document.getElementById("filteredLogsModal")?.classList.remove("hidden"); };
       document.getElementById("showFilteredLogsBtn")?.addEventListener("click", showFiltered);
       document.getElementById("closeFilteredLogsBtn")?.addEventListener("click", () => document.getElementById("filteredLogsModal")?.classList.add("hidden"));
