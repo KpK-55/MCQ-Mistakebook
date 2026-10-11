@@ -296,6 +296,9 @@
               <span class="font-bold text-slate-600 dark:text-slate-400">Account:</span>
               <span id="driveUserEmail" class="font-mono text-brand-500 font-bold truncate max-w-[200px]"></span>
             </div>
+            <div class="flex items-center justify-between gap-3"><span class="font-bold text-slate-600 dark:text-slate-400">Uploaded this sync:</span><span id="driveLastUploadSize" class="font-bold text-slate-700 dark:text-slate-200">0 MB</span></div>
+            <div class="flex items-center justify-between gap-3"><span class="font-bold text-slate-600 dark:text-slate-400">Total uploaded by this app:</span><span id="driveTotalUploadedSize" class="font-bold text-slate-700 dark:text-slate-200">0 GB</span></div>
+            <p class="text-[10px] text-slate-500">Total is a local cumulative estimate of successful uploads from this browser/device, not your entire Google Drive usage.</p>
             <div class="flex items-center justify-between">
               <span class="font-bold text-slate-600 dark:text-slate-400">Last Synced:</span>
               <span id="driveLastSyncTime" class="font-medium text-slate-500">Never</span>
@@ -528,7 +531,7 @@
   <div id="logContextMenu" class="log-context-menu hidden rounded-xl border border-slate-700 bg-[#0c1222] p-1 shadow-2xl"><button id="contextEditBtn" type="button" class="block w-full rounded-lg px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800">✎ Edit log</button><button id="contextDeleteBtn" type="button" class="block w-full rounded-lg px-3 py-2 text-left text-xs text-rose-400 hover:bg-slate-800">⌫ Delete log</button></div>
 
   <!-- Image Lightbox Modal -->
-  <div id="imageLightboxModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-3 hidden">
+  <div id="imageLightboxModal" class="fixed inset-0 z-[90] bg-black/90 backdrop-blur-md flex items-center justify-center p-3 hidden">
     <div class="relative max-w-4xl max-h-[92vh] flex flex-col items-center">
       <button id="closeLightboxBtn" type="button" class="absolute -top-9 right-0 text-white hover:text-slate-300 p-1">
         <i data-lucide="x" class="w-6 h-6"></i>
@@ -926,6 +929,7 @@
               if (res && res.access_token) {
                 gDriveAccessToken = res.access_token;
                 localStorage.setItem(DRIVE_TOKEN_KEY, gDriveAccessToken);
+                localStorage.setItem("mcq_drive_token_expiry", String(Date.now() + Math.max(60, Number(res.expires_in || 3600)) * 1000));
                 await fetchGoogleUserInfo();
                 updateDriveUI(true);
                 showToast("Drive Connected");
@@ -981,6 +985,7 @@
             if (res && res.access_token) {
               gDriveAccessToken = res.access_token;
               localStorage.setItem(DRIVE_TOKEN_KEY, gDriveAccessToken);
+              localStorage.setItem("mcq_drive_token_expiry", String(Date.now() + Math.max(60, Number(res.expires_in || 3600)) * 1000));
               await fetchGoogleUserInfo();
               updateDriveUI(true);
               showToast("Connected to Drive");
@@ -996,6 +1001,7 @@
       gDriveAccessToken = null;
       gDriveFileId = null;
       localStorage.removeItem(DRIVE_TOKEN_KEY);
+      localStorage.removeItem("mcq_drive_token_expiry");
       localStorage.removeItem(DRIVE_EMAIL_KEY);
       updateDriveUI(false);
       showToast("Drive disconnected");
@@ -1245,6 +1251,7 @@
       if (!verify.ok) throw new Error(`Could not verify uploaded media (${verify.status})`);
       const verified = await verify.json();
       if (verified.trashed || verified.id !== uploaded.id || !verified.appProperties || verified.appProperties.mcqMediaKey !== mediaKey) throw new Error("Uploaded media verification failed");
+      countSuccessfulUpload(blob.size);
       return verified.id;
     }
 
@@ -1318,6 +1325,7 @@
           entry[spec.field] = null;
           uploaded++;
         } catch (err) {
+          if (/401|unauthorized/i.test(String(err?.message || ""))) throw err;
           failed++;
           console.error(`Media upload failed for entry ${entry.id} (${spec.kind})`, err);
         }
@@ -1366,6 +1374,59 @@
     const PER_LOG_SYNC_STATE_KEY = "mcq_per_log_sync_state_v1";
     const PER_LOG_SCAN_CURSOR_KEY = "mcq_per_log_scan_cursor_v1";
     const PER_LOG_SETTINGS_NAME = "settings_current.json";
+    const DRIVE_TOTAL_UPLOADED_KEY = "mcq_drive_total_uploaded_bytes_v1";
+    let syncUploadedBytes = 0;
+    let syncNeedsSilentReauth = false;
+    let filteredPopupReturn = false;
+    function formatDriveBytes(bytes, cumulative = false) {
+      const n = Math.max(0, Number(bytes) || 0);
+      if (cumulative) return `${(n / (1024 ** 3)).toFixed(3)} GB`;
+      if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+      return `${(n / (1024 ** 2)).toFixed(2)} MB`;
+    }
+    function updateUploadSizeUI() {
+      const one = document.getElementById("driveLastUploadSize");
+      const total = document.getElementById("driveTotalUploadedSize");
+      if (one) one.textContent = formatDriveBytes(syncUploadedBytes);
+      if (total) total.textContent = formatDriveBytes(localStorage.getItem(DRIVE_TOTAL_UPLOADED_KEY), true);
+    }
+    function countSuccessfulUpload(bytes) {
+      const n = Math.max(0, Number(bytes) || 0);
+      syncUploadedBytes += n;
+      const total = Number(localStorage.getItem(DRIVE_TOTAL_UPLOADED_KEY) || 0) + n;
+      localStorage.setItem(DRIVE_TOTAL_UPLOADED_KEY, String(total));
+      updateUploadSizeUI();
+    }
+    function requestDriveToken(prompt = "") {
+      const clientId = localStorage.getItem(CLIENT_ID_KEY) || document.getElementById("gDriveClientIdInput")?.value.trim();
+      if (!clientId || !window.google?.accounts?.oauth2) return Promise.reject(new Error("Google sign-in is not available"));
+      return new Promise((resolve, reject) => {
+        let settled = false;
+        const client = google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email",
+          callback: (res) => {
+            if (settled) return;
+            settled = true;
+            if (res?.access_token) {
+              gDriveAccessToken = res.access_token;
+              localStorage.setItem(DRIVE_TOKEN_KEY, gDriveAccessToken);
+              const expiresAt = Date.now() + Math.max(60, Number(res.expires_in || 3600)) * 1000;
+              localStorage.setItem("mcq_drive_token_expiry", String(expiresAt));
+              resolve(gDriveAccessToken);
+            } else reject(new Error(res?.error_description || res?.error || "Google authorization was not granted"));
+          },
+          error_callback: (err) => { if (!settled) { settled = true; reject(new Error(err?.message || err?.type || "Silent sign-in requires interaction")); } }
+        });
+        try { client.requestAccessToken({ prompt }); } catch (e) { settled = true; reject(e); }
+      });
+    }
+    async function silentRefreshDriveToken() {
+      // GIS may renew silently while the Google session/grant is valid; otherwise ask the user to sign in.
+      await requestDriveToken("");
+      await fetchGoogleUserInfo();
+      updateDriveUI(true);
+    }
 
     function readPerLogSyncState() {
       try { return JSON.parse(localStorage.getItem(PER_LOG_SYNC_STATE_KEY) || '{"files":{}}'); }
@@ -1382,7 +1443,7 @@
         const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(existingFileId)}?uploadType=media`, {
           method: "PATCH", headers: { Authorization: `Bearer ${gDriveAccessToken}`, "Content-Type": "application/json" }, body: content
         });
-        if (res.ok) return existingFileId;
+        if (res.ok) { countSuccessfulUpload(new Blob([content]).size); return existingFileId; }
         if (res.status !== 404) throw new Error(`Could not update ${name} (${res.status})`);
       }
       const metadata = { name, mimeType: "application/json", parents: [folderId], appProperties };
@@ -1393,6 +1454,7 @@
         method: "POST", headers: { Authorization: `Bearer ${gDriveAccessToken}` }, body: form
       });
       if (!res.ok) throw new Error(`Could not create ${name} (${res.status})`);
+      countSuccessfulUpload(new Blob([content]).size);
       return (await res.json()).id;
     }
 
@@ -1406,6 +1468,9 @@
       if (!gDriveAccessToken) { setSyncProgress("Drive not connected", null, "error"); return; }
       if (isSyncing) { syncRequestedWhileBusy = true; return; }
       isSyncing = true;
+      syncUploadedBytes = 0;
+      syncNeedsSilentReauth = false;
+      updateUploadSizeUI();
       const spinner = document.getElementById("syncSpinner");
       if (spinner) spinner.classList.add("spin-fast");
       setSyncProgress("Checking Drive…", 8);
@@ -1496,12 +1561,21 @@
         showToast(`Sync complete · ${dirty.length} log(s) updated`);
       } catch (e) {
         console.error("Google Drive per-log sync failed:", e);
-        setSyncProgress("Sync failed — retry when online", null, "error");
-        showToast(e?.message?.includes("401") ? "Drive session expired. Sign in again." : (e.message || "Sync failed. Check connection and permissions."));
+        const unauthorized = /401|session expired|invalid credentials/i.test(String(e?.message || ""));
+        syncNeedsSilentReauth = unauthorized;
+        setSyncProgress(unauthorized ? "Refreshing Drive session…" : "Sync failed — retry when online", null, unauthorized ? "working" : "error");
+        if (!unauthorized) showToast(e.message || "Sync failed. Check connection and permissions.");
       } finally {
         isSyncing = false;
         if (spinner) spinner.classList.remove("spin-fast");
-        if (syncRequestedWhileBusy) { syncRequestedWhileBusy = false; setTimeout(() => syncWithGoogleDriveImmediate(), 150); }
+        updateUploadSizeUI();
+        if (syncNeedsSilentReauth) {
+          syncNeedsSilentReauth = false;
+          setTimeout(async () => {
+            try { await silentRefreshDriveToken(); showToast("Drive session renewed"); await syncWithGoogleDriveImmediate(); }
+            catch (refreshError) { setSyncProgress("Sign in to reconnect Drive", null, "error"); showToast("Google needs you to sign in again. Open Settings → Google Drive and tap Sign In."); }
+          }, 100);
+        } else if (syncRequestedWhileBusy) { syncRequestedWhileBusy = false; setTimeout(() => syncWithGoogleDriveImmediate(), 150); }
       }
     }
     function populateDropdowns() {
@@ -1625,7 +1699,7 @@
       document.getElementById("filteredLogsSubtitle").textContent = `${rows.length} matching ${rows.length === 1 ? "log" : "logs"} · updates when opened`;
       if (!rows.length) content.innerHTML = '<div class="py-12 text-center text-sm text-slate-500">No logs match the current filters.</div>';
       else content.innerHTML = rows.map(item => `<article class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 space-y-2"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="text-[10px] uppercase tracking-wide text-slate-500">${escapeHtml(item.subject || "No subject")} · Q${escapeHtml(item.questionNum || "—")}</div><div class="font-extrabold text-sm break-words mt-1">${escapeHtml(item.chapter || "No chapter")}</div></div><button type="button" class="shrink-0 rounded-lg bg-blue-600 text-white px-3 py-1.5 text-xs font-bold" data-open-filtered-id="${escapeHtml(item.id)}">Details</button></div><div>${getErrorTypeBadge(item.errorType || "Unspecified")}</div><div class="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap break-words">${escapeHtml(item.remedialAction || "No explanation recorded")}</div><div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-500"><span>Source: ${escapeHtml(item.source || "—")}</span><span>Reviews: ${Number(item.reviewCount || 0)}</span>${item.audioData || item.audioDriveId ? `<button type="button" class="text-violet-500 font-bold" data-play-filtered-id="${escapeHtml(item.id)}">▶ Play audio</button>` : ""}</div></article>`).join("");
-      content.querySelectorAll("[data-open-filtered-id]").forEach(btn => btn.addEventListener("click", () => { document.getElementById("filteredLogsModal").classList.add("hidden"); openDetail(btn.dataset.openFilteredId); }));
+      content.querySelectorAll("[data-open-filtered-id]").forEach(btn => btn.addEventListener("click", () => { filteredPopupReturn = true; document.getElementById("filteredLogsModal").classList.add("hidden"); openDetail(btn.dataset.openFilteredId); }));
       content.querySelectorAll("[data-play-filtered-id]").forEach(btn => btn.addEventListener("click", () => playInlineAudio(btn.dataset.playFilteredId, btn)));
       if (window.lucide) lucide.createIcons();
     }
@@ -1921,6 +1995,7 @@
 
     // Attach DOM events safely after structure loads
     window.addEventListener("DOMContentLoaded", () => {
+      updateUploadSizeUI();
       const savedTheme = localStorage.getItem("mcq_theme_mode");
       if (savedTheme === "light") {
         document.documentElement.classList.remove("dark");
@@ -1942,6 +2017,12 @@
       document.getElementById("showFilteredLogsBtn")?.addEventListener("click", showFiltered);
       document.getElementById("closeFilteredLogsBtn")?.addEventListener("click", () => document.getElementById("filteredLogsModal")?.classList.add("hidden"));
       document.getElementById("closeFilteredLogsFooterBtn")?.addEventListener("click", () => document.getElementById("filteredLogsModal")?.classList.add("hidden"));
+      const closeDetailAndRestoreFilter = () => {
+        document.getElementById("detailModal")?.classList.add("hidden");
+        if (filteredPopupReturn) { filteredPopupReturn = false; document.getElementById("filteredLogsModal")?.classList.remove("hidden"); renderFilteredLogsPopup(); }
+      };
+      document.getElementById("closeDetailBtn")?.addEventListener("click", closeDetailAndRestoreFilter);
+      document.getElementById("detailModal")?.addEventListener("click", e => { if (e.target?.id === "detailModal") closeDetailAndRestoreFilter(); });
       document.getElementById("closeModalBtn")?.addEventListener("click", closeEntryModal);
       document.getElementById("cancelEntryModalBtn")?.addEventListener("click", closeEntryModal);
 
@@ -1955,6 +2036,7 @@
       document.getElementById("closeLightboxBtn")?.addEventListener("click", () => {
         document.getElementById("imageLightboxModal")?.classList.add("hidden");
       });
+      document.getElementById("imageLightboxModal")?.addEventListener("click", e => { if (e.target?.id === "imageLightboxModal") e.currentTarget.classList.add("hidden"); });
 
       document.getElementById("themeToggleBtn")?.addEventListener("click", toggleTheme);
 
