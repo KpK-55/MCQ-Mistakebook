@@ -74,7 +74,13 @@
     /* Mobile-first compact log list: show only Chapter, Error Type and Audio. */
     @media (max-width: 640px) {
       body { font-size: 13px; }
-      header > div { height: 3.25rem !important; padding-left: .65rem !important; padding-right: .65rem !important; }
+      header > div { height: 3.25rem !important; padding-left: .5rem !important; padding-right: .5rem !important; }
+      header h1 { font-size: .78rem !important; }
+      #syncStatusText { max-width: 100px !important; font-size: 9px !important; }
+      #themeToggleBtn, #openSettingsModalBtn { display: none !important; }
+      #openNewLogModalBtn { padding: .55rem .65rem !important; font-size: 11px !important; white-space: nowrap; }
+      #quickSyncBtn { padding: .55rem !important; }
+      #mobileMenuPanel { max-height: calc(100dvh - 5rem); overflow-y: auto; }
       main { padding-left: .55rem !important; padding-right: .55rem !important; padding-top: .65rem !important; }
       #logsTable { min-width: 0 !important; width: 100% !important; table-layout: fixed !important; }
       #logsTable colgroup { display: none; }
@@ -95,6 +101,8 @@
       #logsTable td:nth-child(9) button { width: 2rem !important; height: 2rem !important; }
       #logsTable td:nth-child(9) span { font-size: 9px !important; }
       #logsTable tbody tr.log-row { min-height: 48px; }
+      #filteredLogsModal { padding: 0 !important; align-items: stretch !important; }
+      #filteredLogsModal > div { width: 100% !important; max-width: none !important; max-height: 100dvh !important; height: 100dvh !important; border-radius: 0 !important; }
       #detailModal { padding: 0 !important; align-items: stretch !important; }
       #detailModal > div { width: 100% !important; max-width: none !important; max-height: 100dvh !important; height: 100dvh !important; border-radius: 0 !important; }
       #detailModal > div > div:first-child { padding: .75rem .9rem !important; }
@@ -131,7 +139,16 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 sm:gap-2 relative">
+        <!-- Mobile hamburger menu -->
+        <button id="mobileMenuBtn" type="button" class="sm:hidden p-2 rounded-xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card text-slate-700 dark:text-slate-200" aria-label="Open menu" aria-expanded="false" title="Menu">
+          <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+        <div id="mobileMenuPanel" class="hidden sm:hidden absolute right-0 top-11 z-[70] w-56 rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-2 shadow-2xl">
+          <button id="mobileMenuSettingsBtn" type="button" class="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="sliders" class="w-4 h-4 text-brand-500"></i>Settings</button>
+          <button id="mobileMenuThemeBtn" type="button" class="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="sun-moon" class="w-4 h-4 text-amber-500"></i>Switch theme</button>
+          <button id="mobileMenuMistakeTypesBtn" type="button" class="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="chart-no-axes-column" class="w-4 h-4 text-emerald-500"></i>Logs by mistake type</button>
+        </div>
         <!-- Theme Toggle -->
         <button id="themeToggleBtn" type="button" class="p-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Toggle Theme">
           <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
@@ -206,6 +223,11 @@
         </select>
       </div>
     </section>
+    <div class="flex justify-center sm:justify-end -mt-2">
+      <button id="showFilteredLogsBtn" type="button" class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-extrabold text-sm px-5 py-2.5 shadow-md shadow-blue-600/20 w-full sm:w-auto">
+        <i data-lucide="check" class="w-5 h-5"></i><span>Show filtered logs</span><span id="filteredLogsCount" class="rounded-full bg-white/20 px-2 py-0.5 text-xs">0</span>
+      </button>
+    </div>
 
     <!-- Table Container -->
     <div class="bg-white dark:bg-amoled-card rounded-2xl border border-slate-200 dark:border-amoled-border overflow-hidden shadow-xs">
@@ -483,6 +505,15 @@
           <button type="submit" class="px-5 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-700">Save</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Filtered logs popup -->
+  <div id="filteredLogsModal" class="fixed inset-0 z-[65] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 hidden" role="dialog" aria-modal="true" aria-labelledby="filteredLogsTitle">
+    <div class="bg-white dark:bg-amoled-card rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92dvh] flex flex-col overflow-hidden border border-slate-200 dark:border-amoled-border">
+      <div class="px-4 py-3 border-b border-slate-200 dark:border-amoled-border flex items-center justify-between gap-3"><div><h2 id="filteredLogsTitle" class="font-extrabold text-base">Filtered logs</h2><p id="filteredLogsSubtitle" class="text-xs text-slate-500 mt-1">Matching your current filters</p></div><button id="closeFilteredLogsBtn" type="button" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close filtered logs"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+      <div id="filteredLogsContent" class="p-3 sm:p-4 overflow-auto space-y-3"></div>
+      <div class="p-3 border-t border-slate-200 dark:border-amoled-border flex justify-end"><button id="closeFilteredLogsFooterBtn" type="button" class="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold">Done</button></div>
     </div>
   </div>
 
@@ -1568,6 +1599,37 @@
       </span>`;
     }
 
+    // Shared filter source for the table, filtered-log popup, and PDF export.
+    function getFilteredEntries() {
+      const q = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
+      const fSrc = document.getElementById("filterSource")?.value || "ALL";
+      const fSub = document.getElementById("filterSubject")?.value || "ALL";
+      const fChap = document.getElementById("filterChapter")?.value || "ALL";
+      const fStatus = document.getElementById("filterReviewStatus")?.value || "ALL";
+      return errorEntries.filter(item => item && !item.deleted).filter(item => {
+        if (fSrc !== "ALL" && item.source !== fSrc) return false;
+        if (fSub !== "ALL" && item.subject !== fSub) return false;
+        if (fChap !== "ALL" && item.chapter !== fChap) return false;
+        if (fStatus === "NEW" && Number(item.reviewCount || 0) > 0) return false;
+        if (fStatus === "REVIEWED" && Number(item.reviewCount || 0) === 0) return false;
+        if (fStatus === "FLAGGED" && !item.flagged) return false;
+        if (q && ![item.questionNum,item.source,item.subject,item.chapter,item.remedialAction,item.errorType].join(" ").toLowerCase().includes(q)) return false;
+        return true;
+      }).sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+    }
+
+    function renderFilteredLogsPopup() {
+      const rows = getFilteredEntries();
+      const content = document.getElementById("filteredLogsContent");
+      document.getElementById("filteredLogsCount").textContent = rows.length;
+      document.getElementById("filteredLogsSubtitle").textContent = `${rows.length} matching ${rows.length === 1 ? "log" : "logs"} · updates when opened`;
+      if (!rows.length) content.innerHTML = '<div class="py-12 text-center text-sm text-slate-500">No logs match the current filters.</div>';
+      else content.innerHTML = rows.map(item => `<article class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 space-y-2"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="text-[10px] uppercase tracking-wide text-slate-500">${escapeHtml(item.subject || "No subject")} · Q${escapeHtml(item.questionNum || "—")}</div><div class="font-extrabold text-sm break-words mt-1">${escapeHtml(item.chapter || "No chapter")}</div></div><button type="button" class="shrink-0 rounded-lg bg-blue-600 text-white px-3 py-1.5 text-xs font-bold" data-open-filtered-id="${escapeHtml(item.id)}">Details</button></div><div>${getErrorTypeBadge(item.errorType || "Unspecified")}</div><div class="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap break-words">${escapeHtml(item.remedialAction || "No explanation recorded")}</div><div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-500"><span>Source: ${escapeHtml(item.source || "—")}</span><span>Reviews: ${Number(item.reviewCount || 0)}</span>${item.audioData || item.audioDriveId ? `<button type="button" class="text-violet-500 font-bold" data-play-filtered-id="${escapeHtml(item.id)}">▶ Play audio</button>` : ""}</div></article>`).join("");
+      content.querySelectorAll("[data-open-filtered-id]").forEach(btn => btn.addEventListener("click", () => { document.getElementById("filteredLogsModal").classList.add("hidden"); openDetail(btn.dataset.openFilteredId); }));
+      content.querySelectorAll("[data-play-filtered-id]").forEach(btn => btn.addEventListener("click", () => playInlineAudio(btn.dataset.playFilteredId, btn)));
+      if (window.lucide) lucide.createIcons();
+    }
+
     // Main Table Render
     let activeDetailId = null;
     let contextEntryId = null;
@@ -1609,6 +1671,7 @@
       const list = errorEntries.filter(item => !item.deleted).sort((a,b) => (b.createdAt||0)-(a.createdAt||0)).filter(item => {
         if (fSrc !== "ALL" && item.source !== fSrc) return false;
         if (fSub !== "ALL" && item.subject !== fSub) return false;
+        if (fChap !== "ALL" && item.chapter !== fChap) return false;
         if (fStatus === "NEW" && Number(item.reviewCount||0) > 0) return false;
         if (fStatus === "REVIEWED" && Number(item.reviewCount||0) === 0) return false;
         if (fStatus === "FLAGGED" && !item.flagged) return false;
@@ -1616,6 +1679,7 @@
         return true;
       });
       document.getElementById("emptyTableState")?.classList.toggle("hidden", list.length !== 0);
+      const filteredCount = document.getElementById("filteredLogsCount"); if (filteredCount) filteredCount.textContent = list.length;
       list.forEach(item => {
         const count = Number(item.reviewCount || 0); const isReviewed = count > 0;
         let visualsHtml = '<span class="text-slate-500 italic">None</span>';
@@ -1866,6 +1930,18 @@
 
       // Buttons
       document.getElementById("openNewLogModalBtn")?.addEventListener("click", () => openEntryModal());
+      const menuPanel = document.getElementById("mobileMenuPanel");
+      const menuBtn = document.getElementById("mobileMenuBtn");
+      menuBtn?.addEventListener("click", () => { const opening = menuPanel.classList.contains("hidden"); menuPanel.classList.toggle("hidden", !opening); menuBtn.setAttribute("aria-expanded", String(opening)); if (window.lucide) lucide.createIcons(); });
+      document.addEventListener("click", e => { if (menuPanel && !menuPanel.classList.contains("hidden") && !e.target.closest("#mobileMenuPanel") && !e.target.closest("#mobileMenuBtn")) { menuPanel.classList.add("hidden"); menuBtn?.setAttribute("aria-expanded", "false"); } });
+      document.getElementById("mobileMenuSettingsBtn")?.addEventListener("click", () => { menuPanel.classList.add("hidden"); document.getElementById("openSettingsModalBtn")?.click(); });
+      const toggleTheme = () => { document.documentElement.classList.toggle("dark"); localStorage.setItem("mcq_theme_mode", document.documentElement.classList.contains("dark") ? "dark" : "light"); if (window.lucide) lucide.createIcons(); };
+      document.getElementById("mobileMenuThemeBtn")?.addEventListener("click", () => { menuPanel.classList.add("hidden"); toggleTheme(); });
+      document.getElementById("mobileMenuMistakeTypesBtn")?.addEventListener("click", () => { menuPanel.classList.add("hidden"); document.getElementById("errorTypeStats")?.scrollIntoView({behavior:"smooth",block:"start"}); });
+      const showFiltered = () => { renderFilteredLogsPopup(); document.getElementById("filteredLogsModal")?.classList.remove("hidden"); };
+      document.getElementById("showFilteredLogsBtn")?.addEventListener("click", showFiltered);
+      document.getElementById("closeFilteredLogsBtn")?.addEventListener("click", () => document.getElementById("filteredLogsModal")?.classList.add("hidden"));
+      document.getElementById("closeFilteredLogsFooterBtn")?.addEventListener("click", () => document.getElementById("filteredLogsModal")?.classList.add("hidden"));
       document.getElementById("closeModalBtn")?.addEventListener("click", closeEntryModal);
       document.getElementById("cancelEntryModalBtn")?.addEventListener("click", closeEntryModal);
 
@@ -1880,11 +1956,7 @@
         document.getElementById("imageLightboxModal")?.classList.add("hidden");
       });
 
-      document.getElementById("themeToggleBtn")?.addEventListener("click", () => {
-        document.documentElement.classList.toggle("dark");
-        localStorage.setItem("mcq_theme_mode", document.documentElement.classList.contains("dark") ? "dark" : "light");
-        if (window.lucide) lucide.createIcons();
-      });
+      document.getElementById("themeToggleBtn")?.addEventListener("click", toggleTheme);
 
       document.getElementById("modalSubject")?.addEventListener("change", (e) => updateChapterSelect(e.target.value));
 
@@ -2109,15 +2181,21 @@
         renderErrorTypeRadioPills(v); renderTable(); syncWithGoogleDriveImmediate();
       });
 
-      // Print only the currently filtered records and requested columns; user can choose Save as PDF.
+      // Export current filters. A synchronous popup is required by mobile browsers; show a clear fallback if blocked.
       document.getElementById("exportPdfBtn")?.addEventListener("click", () => {
         const rows = getFilteredEntries();
         if (!rows.length) { showToast("No matching logs to export"); return; }
         const esc = value => escapeHtml(value ?? "");
-        const printHtml = `<!doctype html><html><head><meta charset="utf-8"><title>MCQ Mistake Logs</title><style>
-          body{font:12px Arial,sans-serif;color:#111;margin:20px}h1{font-size:18px}p{color:#555;font-size:10px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #bbb;padding:6px;vertical-align:top;overflow-wrap:anywhere;white-space:pre-wrap}th{background:#eee;text-align:left}th:nth-child(1){width:7%}th:nth-child(2){width:16%}th:nth-child(3){width:11%}th:nth-child(4){width:17%}th:nth-child(5){width:14%}th:nth-child(6){width:35%}@media print{body{margin:10mm}tr{break-inside:avoid}}
-          </style></head><body><h1>MCQ Error Tracker — Mistake Logs</h1><p>Exported ${new Date().toLocaleString()} · ${rows.length} entries</p><table><thead><tr><th>Question #</th><th>Source</th><th>Subject</th><th>Chapter</th><th>Error Type</th><th>Text Explanation</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.questionNum)}</td><td>${esc(x.source)}</td><td>${esc(x.subject)}</td><td>${esc(x.chapter)}</td><td>${esc(x.errorType)}</td><td>${esc(x.remedialAction)}</td></tr>`).join("")}</tbody></table><script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script></body></html>`;
-        const w = window.open("", "_blank"); if (!w) { showToast("Allow pop-ups to export PDF"); return; }
+        const printHtml = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MCQ Mistake Logs</title><style>
+          *{box-sizing:border-box}body{font:12px Arial,sans-serif;color:#111;margin:20px}h1{font-size:18px}p{color:#555;font-size:10px}button{padding:10px 16px;background:#2563eb;color:#fff;border:0;border-radius:8px;font-weight:bold;margin:0 0 14px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #bbb;padding:6px;vertical-align:top;overflow-wrap:anywhere;white-space:pre-wrap}th{background:#eee;text-align:left}th:nth-child(1){width:7%}th:nth-child(2){width:16%}th:nth-child(3){width:11%}th:nth-child(4){width:17%}th:nth-child(5){width:14%}th:nth-child(6){width:35%}@media print{body{margin:10mm}button{display:none}tr{break-inside:avoid}thead{display:table-header-group}}
+          </style></head><body><button onclick="window.print()">Print / Save as PDF</button><h1>MCQ Error Tracker — Mistake Logs</h1><p>Exported ${new Date().toLocaleString()} · ${rows.length} entries</p><table><thead><tr><th>Question #</th><th>Source</th><th>Subject</th><th>Chapter</th><th>Error Type</th><th>Text Explanation</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.questionNum)}</td><td>${esc(x.source)}</td><td>${esc(x.subject)}</td><td>${esc(x.chapter)}</td><td>${esc(x.errorType)}</td><td>${esc(x.remedialAction)}</td></tr>`).join("")}</tbody></table></body></html>`;
+        const w = window.open("about:blank", "_blank");
+        if (!w) {
+          // Browser popup blocking fallback: download a printable HTML file instead of silently failing.
+          const blob = new Blob([printHtml], {type:"text/html;charset=utf-8"});
+          const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "MCQ-Mistake-Logs.html"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+          showToast("Popup blocked — downloaded printable file. Open it and choose Print / Save as PDF."); return;
+        }
         w.document.open(); w.document.write(printHtml); w.document.close();
       });
 
