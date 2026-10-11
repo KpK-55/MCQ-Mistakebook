@@ -1349,11 +1349,18 @@
           (scanFrom ? ` and modifiedTime > '${new Date(scanFrom).toISOString()}'` : "");
         setSyncProgress(cursor ? "Finding changed logs…" : "Setting up log sync…", 18);
         const remoteFiles = await driveListAllFiles(q, "files(id,name,modifiedTime,appProperties),nextPageToken");
+        // Settings must be discoverable even when unchanged and therefore excluded
+        // by the incremental modifiedTime filter. Otherwise a device can mistake
+        // an existing settings file for a missing one and overwrite it with stale data.
+        const settingsQuery = `'${dataFolderId}' in parents and trashed = false and name = '${PER_LOG_SETTINGS_NAME}'`;
+        const settingsFiles = await driveListAllFiles(settingsQuery, "files(id,name,modifiedTime,appProperties),nextPageToken");
         const now = Date.now();
         const remoteByName = new Map(remoteFiles.map(f => [f.name, f]));
+        for (const file of settingsFiles) remoteByName.set(file.name, file);
+        const filesToRead = [...new Map(remoteFiles.concat(settingsFiles).map(f => [f.id, f])).values()];
         const remoteEntries = [];
         let settingsRemote = null;
-        await runWithConcurrency(remoteFiles, 8, async file => {
+        await runWithConcurrency(filesToRead, 8, async file => {
           try {
             const data = await downloadJsonDriveFile(file.id);
             if (file.name === PER_LOG_SETTINGS_NAME) settingsRemote = { file, data };
