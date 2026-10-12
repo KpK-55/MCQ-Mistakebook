@@ -251,18 +251,18 @@
     <!-- Search & Filters -->
     <section id="searchFilterSection" class="bg-white dark:bg-amoled-card p-3 rounded-2xl border border-slate-200 dark:border-amoled-border shadow-xs">
       <div id="searchFilterControls" class="grid grid-cols-2 gap-2 items-center">
-        <select id="filterSource" class="flex-1 sm:flex-none px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-slate-300 focus:outline-none">
+        <select id="filterSource" multiple size="1" title="Select one or more sources" class="filter-multi-select flex-1 sm:flex-none px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-slate-300 focus:outline-none">
           <option value="ALL">All Sources</option>
         </select>
 
-        <select id="filterSubject" class="flex-1 sm:flex-none px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-slate-300 focus:outline-none">
+        <select id="filterSubject" multiple size="1" title="Select one or more subjects" class="filter-multi-select flex-1 sm:flex-none px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-slate-300 focus:outline-none">
           <option value="ALL">All Subjects</option>
         </select>
-        <select id="filterChapter" class="flex-1 sm:flex-none px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-slate-300 focus:outline-none">
+        <select id="filterChapter" multiple size="1" title="Select one or more chapters" class="filter-multi-select flex-1 sm:flex-none px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-slate-300 focus:outline-none">
           <option value="ALL">All Chapters</option>
         </select>
         <select id="filterErrorType" multiple size="1" title="Select one or more error types (Ctrl/⌘ for multiple)" class="filter-multi-select px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-slate-300"><option value="ALL" selected>All Error Types</option></select>
-        <select id="filterReviewStatus" class="flex-1 sm:flex-none px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-slate-300 focus:outline-none">
+        <select id="filterReviewStatus" multiple size="1" title="Select one or more statuses" class="filter-multi-select flex-1 sm:flex-none px-2.5 py-2 text-xs font-semibold bg-slate-50 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-slate-300 focus:outline-none">
           <option value="ALL">All Status</option>
           <option value="NEW">Unreviewed (0 Reviews)</option>
           <option value="REVIEWED">Reviewed (≥1)</option>
@@ -492,7 +492,7 @@
         <div>
           <label class="block text-xs font-bold text-black dark:text-slate-300 mb-1">Root Cause / Action *</label>
           <textarea id="modalRemedial" rows="3" required placeholder="What was the misconception or error?" class="w-full px-3 py-2 bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-white leading-relaxed"></textarea>
-          <div class="flex flex-wrap gap-2 mt-2"><button type="button" id="latexEditBtn" class="rounded-lg border-2 px-3 py-1.5 text-xs font-bold">Equation helper</button><button type="button" id="latexFormatBtn" class="rounded-lg border-2 px-3 py-1.5 text-xs font-bold">Format dictated equation</button><button type="button" id="latexPreviewBtn" class="rounded-lg border-2 px-3 py-1.5 text-xs font-bold">Preview equation</button></div><p class="latex-help">Dictate naturally (e.g. “x square”, “half m v square”, “q one q two divided by r square”), then tap Format dictated equation. Review the result before saving; speech recognition can be ambiguous. Use ^ for powers and _ for subscripts when needed.</p><div id="latexPreview" class="hidden rounded-xl border-2 p-3 overflow-x-auto"></div>
+          
         </div>
 
         <!-- Photos -->
@@ -1636,12 +1636,16 @@
       const fSrc = document.getElementById("filterSource");
       const mSrc = document.getElementById("modalSource");
       if (fSrc && mSrc) {
+        const oldSources = fSrc.multiple ? [...fSrc.selectedOptions].map(o=>o.value) : [fSrc.value];
+        fSrc.multiple = true;
         fSrc.innerHTML = '<option value="ALL">All Sources</option>';
         mSrc.innerHTML = '<option value="" disabled selected>Select Source...</option>';
         appConfig.sources.forEach(src => {
           fSrc.innerHTML += `<option value="${escapeHtml(src)}">${escapeHtml(src)}</option>`;
           mSrc.innerHTML += `<option value="${escapeHtml(src)}">${escapeHtml(src)}</option>`;
         });
+        oldSources.filter(v=>v!=="ALL" && appConfig.sources.includes(v)).forEach(v=>{const o=[...fSrc.options].find(o=>o.value===v);if(o)o.selected=true;});
+        if(!oldSources.some(v=>v!=="ALL" && appConfig.sources.includes(v))) fSrc.options[0].selected=true;
       }
 
       const fSub = document.getElementById("filterSubject");
@@ -1650,6 +1654,8 @@
       const mSub = document.getElementById("modalSubject");
       const tSub = document.getElementById("taxSubjectSelect");
       if (fSub && mSub && tSub) {
+        const oldSubjects = fSub.multiple ? [...fSub.selectedOptions].map(o=>o.value) : [fSub.value];
+        fSub.multiple = true;
         fSub.innerHTML = '<option value="ALL">All Subjects</option>';
         mSub.innerHTML = '<option value="" disabled selected>Select Subject...</option>';
         tSub.innerHTML = '';
@@ -1658,11 +1664,16 @@
           mSub.innerHTML += `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`;
           tSub.innerHTML += `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`;
         });
+        oldSubjects.filter(v=>v!=="ALL" && Object.prototype.hasOwnProperty.call(appConfig.subjects,v)).forEach(v=>{const o=[...fSub.options].find(o=>o.value===v);if(o)o.selected=true;});
+        if(!oldSubjects.some(v=>v!=="ALL" && Object.prototype.hasOwnProperty.call(appConfig.subjects,v))) fSub.options[0].selected=true;
       }
 
       if (fChap) {
-        const allChapters = [...new Set(Object.values(appConfig.subjects).flat())].sort((a,b)=>a.localeCompare(b));
-        fChap.multiple = true; fChap.innerHTML = '<option value="ALL">All Chapters</option>' + allChapters.map(ch => `<option value="${escapeHtml(ch)}">${escapeHtml(ch)}</option>`).join("");
+        fChap.multiple = true;
+        const chosenSubjects = fSub ? [...fSub.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [];
+        const chapterSource = chosenSubjects.length ? chosenSubjects.flatMap(sub=>appConfig.subjects[sub]||[]) : Object.values(appConfig.subjects).flat();
+        const allChapters = [...new Set(chapterSource)].sort((a,b)=>a.localeCompare(b));
+        fChap.innerHTML = '<option value="ALL">All Chapters</option>' + allChapters.map(ch => `<option value="${escapeHtml(ch)}">${escapeHtml(ch)}</option>`).join("");
         priorChapter.filter(v=>allChapters.includes(v)).forEach(v=>{ const opt=[...fChap.options].find(o=>o.value===v); if(opt) opt.selected=true; }); if(!priorChapter.some(v=>allChapters.includes(v))) fChap.options[0].selected=true;
       }
       const fErr = document.getElementById("filterErrorType"); if(fErr){ const old=[...fErr.selectedOptions].map(o=>o.value); fErr.innerHTML='<option value="ALL">All Error Types</option>'+appConfig.errorTypes.map(et=>`<option value="${escapeHtml(et.label)}">${escapeHtml(et.label)}</option>`).join(""); fErr.multiple=true; old.filter(v=>appConfig.errorTypes.some(et=>et.label===v)).forEach(v=>{const o=[...fErr.options].find(o=>o.value===v);if(o)o.selected=true;}); if(!old.some(v=>v!=="ALL")) fErr.options[0].selected=true;
@@ -1733,21 +1744,22 @@
     // Shared filter source for the table, filtered-log popup, and PDF export.
     function getFilteredEntries() {
       const q = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
-      const fSrc = document.getElementById("filterSource")?.value || "ALL";
-      const fSub = document.getElementById("filterSubject")?.value || "ALL";
+      const fSrcEl = document.getElementById("filterSource");
+      const fSubEl = document.getElementById("filterSubject");
+      const fSrc = fSrcEl?.multiple ? [...fSrcEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fSrcEl?.value || "ALL"].filter(v=>v!=="ALL");
+      const fSub = fSubEl?.multiple ? [...fSubEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fSubEl?.value || "ALL"].filter(v=>v!=="ALL");
       const fChapEl = document.getElementById("filterChapter");
       const fChap = fChapEl?.multiple ? [...fChapEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fChapEl?.value || "ALL"].filter(v=>v!=="ALL");
       const fErrEl = document.getElementById("filterErrorType");
       const fErr = fErrEl ? [...fErrEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [];
-      const fStatus = document.getElementById("filterReviewStatus")?.value || "ALL";
+      const fStatusEl = document.getElementById("filterReviewStatus");
+      const fStatus = fStatusEl?.multiple ? [...fStatusEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fStatusEl?.value || "ALL"].filter(v=>v!=="ALL");
       return errorEntries.filter(item => item && !item.deleted).filter(item => {
-        if (fSrc !== "ALL" && item.source !== fSrc) return false;
-        if (fSub !== "ALL" && item.subject !== fSub) return false;
+        if (fSrc.length && !fSrc.includes(item.source)) return false;
+        if (fSub.length && !fSub.includes(item.subject)) return false;
         if (fChap.length && !fChap.includes(item.chapter)) return false;
         if (fErr.length && !fErr.includes(item.errorType)) return false;
-        if (fStatus === "NEW" && Number(item.reviewCount || 0) > 0) return false;
-        if (fStatus === "REVIEWED" && Number(item.reviewCount || 0) === 0) return false;
-        if (fStatus === "FLAGGED" && !item.flagged) return false;
+        if (fStatus.length && !((fStatus.includes("NEW") && Number(item.reviewCount || 0) === 0) || (fStatus.includes("REVIEWED") && Number(item.reviewCount || 0) > 0) || (fStatus.includes("FLAGGED") && item.flagged))) return false;
         if (q && ![item.questionNum,item.source,item.subject,item.chapter,item.remedialAction,item.errorType].join(" ").toLowerCase().includes(q)) return false;
         return true;
       }).sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -1878,8 +1890,10 @@
       const tbody = document.getElementById("logsTableBody"); if (!tbody) return;
       tbody.innerHTML = "";
       const q = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
-      const fSrc = document.getElementById("filterSource")?.value || "ALL";
-      const fSub = document.getElementById("filterSubject")?.value || "ALL";
+      const fSrcEl = document.getElementById("filterSource");
+      const fSubEl = document.getElementById("filterSubject");
+      const fSrc = fSrcEl?.multiple ? [...fSrcEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fSrcEl?.value || "ALL"].filter(v=>v!=="ALL");
+      const fSub = fSubEl?.multiple ? [...fSubEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fSubEl?.value || "ALL"].filter(v=>v!=="ALL");
       const fChap = document.getElementById("filterChapter")?.value || "ALL";
       const fStatus = document.getElementById("filterReviewStatus")?.value || "ALL";
       const list = errorEntries.filter(item => !item.deleted).sort((a,b) => (b.createdAt||0)-(a.createdAt||0)).filter(item => {
@@ -2213,37 +2227,6 @@
       document.getElementById("themeToggleBtn")?.addEventListener("click", toggleTheme);
 
       document.getElementById("modalSubject")?.addEventListener("change", (e) => updateChapterSelect(e.target.value));
-      const remedialBox=document.getElementById("modalRemedial"), latexPreview=document.getElementById("latexPreview");
-      document.getElementById("latexEditBtn")?.addEventListener("click",()=>{ const value=remedialBox.value; const selection=value.slice(remedialBox.selectionStart,remedialBox.selectionEnd); const seed=selection || "\\frac{a}{b}"; const insert=prompt("Edit LaTeX equation (will be inserted at cursor):",seed); if(insert===null)return; const start=remedialBox.selectionStart,end=remedialBox.selectionEnd; remedialBox.setRangeText("$$"+insert+"$$",start,end,"end"); remedialBox.focus(); });
-      document.getElementById("latexFormatBtn")?.addEventListener("click",()=>{
-        const supers = {"0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹","+":"⁺","-":"⁻","=":"⁼","(":"⁽",")":"⁾"};
-        const subs = {"0":"₀","1":"₁","2":"₂","3":"₃","4":"₄","5":"₅","6":"₆","7":"₇","8":"₈","9":"₉","+":"₊","-":"₋","=":"₌","(":"₍",")":"₎"};
-        let value=remedialBox.value;
-        // Common keyboard-microphone phrasing for maths and NEET formulas.
-        const spokenRules = [
-          [/\bkinetic energy\s+equals?\s+half\s+(?:of\s+)?m\s+v(?:\s+square|\s+squared)\b/gi, 'KE = 1/2 mv²'],
-          [/\bhalf\s+m\s+v(?:\s+square|\s+squared)\b/gi, '1/2 mv²'],
-          [/\bq\s+one\s+q\s+two\s+(?:divided by|over)\s+r(?:\s+square|\s+squared)\b/gi, 'q₁q₂/r²'],
-          [/\bq\s+1\s+q\s+2\s+(?:divided by|over)\s+r(?:\s+square|\s+squared)\b/gi, 'q₁q₂/r²'],
-          [/\b([a-z])\s+(?:to the power of\s+)?square\b/gi, '$1²'],
-          [/\b([a-z])\s+squared\b/gi, '$1²'],
-          [/\b([a-z])\s+cube\b/gi, '$1³'],
-          [/\b([a-z])\s+to the power of\s+(\d+)\b/gi, (_,a,n)=>a+Array.from(n).map(c=>supers[c]||c).join('')],
-          [/\bq\s+one\b/gi, 'q₁'], [/\bq\s+two\b/gi, 'q₂'],
-          [/\bdelta\s+h\b/gi, 'ΔH'], [/\bdelta\s+u\b/gi, 'ΔU'], [/\bdelta\s+n\b/gi, 'Δn'],
-          [/\bplus or minus\b/gi, '±'], [/\bplus\b/gi, '+'], [/\bminus\b/gi, '−'],
-          [/\bequals\b/gi, '='], [/\bdivided by\b/gi, '/'], [/\bover\b/gi, '/'],
-          [/\bhalf\b/gi, '1/2'], [/\bsquare root of\b/gi, '√']
-        ];
-        for (const [pattern,replacement] of spokenRules) value=value.replace(pattern,replacement);
-        value=value.replace(/\^([0-9+\-=()]+)/g,(_,v)=>Array.from(v).map(c=>supers[c]||c).join(''));
-        value=value.replace(/_([0-9+\-=()]+)/g,(_,v)=>Array.from(v).map(c=>subs[c]||c).join(''));
-        value=value.replace(/([A-Za-z])([0-9]+)/g,(_,v,d)=>v+Array.from(d).map(c=>subs[c]||c).join(''));
-        value=value.replace(/\s+/g,' ').replace(/\s*([=+/])\s*/g,' $1 ').trim();
-        remedialBox.value=value; remedialBox.focus(); latexPreview.classList.remove('hidden'); latexPreview.textContent=value;
-      });
-      document.getElementById("latexPreviewBtn")?.addEventListener("click",()=>{ latexPreview.classList.remove("hidden"); const math=remedialBox.value.match(/\$\$([\s\S]+?)\$\$/); if(!math){latexPreview.textContent="No $$...$$ display equation found. Wrap an equation in $$...$$ to preview it.";return;} latexPreview.innerHTML=""; if(window.katex){try{window.katex.render(math[1],latexPreview,{displayMode:true,throwOnError:false});}catch(e){latexPreview.textContent=math[1];}}else latexPreview.textContent=math[1]+" (LaTeX preview library unavailable; equation text is preserved.)"; });
-
       document.getElementById("entryForm")?.addEventListener("submit", (e) => {
         e.preventDefault();
         const editId = document.getElementById("editEntryId").value;
@@ -2562,9 +2545,34 @@
       async function runCloudBackup(isAutomatic=false){
         if(!gDriveAccessToken) { if(!isAutomatic) showToast("Connect Google Drive first"); return false; }
         const status=document.getElementById("cloudBackupStatus"); if(status)status.textContent="Creating latest backup…";
-        try{const folders=await ensureMediaFolders(); const payload={format:"mcq-error-tracker-cloud-backup",schemaVersion:1,exportedAt:new Date().toISOString(),payload:{errorEntries,appConfig,configUpdatedAt}}; const stateKey="mcq_latest_cloud_backup_file_id"; let fileId=localStorage.getItem(stateKey); if(fileId){const chk=await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?fields=id,name,trashed`,{headers:{Authorization:`Bearer ${gDriveAccessToken}`}});if(!chk.ok)fileId=null;else{const d=await chk.json();if(d.trashed)fileId=null;}} const dataFolder=folders.Backups; const metadata={name:"MCQ_Error_Tracker_LATEST_BACKUP.json",mimeType:"application/json",appProperties:{mcqBackupType:"rolling-latest",mcqBackupSchema:"1"}}; if(!fileId)metadata.parents=[dataFolder]; const url=fileId?`https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(fileId)}?uploadType=multipart&fields=id,name,modifiedTime`:`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime`;const form=new FormData();form.append("metadata",new Blob([JSON.stringify(metadata)],{type:"application/json"}));form.append("file",new Blob([JSON.stringify(payload)],{type:"application/json"}),metadata.name);const res=await fetch(url,{method:fileId?"PATCH":"POST",headers:{Authorization:`Bearer ${gDriveAccessToken}`},body:form});if(!res.ok)throw new Error(`Backup upload failed (${res.status})`);const saved=await res.json();localStorage.setItem(stateKey,saved.id);localStorage.setItem("mcq_latest_cloud_backup_time",String(Date.now()));if(status)status.textContent=`Last cloud backup: ${new Date().toLocaleString()}`;if(!isAutomatic)showToast("Latest cloud backup saved");return true;}catch(err){if(status)status.textContent="Cloud backup failed: "+(err.message||"unknown error");if(!isAutomatic)showToast(err.message||"Cloud backup failed");return false;}
+        try{
+          // First reconcile this device with Drive so the snapshot includes synced records from other devices.
+          await syncWithGoogleDriveImmediate();
+          const folders=await ensureMediaFolders();
+          const payload={format:"mcq-error-tracker-cloud-backup",schemaVersion:2,exportedAt:new Date().toISOString(),payload:{errorEntries,appConfig,configUpdatedAt,settings:appConfig,localMetadata:{lastSync:localStorage.getItem(LAST_SYNC_KEY)||null}}}; const stateKey="mcq_latest_cloud_backup_file_id"; let fileId=localStorage.getItem(stateKey); if(fileId){const chk=await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?fields=id,name,trashed`,{headers:{Authorization:`Bearer ${gDriveAccessToken}`}});if(!chk.ok)fileId=null;else{const d=await chk.json();if(d.trashed)fileId=null;}} const dataFolder=folders.Backups; const metadata={name:"MCQ_Error_Tracker_LATEST_BACKUP.json",mimeType:"application/json",appProperties:{mcqBackupType:"rolling-latest",mcqBackupSchema:"1"}}; if(!fileId)metadata.parents=[dataFolder]; const url=fileId?`https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(fileId)}?uploadType=multipart&fields=id,name,modifiedTime`:`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime`;const form=new FormData();form.append("metadata",new Blob([JSON.stringify(metadata)],{type:"application/json"}));form.append("file",new Blob([JSON.stringify(payload)],{type:"application/json"}),metadata.name);const res=await fetch(url,{method:fileId?"PATCH":"POST",headers:{Authorization:`Bearer ${gDriveAccessToken}`},body:form});if(!res.ok)throw new Error(`Backup upload failed (${res.status})`);const saved=await res.json();localStorage.setItem(stateKey,saved.id);localStorage.setItem("mcq_latest_cloud_backup_time",String(Date.now()));if(status)status.textContent=`Last cloud backup: ${new Date().toLocaleString()}`;if(!isAutomatic)showToast("Latest cloud backup saved");return true;}catch(err){if(status)status.textContent="Cloud backup failed: "+(err.message||"unknown error");if(!isAutomatic)showToast(err.message||"Cloud backup failed");return false;}
       }
-      async function restoreLatestCloudBackup(){if(!gDriveAccessToken){showToast("Connect Google Drive first");return;}if(!confirm("Restore the latest cloud backup? This replaces the logs and settings on this device. Continue only if this is what you intend."))return;try{const folders=await ensureMediaFolders();const files=await driveListAllFiles(`'${folders.Backups}' in parents and name = 'MCQ_Error_Tracker_LATEST_BACKUP.json' and trashed = false`,"files(id,name,modifiedTime),nextPageToken");if(!files.length)throw new Error("No latest cloud backup found");const res=await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(files[0].id)}?alt=media`,{headers:{Authorization:`Bearer ${gDriveAccessToken}`}});if(!res.ok)throw new Error(`Download failed (${res.status})`);const b=await res.json();if(b.format!=="mcq-error-tracker-cloud-backup"||!b.payload?.errorEntries)throw new Error("Backup format not recognized");errorEntries=b.payload.errorEntries;appConfig=normalizeConfig(b.payload.appConfig);configUpdatedAt=Number(b.payload.configUpdatedAt||Date.now());saveLocalCache(true);populateDropdowns();renderTable();await syncWithGoogleDriveImmediate();showToast("Latest backup restored");}catch(err){showToast(err.message||"Restore failed");}}
+      async function restoreLatestCloudBackup(){if(!gDriveAccessToken){showToast("Connect Google Drive first");return;}if(!confirm("Restore the latest cloud backup? This replaces the logs and settings on this device. Continue only if this is what you intend."))return;try{const folders=await ensureMediaFolders();const files=await driveListAllFiles(`'${folders.Backups}' in parents and name = 'MCQ_Error_Tracker_LATEST_BACKUP.json' and trashed = false`,"files(id,name,modifiedTime),nextPageToken");if(!files.length)throw new Error("No latest cloud backup found");const res=await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(files[0].id)}?alt=media`,{headers:{Authorization:`Bearer ${gDriveAccessToken}`}});if(!res.ok)throw new Error(`Download failed (${res.status})`);const b=await res.json();if(b.format!=="mcq-error-tracker-cloud-backup"||!b.payload?.errorEntries)throw new Error("Backup format not recognized");const currentById=new Map((Array.isArray(errorEntries)?errorEntries:[]).filter(e=>e&&e.id).map(e=>[String(e.id),e]));
+      for(const backed of b.payload.errorEntries){if(!backed||!backed.id)continue;const key=String(backed.id);const current=currentById.get(key);if(!current){currentById.set(key,backed);continue;}const bt=Number(backed.updatedAt||backed.modifiedAt||backed.createdAt||0);const ct=Number(current.updatedAt||current.modifiedAt||current.createdAt||0);if(bt>ct)currentById.set(key,backed);}
+      errorEntries=[...currentById.values()];appConfig=normalizeConfig(b.payload.appConfig||b.payload.settings||appConfig);configUpdatedAt=Math.max(Number(configUpdatedAt||0),Number(b.payload.configUpdatedAt||0),Date.now());saveLocalCache(true);populateDropdowns();renderTable();await syncWithGoogleDriveImmediate();showToast("Backup merged with existing logs and synced to Drive");}catch(err){showToast(err.message||"Restore failed");}}
+      // Multi-select filter interactions: ALL is exclusive; subject selection rebuilds chapters.
+      function normalizeMultiFilter(el) {
+        if (!el || !el.multiple) return;
+        const vals=[...el.selectedOptions].map(o=>o.value);
+        if(vals.includes("ALL") && vals.length>1){ const all=[...el.options].find(o=>o.value==="ALL"); [...el.options].forEach(o=>o.selected=false); if(all) all.selected=true; }
+        else if(vals.some(v=>v!=="ALL")){ const all=[...el.options].find(o=>o.value==="ALL"); if(all) all.selected=false; }
+      }
+      ["filterSource","filterSubject","filterChapter","filterErrorType","filterReviewStatus"].forEach(id=>document.getElementById(id)?.addEventListener("change",()=>{
+        const el=document.getElementById(id); normalizeMultiFilter(el);
+        if(id==="filterSubject"){
+          const chap=document.getElementById("filterChapter"); const prior=chap?[...chap.selectedOptions].map(o=>o.value):[];
+          const subjects=[...el.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL");
+          const pool=subjects.length?subjects.flatMap(sub=>appConfig.subjects[sub]||[]):Object.values(appConfig.subjects).flat();
+          const chapters=[...new Set(pool)].sort((a,b)=>a.localeCompare(b));
+          if(chap){chap.innerHTML='<option value="ALL">All Chapters</option>'+chapters.map(ch=>`<option value="${escapeHtml(ch)}">${escapeHtml(ch)}</option>`).join(""); const keep=prior.filter(v=>chapters.includes(v)); if(keep.length)keep.forEach(v=>{const o=[...chap.options].find(o=>o.value===v);if(o)o.selected=true;});else chap.options[0].selected=true;}
+        }
+        normalizeMultiFilter(document.getElementById("filterChapter")); renderTable();
+        if(!document.getElementById("filteredLogsModal")?.classList.contains("hidden")) renderFilteredLogsPopup();
+      }));
       document.getElementById("manualCloudBackupBtn")?.addEventListener("click",()=>runCloudBackup(false));document.getElementById("restoreCloudBackupBtn")?.addEventListener("click",restoreLatestCloudBackup);
       const cloudBackupStatusEl=document.getElementById("cloudBackupStatus"); const lastCloudBackup=Number(localStorage.getItem("mcq_latest_cloud_backup_time")||0); if(cloudBackupStatusEl)cloudBackupStatusEl.textContent="Last cloud backup: "+(lastCloudBackup?new Date(lastCloudBackup).toLocaleString():"Never");
 
