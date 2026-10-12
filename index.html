@@ -366,7 +366,7 @@
             </button>
           </div>
 
-          <div class="pt-3 border-t border-slate-200 dark:border-amoled-border space-y-2"><span class="font-bold text-black dark:text-slate-300 block">Cloud backup</span><p class="text-xs text-slate-500">Manual backup updates one rolling backup file in Google Drive. Restore merges active logs from the latest saved backup with logs already on this device.</p><div class="grid grid-cols-2 gap-2"><button id="manualCloudBackupBtn" type="button" class="py-2 px-3 bg-blue-600 text-white rounded-xl font-bold">Back up now</button><button id="restoreCloudBackupBtn" type="button" class="py-2 px-3 bg-emerald-600 text-white rounded-xl font-bold">Restore latest</button></div><div id="cloudBackupStatus" class="text-xs text-slate-500" aria-live="polite">Last cloud backup: Never</div></div>
+          <div class="pt-3 border-t border-slate-200 dark:border-amoled-border space-y-2"><span class="font-bold text-black dark:text-slate-300 block">Cloud backup</span><p class="text-xs text-slate-500">Each manual backup creates a new dated snapshot in Google Drive. Restore merges active logs from the newest snapshot with logs already on this device.</p><div class="grid grid-cols-2 gap-2"><button id="manualCloudBackupBtn" type="button" class="py-2 px-3 bg-blue-600 text-white rounded-xl font-bold">Back up now</button><button id="restoreCloudBackupBtn" type="button" class="py-2 px-3 bg-emerald-600 text-white rounded-xl font-bold">Restore latest</button></div><div id="cloudBackupStatus" class="text-xs text-slate-500" aria-live="polite">Last cloud backup: Never</div></div>
 
           <div class="pt-3 border-t border-slate-200 dark:border-amoled-border">
             <span class="font-bold text-black dark:text-slate-300 block mb-2">Offline JSON Backup:</span>
@@ -2544,15 +2544,25 @@
         } finally { btn.disabled = false; btn.textContent = "Export Safe Backup"; }
       });
 
-      // Rolling cloud backup: a single stable file is updated in place, never a pile of dated backups.
+      // Snapshot backup: every manual backup creates a new dated file. Older snapshots remain recoverable.
       async function runCloudBackup(isAutomatic=false){
         if(!gDriveAccessToken) { if(!isAutomatic) showToast("Connect Google Drive first"); return false; }
-        const status=document.getElementById("cloudBackupStatus"); if(status)status.textContent="Creating latest backup…";
+        const status=document.getElementById("cloudBackupStatus"); if(status)status.textContent="Syncing current logs before backup…";
         try{
-          // First reconcile this device with Drive so the snapshot includes synced records from other devices.
           await syncWithGoogleDriveImmediate();
           const folders=await ensureMediaFolders();
-          const payload={format:"mcq-error-tracker-cloud-backup",schemaVersion:2,exportedAt:new Date().toISOString(),payload:{errorEntries:errorEntries.filter(e=>e && !e.deleted),appConfig,configUpdatedAt,settings:appConfig,localMetadata:{lastSync:localStorage.getItem(LAST_SYNC_KEY)||null}}}; const stateKey="mcq_latest_cloud_backup_file_id"; let fileId=localStorage.getItem(stateKey); if(fileId){const chk=await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?fields=id,name,trashed`,{headers:{Authorization:`Bearer ${gDriveAccessToken}`}});if(!chk.ok)fileId=null;else{const d=await chk.json();if(d.trashed)fileId=null;}} const dataFolder=folders.Backups; const metadata={name:"MCQ_Error_Tracker_LATEST_BACKUP.json",mimeType:"application/json",appProperties:{mcqBackupType:"rolling-latest",mcqBackupSchema:"1"}}; if(!fileId)metadata.parents=[dataFolder]; const url=fileId?`https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(fileId)}?uploadType=multipart&fields=id,name,modifiedTime`:`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime`;const form=new FormData();form.append("metadata",new Blob([JSON.stringify(metadata)],{type:"application/json"}));form.append("file",new Blob([JSON.stringify(payload)],{type:"application/json"}),metadata.name);const res=await fetch(url,{method:fileId?"PATCH":"POST",headers:{Authorization:`Bearer ${gDriveAccessToken}`},body:form});if(!res.ok)throw new Error(`Backup upload failed (${res.status})`);const saved=await res.json();localStorage.setItem(stateKey,saved.id);localStorage.setItem("mcq_latest_cloud_backup_time",String(Date.now()));if(status)status.textContent=`Last cloud backup: ${new Date().toLocaleString()}`;if(!isAutomatic)showToast("Latest cloud backup saved");return true;}catch(err){if(status)status.textContent="Cloud backup failed: "+(err.message||"unknown error");if(!isAutomatic)showToast(err.message||"Cloud backup failed");return false;}
+          const activeEntries=errorEntries.filter(e=>e && e.id && !e.deleted).map(e=>({...e,deleted:false}));
+          const payload={format:"mcq-error-tracker-cloud-backup",schemaVersion:3,exportedAt:new Date().toISOString(),payload:{errorEntries:activeEntries,appConfig,configUpdatedAt,settings:appConfig,localMetadata:{lastSync:localStorage.getItem(LAST_SYNC_KEY)||null},mediaPolicy:"Media remain in Drive and are referenced by their original Drive file IDs on each log."}};
+          const stamp=new Date().toISOString().replace(/[:.]/g,"-");
+          const filename=`MCQ_Error_Tracker_BACKUP_${stamp}.json`;
+          const metadata={name:filename,mimeType:"application/json",parents:[folders.Backups],appProperties:{mcqBackupType:"snapshot",mcqBackupSchema:"3"}};
+          const form=new FormData(); form.append("metadata",new Blob([JSON.stringify(metadata)],{type:"application/json"})); form.append("file",new Blob([JSON.stringify(payload)],{type:"application/json"}),filename);
+          const res=await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime",{method:"POST",headers:{Authorization:`Bearer ${gDriveAccessToken}`},body:form});
+          if(!res.ok)throw new Error(`Backup upload failed (${res.status})`);
+          const saved=await res.json(); localStorage.setItem("mcq_latest_cloud_backup_file_id",saved.id); localStorage.setItem("mcq_latest_cloud_backup_time",String(Date.now())); localStorage.setItem("mcq_latest_cloud_backup_name",saved.name||filename);
+          if(status)status.textContent=`Last cloud backup: ${new Date().toLocaleString()} · ${activeEntries.length} active logs`;
+          if(!isAutomatic)showToast(`Backup saved: ${activeEntries.length} active logs`); return true;
+        }catch(err){if(status)status.textContent="Cloud backup failed: "+(err.message||"unknown error");if(!isAutomatic)showToast(err.message||"Cloud backup failed");return false;}
       }
       async function restoreLatestCloudBackup() {
         if (!gDriveAccessToken) { showToast("Connect Google Drive first"); return; }
@@ -2562,7 +2572,7 @@
           if (status) status.textContent = "Downloading latest cloud backup…";
           const folders = await ensureMediaFolders();
           const files = await driveListAllFiles(
-            `'${folders.Backups}' in parents and name = 'MCQ_Error_Tracker_LATEST_BACKUP.json' and trashed = false`,
+            `'${folders.Backups}' in parents and name contains 'MCQ_Error_Tracker_BACKUP_' and trashed = false`,
             "files(id,name,modifiedTime),nextPageToken"
           );
           if (!files.length) throw new Error("No latest cloud backup found");
@@ -2572,6 +2582,7 @@
           });
           if (!res.ok) throw new Error(`Download failed (${res.status})`);
           const backup = await res.json();
+          localStorage.setItem("mcq_latest_cloud_backup_file_id", files[0].id); localStorage.setItem("mcq_latest_cloud_backup_name", files[0].name || ""); localStorage.setItem("mcq_latest_cloud_backup_time", String(Date.parse(backup.exportedAt || files[0].modifiedTime || Date.now())));
           if (backup.format !== "mcq-error-tracker-cloud-backup" || !Array.isArray(backup.payload?.errorEntries)) {
             throw new Error("Backup format not recognized");
           }
@@ -2623,7 +2634,7 @@
         if(!document.getElementById("filteredLogsModal")?.classList.contains("hidden")) renderFilteredLogsPopup();
       }));
       document.getElementById("manualCloudBackupBtn")?.addEventListener("click",()=>runCloudBackup(false));document.getElementById("restoreCloudBackupBtn")?.addEventListener("click",restoreLatestCloudBackup);
-      const cloudBackupStatusEl=document.getElementById("cloudBackupStatus"); const lastCloudBackup=Number(localStorage.getItem("mcq_latest_cloud_backup_time")||0); if(cloudBackupStatusEl)cloudBackupStatusEl.textContent="Last cloud backup: "+(lastCloudBackup?new Date(lastCloudBackup).toLocaleString():"Never");
+      const cloudBackupStatusEl=document.getElementById("cloudBackupStatus"); const lastCloudBackup=Number(localStorage.getItem("mcq_latest_cloud_backup_time")||0); const lastCloudBackupName=localStorage.getItem("mcq_latest_cloud_backup_name"); if(cloudBackupStatusEl)cloudBackupStatusEl.textContent="Last cloud backup: "+(lastCloudBackup?new Date(lastCloudBackup).toLocaleString()+(lastCloudBackupName?" · "+lastCloudBackupName:""):"Check Drive for existing backups");
 
       // JSON backup
       document.getElementById("exportJsonBtn")?.addEventListener("click", () => {
