@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>MCQ Error Tracker</title>
   <link rel="manifest" href="./manifest.webmanifest">
-  <meta name="theme-color" content="#030712">
+  <meta name="theme-color" content="#111214">
   <meta name="mobile-web-app-capable" content="yes">
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -20,15 +20,15 @@
         extend: {
           colors: {
             amoled: {
-              bg: '#030712',
-              card: '#080d1a',
-              row: '#090e1d',
-              border: '#151f32'
+              bg: '#111214',
+              card: '#1a1b1e',
+              row: '#16171a',
+              border: '#282a30'
             },
             brand: {
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca'
+              500: '#f59e0b',
+              600: '#d97706',
+              700: '#b45309'
             }
           }
         }
@@ -42,43 +42,135 @@
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
     }
-    .dark body { background-color: #000000 !important; color: #BCBCBC !important; }
-    html.dark body { color: #BCBCBC !important; background: #000000 !important; }
-    html.dark body .bg-amoled-bg, html.dark body .dark\:bg-amoled-bg, html.dark body .dark\:bg-amoled-card, html.dark body .dark\:bg-\[\#0c1222\], html.dark body .dark\:bg-\[\#0a0f1e\] { background-color: #000000 !important; }
-    html.dark body .text-white, html.dark body .dark\:text-white, html.dark body .dark\:text-slate-100, html.dark body .dark\:text-slate-200, html.dark body .dark\:text-slate-300, html.dark body .dark\:text-slate-400 { color: #BCBCBC !important; }
-    html:not(.dark) #logsTable td:nth-child(7), html:not(.dark) #logsTable td:nth-child(7) * { color: #000000 !important; }
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+    
+    /* === [LINES 44-53] THEME BACKGROUND & CONTRAST CONFIGURATION === */
+    /* Dark Theme: Soft charcoal, not pitch black */
+    html.dark body { 
+      background-color: #111214 !important; 
+      color: #d1d5db !important; 
     }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: transparent;
+    html.dark body .bg-amoled-bg, 
+    html.dark body .dark\:bg-amoled-bg, 
+    html.dark body .dark\:bg-\[\#0c1222\], 
+    html.dark body .dark\:bg-\[\#0a0f1e\] { 
+      background-color: #151619 !important; 
     }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #1e293b;
-      border-radius: 9999px;
+    html.dark body .dark\:bg-amoled-card,
+    html.dark body .bg-white { 
+      background-color: #1a1b1e !important; 
     }
+    html.dark body .text-white, 
+    html.dark body .dark\:text-white, 
+    html.dark body .dark\:text-slate-100 { 
+      color: #f3f4f6 !important; 
+    }
+    html.dark body .text-black,
+    html.dark body .dark\:text-slate-200, 
+    html.dark body .dark\:text-slate-300 { 
+      color: #e5e7eb !important; 
+    }
+    html.dark body .text-slate-400, 
+    html.dark body .dark\:text-slate-400,
+    html.dark body .text-slate-500 { 
+      color: #9ca3af !important; 
+    }
+    
+    /* Light Theme: Warm ivory, glare-free */
+    html:not(.dark) body { 
+      background-color: #fcfbf7 !important; 
+      color: #1f2937 !important; 
+    }
+    html:not(.dark) .bg-white { 
+      background-color: #ffffff !important; 
+      border-color: #e6e2d8 !important; 
+    }
+    html:not(.dark) .bg-slate-50,
+    html:not(.dark) .bg-slate-100 { 
+      background-color: #f7f5ed !important; 
+    }
+    html:not(.dark) #logsTable td:nth-child(7), 
+    html:not(.dark) #logsTable td:nth-child(7) * { 
+      color: #1f2937 !important; 
+    }
+
+    /* === [LINES 55-66] SCROLLBAR & ANIMATIONS === */
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 9999px; }
+
     .spin-fast { animation: spin 0.8s linear infinite !important; }
     #quickSyncBtn.syncing #syncSpinner { animation: spin .8s linear infinite !important; transform-origin: center; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* === [LINES 68-76] MAIN SCREEN TABLE DESIGN === */
     #logsTable { table-layout: fixed; min-width: 1120px; }
     #logsTable th, #logsTable td { white-space: normal; overflow-wrap: anywhere; word-break: normal; vertical-align: middle; }
     #logsTable tbody tr.log-row { cursor: pointer; }
-    #logsTable tbody tr.log-row:focus { outline: 2px solid #6366f1; outline-offset: -2px; }
-    .sync-track { height: 4px; background: #1e293b; overflow: hidden; }
-    .sync-fill { height: 100%; width: 0%; background: linear-gradient(90deg,#6366f1,#22c55e); transition: width .2s ease; }
+    #logsTable tbody tr.log-row:focus { outline: 2px solid #f59e0b; outline-offset: -2px; }
+
+    .sync-track { height: 4px; background: #282a30; overflow: hidden; }
+    .sync-fill { height: 100%; width: 0%; background: linear-gradient(90deg,#f59e0b,#10b981); transition: width .2s ease; }
     .sync-fill.indeterminate { width: 35%; animation: sync-slide 1.1s ease-in-out infinite alternate; }
     @keyframes sync-slide { from { transform: translateX(0); } to { transform: translateX(185%); } }
     .log-context-menu { position: fixed; z-index: 100; min-width: 150px; }
+
     html.invert-study-images #detailContent img,
     html.invert-study-images #filteredLogsContent img,
     html.invert-study-images #lightboxImg,
     html.invert-study-images #modalQImgPreview,
     html.invert-study-images #modalSImgPreview { filter: invert(1) hue-rotate(180deg) !important; }
-    .uppercase, th, label, h1, h2, h3 { font-weight: 800; }
+
+    .uppercase, th, label, h1, h2, h3 { font-weight: 700; }
     #searchFilterControls { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.5rem; }
     #filterActionRow { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.5rem; }
     #filterActionRow button { width:100%; min-width:0; }
+
+    /* === [LINES 95-105] OUTLINE BORDERS & BOX STYLING === */
+    .border-slate-200, .dark\:border-amoled-border, .border-slate-300 { 
+      border-width: 1px !important; 
+      border-color: #282a30 !important; 
+    }
+    html:not(.dark) .border-slate-200, 
+    html:not(.dark) .dark\:border-amoled-border, 
+    html:not(.dark) .border-slate-300 { 
+      border-color: #e6e2d8 !important; 
+    }
+    #filteredLogsModal .border-b, #detailModal .border-b { border-bottom-width: 1px !important; }
+    #statTotalLogs, #statNewLogs, #statReviewedLogs, #statErrorTypes { font-size: 2rem !important; line-height: 1.1 !important; font-weight: 800 !important; }
+    main > .grid:first-child > div { border-width: 1px !important; padding: 1rem !important; }
+    #errorTypeStats > span { border-width: 1px !important; }
+
+    #filteredLogsContent:has(#filteredBookTrack) { width:100%; min-width:0; flex:1 1 auto; }
+    #filteredBookTrack { display:flex; width:100%; min-width:0; height:100%; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y; }
+    .filtered-book-page { box-sizing:border-box; flex:0 0 100% !important; width:100% !important; min-width:100% !important; max-width:100% !important; scroll-snap-align:start; scroll-snap-stop:always; overflow-y:auto; padding:clamp(1rem,2.4vw,2rem) !important; border-right:1px solid #282a30; }
+    #filteredLogsModal > div { border-width:1px !important; }
+    #filteredLogsContent article[data-filtered-card] { cursor:pointer; border-width:1px !important; transition:border-color .15s, background .15s; }
+    #filteredLogsContent article[data-filtered-card]:hover { border-color:#f59e0b !important; }
+    #filteredLogsContent article[data-filtered-card]:focus-visible { outline:2px solid #f59e0b; outline-offset:2px; }
+    .filter-multi-select { min-height: 38px; height: 38px; }
+    .filter-multi-select:focus { height: 100px; }
+    .filter-multi-select option { padding: 4px; }
+    .latex-help { font-size:11px; color:#64748b; margin-top:4px; }
+    .solution-image-item { touch-action:pan-y; cursor:grab; }
+
+    /* === [LINES 120-140] ERROR TAG PILL COLOURS (BOTH THEMES) === */
+    .error-pill-pastel { border-width: 1.5px !important; font-weight: 700 !important; border-radius: 9999px !important; padding: 3px 10px !important; }
+    
+    /* Dark Theme Error Pills */
+    html.dark .error-pill-pastel.pastel-blue { background: rgba(14, 165, 233, 0.12) !important; color: #38bdf8 !important; border-color: rgba(56, 189, 248, 0.4) !important; }
+    html.dark .error-pill-pastel.pastel-amber { background: rgba(245, 158, 11, 0.12) !important; color: #fbbf24 !important; border-color: rgba(245, 158, 11, 0.4) !important; }
+    html.dark .error-pill-pastel.pastel-red { background: rgba(244, 63, 94, 0.12) !important; color: #fb7185 !important; border-color: rgba(244, 63, 94, 0.4) !important; }
+    html.dark .error-pill-pastel.pastel-green { background: rgba(16, 185, 129, 0.12) !important; color: #34d399 !important; border-color: rgba(16, 185, 129, 0.4) !important; }
+    html.dark .error-pill-pastel.pastel-purple { background: rgba(168, 85, 247, 0.12) !important; color: #c084fc !important; border-color: rgba(168, 85, 247, 0.4) !important; }
+
+    /* Light Theme Error Pills */
+    html:not(.dark) .error-pill-pastel.pastel-blue { background: #e0f2fe !important; color: #0369a1 !important; border-color: #7dd3fc !important; }
+    html:not(.dark) .error-pill-pastel.pastel-amber { background: #fef3c7 !important; color: #b45309 !important; border-color: #fcd34d !important; }
+    html:not(.dark) .error-pill-pastel.pastel-red { background: #ffe4e6 !important; color: #be123c !important; border-color: #fda4af !important; }
+    html:not(.dark) .error-pill-pastel.pastel-green { background: #d1fae5 !important; color: #047857 !important; border-color: #6ee7b7 !important; }
+    html:not(.dark) .error-pill-pastel.pastel-purple { background: #f3e8ff !important; color: #7e22ce !important; border-color: #d8b4fe !important; }
+
+    .status-pastel { border-width:1px !important; font-weight:700 !important; }
 
     @media (max-width: 640px) {
       body { font-size: 13px; }
@@ -135,30 +227,6 @@
       #logsTable th:nth-child(9), #logsTable td:nth-child(9) { width: 16%; }
     }
 
-    .border-slate-200, .dark\:border-amoled-border, .border-slate-300 { border-width: 2px !important; }
-    #filteredLogsModal .border-b, #detailModal .border-b { border-bottom-width: 2px !important; }
-    #statTotalLogs, #statNewLogs, #statReviewedLogs, #statErrorTypes { font-size: 2rem !important; line-height: 1.1 !important; font-weight: 900 !important; }
-    main > .grid:first-child > div { border-width: 2px !important; padding: 1rem !important; }
-    #errorTypeStats > span { border-width: 2px !important; }
-    #filteredLogsContent:has(#filteredBookTrack) { width:100%; min-width:0; flex:1 1 auto; }
-    #filteredBookTrack { display:flex; width:100%; min-width:0; height:100%; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y; }
-    .filtered-book-page { box-sizing:border-box; flex:0 0 100% !important; width:100% !important; min-width:100% !important; max-width:100% !important; scroll-snap-align:start; scroll-snap-stop:always; overflow-y:auto; padding:clamp(1rem,2.4vw,2rem) !important; border-right:2px solid #334155; }
-    #filteredLogsModal > div { border-width:2px !important; }
-    #filteredLogsContent article[data-filtered-card] { cursor:pointer; border-width:2px !important; transition:border-color .15s, background .15s; }
-    #filteredLogsContent article[data-filtered-card]:hover { border-color:#64748b !important; }
-    #filteredLogsContent article[data-filtered-card]:focus-visible { outline:3px solid #60a5fa; outline-offset:2px; }
-    .filter-multi-select { min-height: 38px; height: 38px; }
-    .filter-multi-select:focus { height: 100px; }
-    .filter-multi-select option { padding: 4px; }
-    .latex-help { font-size:11px; color:#64748b; margin-top:4px; }
-    .solution-image-item { touch-action:pan-y; cursor:grab; }
-    .error-pill-pastel { border-width:2px !important; font-weight:800 !important; }
-    .error-pill-pastel.pastel-blue { background:#17283b !important; color:#b8d8ff !important; border-color:#527da8 !important; }
-    .error-pill-pastel.pastel-amber { background:#332a17 !important; color:#f6dfa0 !important; border-color:#8d7945 !important; }
-    .error-pill-pastel.pastel-red { background:#351e22 !important; color:#ffc0c5 !important; border-color:#98565d !important; }
-    .error-pill-pastel.pastel-green { background:#183027 !important; color:#b9efd4 !important; border-color:#52856e !important; }
-    .error-pill-pastel.pastel-purple { background:#2b2039 !important; color:#e0c5ff !important; border-color:#8060a5 !important; }
-    .status-pastel { border-width:2px !important; font-weight:800 !important; }
     @media (min-width:641px) {
       #filteredLogsModal > div { max-width: min(1100px, 94vw) !important; max-height:94dvh !important; }
       #filteredLogsContent:has(#filteredBookTrack) { min-height:0; }
@@ -174,11 +242,12 @@
   <header class="bg-white dark:bg-amoled-card/90 backdrop-blur-md border-b border-slate-200 dark:border-amoled-border sticky top-0 z-30">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-violet-600 flex items-center justify-center text-white shadow-md shadow-brand-500/20 shrink-0">
+        <!-- Logo / Icon Box -->
+        <div class="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0">
           <i data-lucide="crosshair" class="w-5 h-5"></i>
         </div>
         <div>
-          <h1 class="font-bold text-sm sm:text-base text-black dark:text-white leading-tight">MCQ Error Tracker</h1>
+          <h1 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white leading-tight">MCQ Error Tracker</h1>
           <div class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
             <span id="driveIndicatorDot" class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700 inline-block"></span>
             <span id="syncStatusText" class="truncate max-w-[200px] sm:max-w-xs">Drive Unlinked</span>
@@ -191,7 +260,7 @@
           <i data-lucide="menu" class="w-5 h-5"></i>
         </button>
         <div id="mobileMenuPanel" class="hidden sm:hidden absolute right-0 top-11 z-[70] w-56 rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-2 shadow-2xl">
-          <button id="mobileMenuSettingsBtn" type="button" class="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="sliders" class="w-4 h-4 text-brand-500"></i>Settings</button>
+          <button id="mobileMenuSettingsBtn" type="button" class="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="sliders" class="w-4 h-4 text-amber-500"></i>Settings</button>
           <button id="mobileMenuThemeBtn" type="button" class="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="sun-moon" class="w-4 h-4 text-amber-500"></i>Switch theme</button>
           <button id="mobileMenuMistakeTypesBtn" type="button" class="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"><i data-lucide="chart-no-axes-column" class="w-4 h-4 text-emerald-500"></i>Logs by mistake type</button>
         </div>
@@ -199,15 +268,19 @@
           <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
           <i data-lucide="sun" class="w-4 h-4 block dark:hidden"></i>
         </button>
+
         <button id="quickSyncBtn" type="button" class="p-2 rounded-xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition" title="Sync With Drive">
           <i data-lucide="refresh-cw" class="w-4 h-4" id="syncSpinner"></i>
         </button>
+
         <button id="openSettingsModalBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card text-black dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
-          <i data-lucide="sliders" class="w-4 h-4 text-brand-500"></i>
+          <i data-lucide="sliders" class="w-4 h-4 text-amber-500"></i>
           <span>Settings</span>
         </button>
-        <button id="openNewLogModalBtn" type="button" class="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl bg-brand-600 text-white text-xs sm:text-sm font-semibold hover:bg-brand-700 shadow-md shadow-brand-500/20 active:scale-95 transition">
-          <i data-lucide="plus" class="w-4 h-4"></i>
+
+        <!-- Primary Log Error Button -->
+        <button id="openNewLogModalBtn" type="button" class="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs sm:text-sm font-bold shadow-md shadow-amber-500/20 active:scale-95 transition">
+          <i data-lucide="plus" class="w-4 h-4 stroke-[2.5]"></i>
           <span>Log Error</span>
         </button>
       </div>
@@ -223,13 +296,14 @@
   </div>
 
   <main class="max-w-7xl mx-auto px-3 sm:px-6 py-4 flex-1 w-full space-y-4">
-    <!-- Dashboard -->
+    <!-- Dashboard Stats -->
     <section class="grid grid-cols-2 lg:grid-cols-4 gap-2.5" aria-label="Mistake log statistics">
-      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-slate-400">Total Logs</div><div id="statTotalLogs" class="text-2xl font-extrabold mt-1">0</div><div class="text-xs font-semibold text-slate-400">All active entries</div></div>
-      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-slate-400">New / Unreviewed</div><div id="statNewLogs" class="text-2xl font-extrabold text-amber-400 mt-1">0</div><div class="text-xs font-semibold text-slate-400">Not reviewed yet</div></div>
-      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-slate-400">Reviewed</div><div id="statReviewedLogs" class="text-2xl font-extrabold text-emerald-400 mt-1">0</div><div class="text-xs font-semibold text-slate-400">At least one review</div></div>
-      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-slate-400">Error Types</div><div id="statErrorTypes" class="text-2xl font-extrabold mt-1">0</div><div class="text-xs font-semibold text-slate-400">Types currently configured</div></div>
+      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-slate-500 dark:text-slate-400">Total Logs</div><div id="statTotalLogs" class="text-2xl font-extrabold mt-1">0</div><div class="text-xs font-semibold text-slate-400">All active entries</div></div>
+      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-amber-500">New / Unreviewed</div><div id="statNewLogs" class="text-2xl font-extrabold text-amber-500 mt-1">0</div><div class="text-xs font-semibold text-slate-400">Not reviewed yet</div></div>
+      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-emerald-500">Reviewed</div><div id="statReviewedLogs" class="text-2xl font-extrabold text-emerald-500 mt-1">0</div><div class="text-xs font-semibold text-slate-400">At least one review</div></div>
+      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-slate-500 dark:text-slate-400">Error Types</div><div id="statErrorTypes" class="text-2xl font-extrabold mt-1">0</div><div class="text-xs font-semibold text-slate-400">Types currently configured</div></div>
     </section>
+
     <section id="mistakeTypeSection" class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3">
       <div class="flex items-center justify-between gap-2"><h2 class="text-xs font-extrabold">Logs by mistake type</h2><button id="toggleMistakeTypeStatsBtn" type="button" class="inline-flex items-center gap-1 rounded-lg border border-slate-200 dark:border-amoled-border px-2.5 py-1.5 text-[11px] font-bold"><i data-lucide="chevron-down" class="w-4 h-4"></i><span>Show active entries</span></button></div>
       <div id="errorTypeStats" class="hidden flex-wrap gap-2 mt-3"><span class="text-xs text-slate-500">No logs yet</span></div>
@@ -256,9 +330,9 @@
         </select>
       </div>
       <div id="filterActionRow" class="mt-2 grid grid-cols-2 gap-2 max-w-xl mx-auto">
-        <button id="exportPdfBtn" type="button" class="px-3 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white whitespace-nowrap">Export PDF</button>
-        <button id="showFilteredLogsBtn" type="button" class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-extrabold text-sm px-3 py-2 shadow-md shadow-blue-600/20">
-          <i data-lucide="check" class="w-5 h-5"></i><span>Show filtered logs</span><span id="filteredLogsCount" class="rounded-full bg-white/20 px-2 py-0.5 text-xs">0</span>
+        <button id="exportPdfBtn" type="button" class="px-3 py-2 text-xs font-bold rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 whitespace-nowrap">Export PDF</button>
+        <button id="showFilteredLogsBtn" type="button" class="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-slate-950 font-extrabold text-sm px-3 py-2 shadow-md shadow-amber-500/20">
+          <i data-lucide="check" class="w-5 h-5 stroke-[2.5]"></i><span>Show filtered logs</span><span id="filteredLogsCount" class="rounded-full bg-slate-950/20 px-2 py-0.5 text-xs">0</span>
         </button>
       </div>
     </section>
@@ -300,7 +374,7 @@
     <div class="bg-white dark:bg-amoled-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-slate-200 dark:border-amoled-border">
       <div class="px-5 py-3.5 border-b border-slate-200 dark:border-amoled-border flex items-center justify-between bg-slate-50/70 dark:bg-[#0a0f1e]">
         <div class="flex items-center gap-2">
-          <i data-lucide="sliders" class="w-5 h-5 text-brand-500"></i>
+          <i data-lucide="sliders" class="w-5 h-5 text-amber-500"></i>
           <h2 class="font-bold text-black dark:text-white text-base">Configuration & Sync</h2>
         </div>
         <button id="closeSettingsBtn" type="button" class="text-slate-400 hover:text-black dark:hover:text-white p-1">
@@ -309,7 +383,7 @@
       </div>
 
       <div class="flex border-b border-slate-200 dark:border-amoled-border bg-slate-50 dark:bg-[#070b16] text-xs">
-        <button type="button" class="setting-tab px-4 py-2.5 font-bold border-b-2 border-brand-600 text-brand-600 dark:text-brand-400" data-tab="stab-drive">Google Drive</button>
+        <button type="button" class="setting-tab px-4 py-2.5 font-bold border-b-2 border-amber-500 text-amber-500" data-tab="stab-drive">Google Drive</button>
         <button type="button" class="setting-tab px-4 py-2.5 font-bold border-b-2 border-transparent text-slate-500 hover:text-black dark:hover:text-slate-200" data-tab="stab-sources">Sources</button>
         <button type="button" class="setting-tab px-4 py-2.5 font-bold border-b-2 border-transparent text-slate-500 hover:text-black dark:hover:text-slate-200" data-tab="stab-subjects">Subjects & Chapters</button>
         <button type="button" class="setting-tab px-4 py-2.5 font-bold border-b-2 border-transparent text-slate-500 hover:text-black dark:hover:text-slate-200" data-tab="stab-errortypes">Error Types</button>
@@ -325,7 +399,7 @@
             </div>
             <div id="driveEmailRow" class="hidden flex items-center justify-between">
               <span class="font-bold text-slate-600 dark:text-slate-400">Account:</span>
-              <span id="driveUserEmail" class="font-mono text-brand-500 font-bold truncate max-w-[200px]"></span>
+              <span id="driveUserEmail" class="font-mono text-amber-500 font-bold truncate max-w-[200px]"></span>
             </div>
             <div class="flex items-center justify-between gap-3"><span class="font-bold text-slate-600 dark:text-slate-400">Uploaded this sync:</span><span id="driveLastUploadSize" class="font-bold text-slate-700 dark:text-slate-200">0 MB</span></div>
             <div class="flex items-center justify-between gap-3"><span class="font-bold text-slate-600 dark:text-slate-400">Total uploaded by this app:</span><span id="driveTotalUploadedSize" class="font-bold text-slate-700 dark:text-slate-200">0 GB</span></div>
@@ -351,11 +425,11 @@
           </div>
 
           <div class="pt-3 border-t border-slate-200 dark:border-amoled-border space-y-2">
-            <span class="font-bold text-black dark:text-slate-300 block">Cloud backup</span>
+            <span class="font-bold text-black dark:text-slate-300 block">Cloud Snapshot Backups</span>
             <p class="text-xs text-slate-500">Each manual backup creates a new dated snapshot in Google Drive. Restore merges active logs from the newest snapshot with logs already on this device.</p>
             <div class="grid grid-cols-2 gap-2">
-              <button id="manualCloudBackupBtn" type="button" class="py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition">Back up now</button>
-              <button id="restoreCloudBackupBtn" type="button" class="py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition">Restore latest</button>
+              <button id="manualCloudBackupBtn" type="button" class="py-2 px-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl transition">Back up now</button>
+              <button id="restoreCloudBackupBtn" type="button" class="py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition">Restore latest</button>
             </div>
             <div id="cloudBackupStatus" class="text-xs text-slate-500" aria-live="polite">Last cloud backup: Never</div>
           </div>
@@ -364,7 +438,7 @@
             <span class="font-bold text-black dark:text-slate-300 block mb-2">Offline JSON Backup:</span>
             <div class="grid grid-cols-2 gap-2">
               <button id="exportJsonBtn" type="button" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-[#0c1222] dark:hover:bg-slate-800 rounded-xl font-semibold text-black dark:text-slate-300 transition flex items-center justify-center gap-1.5">
-                <i data-lucide="download" class="w-3.5 h-3.5 text-brand-500"></i> Export JSON
+                <i data-lucide="download" class="w-3.5 h-3.5 text-amber-500"></i> Export JSON
               </button>
               <label class="py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-[#0c1222] dark:hover:bg-slate-800 rounded-xl font-semibold text-black dark:text-slate-300 transition flex items-center justify-center gap-1.5 cursor-pointer">
                 <i data-lucide="upload" class="w-3.5 h-3.5 text-emerald-500"></i> Import JSON
@@ -376,17 +450,14 @@
           <div class="pt-3 border-t border-slate-200 dark:border-amoled-border space-y-2">
             <div>
               <span class="font-bold text-black dark:text-slate-300 block">Migration — Step 1: Safety</span>
-              <p class="mt-1 text-slate-500 dark:text-slate-400 leading-relaxed">Audit current data and export a checksum-verified backup before migrating media.</p>
+              <p class="mt-1 text-slate-500 dark:text-slate-400 leading-relaxed">Audit the current data and export a checksum-verified backup before migrating.</p>
             </div>
             <div class="grid grid-cols-2 gap-2">
               <button id="migrationAuditBtn" type="button" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-[#0c1222] dark:hover:bg-slate-800 rounded-xl font-semibold text-black dark:text-slate-300 transition">Check Data</button>
-              <button id="migrationBackupBtn" type="button" class="py-2 px-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold text-white transition">Export Safe Backup</button>
+              <button id="migrationBackupBtn" type="button" class="py-2 px-3 bg-amber-500 hover:bg-amber-600 rounded-xl font-bold text-slate-950 transition">Export Safe Backup</button>
             </div>
             <div class="pt-3 border-t border-slate-200 dark:border-amoled-border space-y-2">
-              <div>
-                <span class="font-bold text-black dark:text-slate-300 block">Migration — Step 2: Separate media</span>
-                <p class="mt-1 text-slate-500 dark:text-slate-400 leading-relaxed">Uploads each question image, solution image, and voice note as a separate Google Drive file.</p>
-              </div>
+              <div><span class="font-bold text-black dark:text-slate-300 block">Migration — Step 2: Separate media</span><p class="mt-1 text-slate-500 dark:text-slate-400 leading-relaxed">Uploads each question image, solution image and voice note as a separate Google Drive file.</p></div>
               <button id="migrateMediaBtn" type="button" class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl font-bold text-white transition">Migrate Media to Drive</button>
               <div id="mediaMigrationResult" class="hidden rounded-xl border border-slate-200 dark:border-amoled-border bg-slate-50 dark:bg-[#0c1222] p-3 text-slate-600 dark:text-slate-300 space-y-1" aria-live="polite"></div>
             </div>
@@ -398,7 +469,7 @@
         <div id="stab-sources" class="setting-panel hidden space-y-3">
           <div class="flex gap-2">
             <input type="text" id="newSourceInput" placeholder="New source..." class="flex-1 px-3 py-2 bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-white">
-            <button id="addSourceBtn" type="button" class="px-4 py-2 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700">Add</button>
+            <button id="addSourceBtn" type="button" class="px-4 py-2 bg-amber-500 text-slate-950 font-bold rounded-xl hover:bg-amber-600">Add</button>
           </div>
           <div id="sourcesList" class="divide-y divide-slate-100 dark:divide-amoled-border border border-slate-200 dark:border-amoled-border rounded-xl max-h-56 overflow-y-auto"></div>
         </div>
@@ -407,7 +478,7 @@
         <div id="stab-subjects" class="setting-panel hidden space-y-3">
           <div class="flex gap-2">
             <input type="text" id="newSubjectInput" placeholder="New subject..." class="flex-1 px-3 py-2 bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-white">
-            <button id="addSubjectBtn" type="button" class="px-4 py-2 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700">Add Subject</button>
+            <button id="addSubjectBtn" type="button" class="px-4 py-2 bg-amber-500 text-slate-950 font-bold rounded-xl hover:bg-amber-600">Add Subject</button>
           </div>
           <div class="pt-2 space-y-2">
             <div class="flex items-center gap-2">
@@ -416,7 +487,7 @@
             </div>
             <div class="flex gap-2">
               <input type="text" id="newChapterInput" placeholder="Add chapter..." class="flex-1 px-3 py-2 bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-white">
-              <button id="addChapterBtn" type="button" class="px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl font-bold">Add Chapter</button>
+              <button id="addChapterBtn" type="button" class="px-4 py-2 bg-slate-800 text-white rounded-xl font-bold">Add Chapter</button>
             </div>
             <div id="chaptersList" class="divide-y divide-slate-100 dark:divide-amoled-border border border-slate-200 dark:border-amoled-border rounded-xl max-h-52 overflow-y-auto"></div>
           </div>
@@ -434,7 +505,7 @@
               <option value="purple">Purple</option>
             </select>
           </div>
-          <button id="addErrorTypeBtn" type="button" class="w-full py-2 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700">Add Error Type</button>
+          <button id="addErrorTypeBtn" type="button" class="w-full py-2 bg-amber-500 text-slate-950 font-bold rounded-xl hover:bg-amber-600">Add Error Type</button>
           <div id="errorTypesList" class="divide-y divide-slate-100 dark:divide-amoled-border border border-slate-200 dark:border-amoled-border rounded-xl max-h-56 overflow-y-auto"></div>
         </div>
       </div>
@@ -446,7 +517,7 @@
     <div class="bg-white dark:bg-amoled-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-slate-200 dark:border-amoled-border">
       <div class="px-5 py-3.5 border-b border-slate-200 dark:border-amoled-border flex items-center justify-between bg-slate-50/70 dark:bg-[#0a0f1e]">
         <div class="flex items-center gap-2">
-          <i data-lucide="pen-tool" class="w-4 h-4 text-brand-500"></i>
+          <i data-lucide="pen-tool" class="w-4 h-4 text-amber-500"></i>
           <h2 id="modalHeading" class="font-bold text-black dark:text-white text-sm sm:text-base">Record MCQ Mistake</h2>
         </div>
         <button id="closeModalBtn" type="button" class="text-slate-400 hover:text-black dark:hover:text-white p-1">
@@ -463,24 +534,24 @@
             <input type="text" id="modalQNum" placeholder="e.g. 43 or Q12" required class="w-full px-3 py-2 bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl font-semibold text-black dark:text-white">
           </div>
           <div>
-            <div class="flex items-center justify-between mb-1"><label class="block text-xs font-bold text-black dark:text-slate-300">Source *</label><button type="button" id="quickAddSourceBtn" class="text-brand-500 font-bold">+ Add</button></div>
+            <div class="flex items-center justify-between mb-1"><label class="block text-xs font-bold text-black dark:text-slate-300">Source *</label><button type="button" id="quickAddSourceBtn" class="text-amber-500 font-bold">+ Add</button></div>
             <select id="modalSource" required class="w-full px-3 py-2 bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-white"></select>
           </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <div class="flex items-center justify-between mb-1"><label class="block text-xs font-bold text-black dark:text-slate-300">Subject *</label><button type="button" id="quickAddSubjectBtn" class="text-brand-500 font-bold">+ Add</button></div>
+            <div class="flex items-center justify-between mb-1"><label class="block text-xs font-bold text-black dark:text-slate-300">Subject *</label><button type="button" id="quickAddSubjectBtn" class="text-amber-500 font-bold">+ Add</button></div>
             <select id="modalSubject" required class="w-full px-3 py-2 bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-white"></select>
           </div>
           <div>
-            <div class="flex items-center justify-between mb-1"><label class="block text-xs font-bold text-black dark:text-slate-300">Chapter *</label><button type="button" id="quickAddChapterBtn" class="text-brand-500 font-bold">+ Add</button></div>
+            <div class="flex items-center justify-between mb-1"><label class="block text-xs font-bold text-black dark:text-slate-300">Chapter *</label><button type="button" id="quickAddChapterBtn" class="text-amber-500 font-bold">+ Add</button></div>
             <select id="modalChapter" required class="w-full px-3 py-2 bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-white"></select>
           </div>
         </div>
 
         <div>
-          <div class="flex items-center justify-between mb-1.5"><label class="block text-xs font-bold text-black dark:text-slate-300">Error Classification *</label><button type="button" id="quickAddErrorTypeBtn" class="text-brand-500 font-bold">+ Add type</button></div>
+          <div class="flex items-center justify-between mb-1.5"><label class="block text-xs font-bold text-black dark:text-slate-300">Error Classification *</label><button type="button" id="quickAddErrorTypeBtn" class="text-amber-500 font-bold">+ Add type</button></div>
           <div id="modalErrorTypesPillContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
         </div>
 
@@ -533,7 +604,7 @@
             </button>
             <span id="voiceTimer" class="font-mono text-xs text-slate-500 ml-1">00:00</span>
           </div>
-          <div class="flex items-center gap-2"><label class="cursor-pointer text-xs font-bold text-brand-500">Upload audio<input type="file" id="modalAudioInput" accept="audio/*" class="hidden"></label></div>
+          <div class="flex items-center gap-2"><label class="cursor-pointer text-xs font-bold text-amber-500">Upload audio<input type="file" id="modalAudioInput" accept="audio/*" class="hidden"></label></div>
           <div id="voicePlaybackContainer" class="hidden flex items-center gap-2">
             <audio id="modalAudioEl" controls class="h-7 w-36"></audio>
             <button type="button" id="deleteVoiceBtn" class="text-rose-500 font-bold text-xs">Remove</button>
@@ -549,7 +620,7 @@
 
         <div class="pt-3 border-t border-slate-200 dark:border-amoled-border flex justify-end gap-2">
           <button type="button" id="cancelEntryModalBtn" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-amoled-border text-xs text-black dark:text-slate-300">Cancel</button>
-          <button type="submit" class="px-5 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-700">Save</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold hover:bg-amber-600">Save</button>
         </div>
       </form>
     </div>
@@ -574,7 +645,7 @@
         <button id="filteredBookNext" type="button" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 font-bold" aria-label="Next log">Next →</button>
       </div>
       <div class="p-3 border-t border-slate-200 dark:border-amoled-border flex justify-end">
-        <button id="closeFilteredLogsFooterBtn" type="button" class="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold">Done</button>
+        <button id="closeFilteredLogsFooterBtn" type="button" class="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600">Done</button>
       </div>
     </div>
   </div>
@@ -592,11 +663,12 @@
       <div id="detailContent" class="p-4 sm:p-5 overflow-y-auto custom-scrollbar space-y-4 text-sm"></div>
       <div class="p-3 border-t border-slate-200 dark:border-amoled-border flex flex-wrap justify-end gap-2">
         <button id="detailReviewBtn" type="button" class="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold">Mark reviewed</button>
-        <button id="detailEditBtn" type="button" class="px-3 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold">Edit</button>
-        <button id="detailDeleteBtn" type="button" class="px-3 py-2 rounded-xl border border-rose-500/40 text-rose-500 text-xs font-bold">Delete</button>
+        <button id="detailEditBtn" type="button" class="px-3 py-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold hover:bg-amber-600">Edit</button>
+        <button id="detailDeleteBtn" type="button" class="px-3 py-2 rounded-xl border border-rose-500/40 text-rose-500 text-xs font-bold hover:bg-rose-500/10">Delete</button>
       </div>
     </div>
   </div>
+
   <div id="logContextMenu" class="log-context-menu hidden rounded-xl border border-slate-700 bg-[#0c1222] p-1 shadow-2xl">
     <button id="contextEditBtn" type="button" class="block w-full rounded-lg px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800">✎ Edit log</button>
     <button id="contextDeleteBtn" type="button" class="block w-full rounded-lg px-3 py-2 text-left text-xs text-rose-400 hover:bg-slate-800">⌫ Delete log</button>
@@ -738,6 +810,12 @@
     let questionImgBase64 = null;
     let solutionImgBase64 = null;
     let currentPlayingAudio = null;
+
+    let activeDetailId = null;
+    let contextEntryId = null;
+    let filteredLogsViewMode = "list";
+    let filteredBookRows = [];
+    let filteredPopupReturn = false;
 
     const MEDIA_SPECS = [
       { field: "questionImage", idField: "questionImageDriveId", kind: "question-image", folder: "Question Images", prefix: "question" },
@@ -944,7 +1022,7 @@
       else { bar.style.width = state === "working" ? "35%" : "100%"; percentEl.textContent = state === "working" ? "…" : "100%"; }
       if (state === "success") bar.style.background = "#22c55e";
       else if (state === "error") bar.style.background = "#f43f5e";
-      else bar.style.background = "linear-gradient(90deg,#6366f1,#22c55e)";
+      else bar.style.background = "linear-gradient(90deg,#f59e0b,#10b981)";
       if (state !== "working") setTimeout(() => { if (!isSyncing) wrap.classList.add("hidden"); }, 2600);
     }
 
@@ -1147,25 +1225,24 @@
       const button = document.getElementById("migrateMediaBtn");
       const result = document.getElementById("mediaMigrationResult");
       if (!gDriveAccessToken) { showToast("Connect Google Drive first"); return; }
-      if (isSyncing) { showToast("Wait for current sync to finish"); return; }
-      if (!confirm("Upload all embedded images and voice notes to Google Drive? After successful upload, the tracker stores Drive IDs.")) return;
+      if (isSyncing) { showToast("Wait for the current sync to finish"); return; }
+      if (!confirm("Upload all embedded images and voice notes to Google Drive? After successful uploads, the existing tracker JSON file will be updated in place to store media file IDs instead of embedded data. Continue only if you have downloaded and checked the safe backup.")) return;
       button.disabled = true; button.textContent = "Preparing Drive folders…";
       result.classList.remove("hidden"); result.textContent = "Preparing media folders…";
       isSyncing = true;
       try {
         const folders = await ensureMediaFolders();
         const summary = await uploadPendingMedia(folders);
-        if (summary.failed) throw new Error(`${summary.uploaded} uploaded; ${summary.failed} failed. Retry migration after checking connection.`);
-        setSyncProgress("Saving media references…", 90, "working");
+        if (summary.failed) throw new Error(`${summary.uploaded} media file(s) uploaded; ${summary.failed} failed. Failed media remains embedded locally. Retry migration after checking connection and Drive permissions.`);
         localStorage.setItem(LAST_SYNC_KEY, Date.now().toString());
         updateDriveUI(true);
-        result.innerHTML = `<div class="font-bold text-emerald-500">Media migration completed</div><div>Files uploaded or updated: <b>${summary.uploaded}</b></div>`;
-        setSyncProgress("Media migrated", 100, "success");
+        result.innerHTML = `<div class="font-bold text-emerald-500">Media migration completed</div><div>Files uploaded or updated: <b>${summary.uploaded}</b></div><div>Active entries: <b>${errorEntries.filter(x => !x.deleted).length}</b></div><div>Drive references were saved in the tracker JSON. Your separately downloaded safe backup remains unchanged.</div>`;
+        setSyncProgress("Media migrated and references saved", 100, "success");
         showToast("Media migration complete");
         renderTable();
       } catch (err) {
         console.error("Media migration failed", err);
-        result.innerHTML = `<div class="font-bold text-rose-500">Migration incomplete</div><div>${escapeHtml(err.message || "Unknown error")}</div>`;
+        result.innerHTML = `<div class="font-bold text-rose-500">Migration incomplete</div><div>${escapeHtml(err.message || "Unknown error")}</div><div>Do not delete your safe backup. Retry after resolving the issue.</div>`;
         setSyncProgress("Media migration incomplete", null, "error");
         showToast("Media migration incomplete");
       } finally {
@@ -1180,7 +1257,6 @@
     const DRIVE_TOTAL_UPLOADED_KEY = "mcq_drive_total_uploaded_bytes_v1";
     let syncUploadedBytes = 0;
     let syncNeedsSilentReauth = false;
-    let filteredPopupReturn = false;
 
     function formatDriveBytes(bytes, cumulative = false) {
       const n = Math.max(0, Number(bytes) || 0);
@@ -1203,7 +1279,7 @@
     }
     function requestDriveToken(prompt = "") {
       const clientId = localStorage.getItem(CLIENT_ID_KEY) || document.getElementById("gDriveClientIdInput")?.value.trim();
-      if (!clientId || !window.google?.accounts?.oauth2) return Promise.reject(new Error("Google sign-in unavailable"));
+      if (!clientId || !window.google?.accounts?.oauth2) return Promise.reject(new Error("Google sign-in is not available"));
       return new Promise((resolve, reject) => {
         let settled = false;
         const client = google.accounts.oauth2.initTokenClient({
@@ -1215,11 +1291,12 @@
             if (res?.access_token) {
               gDriveAccessToken = res.access_token;
               localStorage.setItem(DRIVE_TOKEN_KEY, gDriveAccessToken);
-              localStorage.setItem("mcq_drive_token_expiry", String(Date.now() + Math.max(60, Number(res.expires_in || 3600)) * 1000));
+              const expiresAt = Date.now() + Math.max(60, Number(res.expires_in || 3600)) * 1000;
+              localStorage.setItem("mcq_drive_token_expiry", String(expiresAt));
               resolve(gDriveAccessToken);
-            } else reject(new Error(res?.error_description || res?.error || "Google authorization not granted"));
+            } else reject(new Error(res?.error_description || res?.error || "Google authorization was not granted"));
           },
-          error_callback: (err) => { if (!settled) { settled = true; reject(new Error(err?.message || err?.type || "Sign-in required")); } }
+          error_callback: (err) => { if (!settled) { settled = true; reject(new Error(err?.message || err?.type || "Silent sign-in requires interaction")); } }
         });
         try { client.requestAccessToken({ prompt }); } catch (e) { settled = true; reject(e); }
       });
@@ -1365,7 +1442,7 @@
         const unauthorized = /401|session expired|invalid credentials/i.test(String(e?.message || ""));
         syncNeedsSilentReauth = unauthorized;
         setSyncProgress(unauthorized ? "Refreshing Drive session…" : "Sync failed — retry when online", null, unauthorized ? "working" : "error");
-        if (!unauthorized) showToast(e.message || "Sync failed. Check connection.");
+        if (!unauthorized) showToast(e.message || "Sync failed. Check connection and permissions.");
       } finally {
         isSyncing = false;
         if (spinner) { spinner.classList.remove("spin-fast"); spinner.style.animation = "none"; void spinner.getBoundingClientRect(); spinner.style.animation = ""; }
@@ -1375,7 +1452,7 @@
           syncNeedsSilentReauth = false;
           setTimeout(async () => {
             try { await silentRefreshDriveToken(); showToast("Drive session renewed"); await syncWithGoogleDriveImmediate(); }
-            catch (refreshError) { setSyncProgress("Sign in to reconnect Drive", null, "error"); showToast("Please re-authenticate Drive in Settings."); }
+            catch (refreshError) { setSyncProgress("Sign in to reconnect Drive", null, "error"); showToast("Google needs you to sign in again. Open Settings → Google Drive and tap Sign In."); }
           }, 100);
         } else if (syncRequestedWhileBusy) { syncRequestedWhileBusy = false; setTimeout(() => syncWithGoogleDriveImmediate(), 150); }
       }
@@ -1456,7 +1533,7 @@
         const isChecked = sel ? (sel === et.label) : (idx === 0);
         c.innerHTML += `
           <label class="flex items-center p-2 rounded-xl border border-slate-200 dark:border-amoled-border bg-slate-50 dark:bg-[#0c1222] cursor-pointer select-none">
-            <input type="radio" name="modalErrorTypeRadio" value="${escapeHtml(et.label)}" class="mr-2" ${isChecked ? 'checked' : ''}>
+            <input type="radio" name="modalErrorTypeRadio" value="${escapeHtml(et.label)}" class="mr-2 text-amber-500 focus:ring-amber-500" ${isChecked ? 'checked' : ''}>
             <span class="text-xs font-bold truncate text-black dark:text-white">${escapeHtml(et.label)}</span>
           </label>
         `;
@@ -1467,29 +1544,18 @@
       const et = appConfig.errorTypes.find(e => e.label === label);
       const color = et ? et.color : "blue";
       const pillMap = {
-        blue: "border-blue-500/40 text-blue-400 bg-blue-500/10",
-        amber: "border-amber-500/40 text-amber-400 bg-amber-500/10",
-        red: "border-red-500/40 text-red-400 bg-red-500/10",
-        emerald: "border-emerald-500/40 text-emerald-400 bg-emerald-500/10",
-        purple: "border-purple-500/40 text-purple-400 bg-purple-500/10"
-      }[color] || "border-blue-500/40 text-blue-400 bg-blue-500/10";
+        blue: "pastel-blue",
+        amber: "pastel-amber",
+        red: "pastel-red",
+        emerald: "pastel-green",
+        purple: "pastel-purple"
+      }[color] || "pastel-blue";
 
-      const dotMap = {
-        blue: "bg-blue-400",
-        amber: "bg-amber-400",
-        red: "bg-red-400",
-        emerald: "bg-emerald-400",
-        purple: "bg-purple-400"
-      }[color] || "bg-blue-400";
-
-      const pastel = ({blue:"pastel-blue",amber:"pastel-amber",red:"pastel-red",emerald:"pastel-green",purple:"pastel-purple"})[color] || "pastel-blue";
-      return `<span class="error-pill-pastel ${pastel} inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${pillMap}">
-        <span class="w-1.5 h-1.5 rounded-full ${dotMap}"></span>
-        ${escapeHtml(label)}
-      </span>`;
+      return `<span class="error-pill-pastel ${pillMap} inline-flex items-center gap-1.5 text-xs font-semibold border"><span class="w-1.5 h-1.5 rounded-full bg-current"></span>${escapeHtml(label)}</span>`;
     }
 
     function getFilteredEntries() {
+      const q = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
       const fSrcEl = document.getElementById("filterSource");
       const fSubEl = document.getElementById("filterSubject");
       const fSrc = fSrcEl?.multiple ? [...fSrcEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fSrcEl?.value || "ALL"].filter(v=>v!=="ALL");
@@ -1506,18 +1572,17 @@
         if (fChap.length && !fChap.includes(item.chapter)) return false;
         if (fErr.length && !fErr.includes(item.errorType)) return false;
         if (fStatus.length && !((fStatus.includes("NEW") && Number(item.reviewCount || 0) === 0) || (fStatus.includes("REVIEWED") && Number(item.reviewCount || 0) > 0) || (fStatus.includes("FLAGGED") && item.flagged))) return false;
+        if (q && ![item.questionNum,item.source,item.subject,item.chapter,item.remedialAction,item.errorType].join(" ").toLowerCase().includes(q)) return false;
         return true;
       }).sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
     }
 
-    let filteredLogsViewMode = "list";
-    let filteredBookRows = [];
     function setFilteredLogsView(mode) {
       filteredLogsViewMode = mode === "book" ? "book" : "list";
-      document.getElementById("filteredListViewBtn")?.classList.toggle("bg-blue-600", filteredLogsViewMode === "list");
-      document.getElementById("filteredListViewBtn")?.classList.toggle("text-white", filteredLogsViewMode === "list");
-      document.getElementById("filteredBookViewBtn")?.classList.toggle("bg-blue-600", filteredLogsViewMode === "book");
-      document.getElementById("filteredBookViewBtn")?.classList.toggle("text-white", filteredLogsViewMode === "book");
+      document.getElementById("filteredListViewBtn")?.classList.toggle("bg-amber-500", filteredLogsViewMode === "list");
+      document.getElementById("filteredListViewBtn")?.classList.toggle("text-slate-950", filteredLogsViewMode === "list");
+      document.getElementById("filteredBookViewBtn")?.classList.toggle("bg-amber-500", filteredLogsViewMode === "book");
+      document.getElementById("filteredBookViewBtn")?.classList.toggle("text-slate-950", filteredLogsViewMode === "book");
       document.getElementById("filteredBookNav")?.classList.toggle("hidden", filteredLogsViewMode !== "book");
       document.getElementById("filteredBookNav")?.classList.toggle("flex", filteredLogsViewMode === "book");
       renderFilteredLogsPopup();
@@ -1533,7 +1598,7 @@
         content.innerHTML = '<div class="py-12 text-center text-sm text-slate-500">No logs match the current filters.</div>';
       } else if (filteredLogsViewMode === "list") {
         content.className = "p-3 sm:p-4 overflow-auto space-y-3";
-        content.innerHTML = rows.map(item => `<article tabindex="0" role="button" data-filtered-card="${escapeHtml(item.id)}" class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 space-y-2"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="text-[10px] uppercase tracking-wide text-slate-500">${escapeHtml(item.subject || "No subject")} · Q${escapeHtml(item.questionNum || "—")}</div><div class="font-extrabold text-sm break-words mt-1">${escapeHtml(item.chapter || "No chapter")}</div></div><button type="button" class="shrink-0 rounded-lg bg-blue-600 text-white px-3 py-1.5 text-xs font-bold" data-open-filtered-id="${escapeHtml(item.id)}">Details</button></div><div>${getErrorTypeBadge(item.errorType || "Unspecified")}</div><div class="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap break-words">${escapeHtml(item.remedialAction || "No explanation recorded")}</div><div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-500"><span>Source: ${escapeHtml(item.source || "—")}</span><span>Reviews: ${Number(item.reviewCount || 0)}</span>${item.audioData || item.audioDriveId ? `<button type="button" class="text-violet-500 font-bold" data-play-filtered-id="${escapeHtml(item.id)}">▶ Play audio</button>` : ""}</div></article>`).join("");
+        content.innerHTML = rows.map(item => `<article tabindex="0" role="button" data-filtered-card="${escapeHtml(item.id)}" class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 space-y-2"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="text-[10px] uppercase tracking-wide text-slate-500">${escapeHtml(item.subject || "No subject")} · Q${escapeHtml(item.questionNum || "—")}</div><div class="font-extrabold text-sm break-words mt-1">${escapeHtml(item.chapter || "No chapter")}</div></div><button type="button" class="shrink-0 rounded-lg bg-amber-500 text-slate-950 font-bold px-3 py-1.5 text-xs hover:bg-amber-600" data-open-filtered-id="${escapeHtml(item.id)}">Details</button></div><div>${getErrorTypeBadge(item.errorType || "Unspecified")}</div><div class="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap break-words">${escapeHtml(item.remedialAction || "No explanation recorded")}</div><div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-500"><span>Source: ${escapeHtml(item.source || "—")}</span><span>Reviews: ${Number(item.reviewCount || 0)}</span>${item.audioData || item.audioDriveId ? `<button type="button" class="text-amber-500 font-bold" data-play-filtered-id="${escapeHtml(item.id)}">▶ Play audio</button>` : ""}</div></article>`).join("");
         content.querySelectorAll("[data-filtered-card]").forEach(card => {
           const openCard = e => { if (e.target.closest("button, audio, a, input, select, textarea")) return; filteredPopupReturn = true; document.getElementById("filteredLogsModal").classList.add("hidden"); openDetail(card.dataset.filteredCard); };
           card.addEventListener("click", openCard);
@@ -1553,8 +1618,8 @@
         }
         content.innerHTML = `<div id="filteredBookTrack" class="flex overflow-x-auto snap-x snap-mandatory" style="scroll-behavior:smooth;align-items:stretch">${rows.map((item, index) => {
           const qImg = mediaFieldValue(item, "questionImage"), sImg = mediaFieldValue(item, "solutionImage"), audio = mediaFieldValue(item, "audioData");
-          const img = (src,label,type,driveId) => src ? `<button type="button" class="block w-full text-left" data-book-image="${escapeHtml(item.id)}" data-book-image-type="${type}"><img src="${src}" alt="${label}" class="max-h-64 w-full object-contain rounded-xl border border-slate-200 dark:border-amoled-border"><span class="block text-[10px] text-blue-500 mt-1">Tap image to enlarge</span></button>` : driveId ? `<div class="text-xs text-slate-500">${label} is stored in Drive; open Details to load it.</div>` : "";
-          return `<article class="filtered-book-page p-4 sm:p-6 space-y-4 overflow-y-auto" style="max-height:calc(100dvh - 190px)"><div class="flex items-start justify-between gap-3"><div><div class="text-[10px] uppercase tracking-wide text-slate-500">${escapeHtml(item.subject || "No subject")} · Question ${escapeHtml(item.questionNum || "—")}</div><h3 class="text-lg font-extrabold mt-1">${escapeHtml(item.chapter || "No chapter")}</h3></div><span class="text-xs font-bold text-slate-500">${index+1}/${rows.length}</span></div><div><div class="text-[10px] uppercase text-slate-500 mb-1">Source</div><div class="font-semibold">${escapeHtml(item.source || "—")}</div></div><div><div class="text-[10px] uppercase text-slate-500 mb-1">Error type</div>${getErrorTypeBadge(item.errorType || "Unspecified")}</div><div><div class="text-[10px] uppercase text-slate-500 mb-1">Root cause / action</div><div class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 whitespace-pre-wrap break-words">${escapeHtml(item.remedialAction || "No explanation recorded")}</div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${img(qImg,"Question image","question",item.questionImageDriveId)}${img(sImg,"Solution image","solution",item.solutionImageDriveId)}</div>${audio ? `<div><div class="text-[10px] uppercase text-slate-500 mb-1">Voice explanation</div><audio controls class="w-full" src="${audio}"></audio></div>` : item.audioDriveId ? `<button type="button" class="text-violet-500 font-bold text-sm" data-play-filtered-id="${escapeHtml(item.id)}">▶ Load / play voice explanation</button>` : `<div class="text-xs text-slate-500">No voice note attached</div>`}<div class="grid grid-cols-2 gap-3 text-xs"><div><span class="text-slate-500">Reviews</span><div class="font-bold">${Number(item.reviewCount || 0)}</div></div><div><span class="text-slate-500">Flagged</span><div class="font-bold">${item.flagged ? "Yes 🚩" : "No"}</div></div></div><button type="button" class="w-full rounded-xl bg-blue-600 text-white px-4 py-2.5 text-sm font-bold" data-open-filtered-id="${escapeHtml(item.id)}">Open editable details</button></article>`;
+          const img = (src,label,type,driveId) => src ? `<button type="button" class="block w-full text-left" data-book-image="${escapeHtml(item.id)}" data-book-image-type="${type}"><img src="${src}" alt="${label}" class="max-h-64 w-full object-contain rounded-xl border border-slate-200 dark:border-amoled-border"><span class="block text-[10px] text-amber-500 mt-1">Tap image to enlarge</span></button>` : driveId ? `<div class="text-xs text-slate-500">${label} is stored in Drive; open Details to load it.</div>` : "";
+          return `<article class="filtered-book-page p-4 sm:p-6 space-y-4 overflow-y-auto" style="max-height:calc(100dvh - 190px)"><div class="flex items-start justify-between gap-3"><div><div class="text-[10px] uppercase tracking-wide text-slate-500">${escapeHtml(item.subject || "No subject")} · Question ${escapeHtml(item.questionNum || "—")}</div><h3 class="text-lg font-extrabold mt-1">${escapeHtml(item.chapter || "No chapter")}</h3></div><span class="text-xs font-bold text-slate-500">${index+1}/${rows.length}</span></div><div><div class="text-[10px] uppercase text-slate-500 mb-1">Source</div><div class="font-semibold">${escapeHtml(item.source || "—")}</div></div><div><div class="text-[10px] uppercase text-slate-500 mb-1">Error type</div>${getErrorTypeBadge(item.errorType || "Unspecified")}</div><div><div class="text-[10px] uppercase text-slate-500 mb-1">Root cause / action</div><div class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 whitespace-pre-wrap break-words">${escapeHtml(item.remedialAction || "No explanation recorded")}</div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${img(qImg,"Question image","question",item.questionImageDriveId)}${img(sImg,"Solution image","solution",item.solutionImageDriveId)}</div>${audio ? `<div><div class="text-[10px] uppercase text-slate-500 mb-1">Voice explanation</div><audio controls class="w-full" src="${audio}"></audio></div>` : item.audioDriveId ? `<button type="button" class="text-amber-500 font-bold text-sm" data-play-filtered-id="${escapeHtml(item.id)}">▶ Load / play voice explanation</button>` : `<div class="text-xs text-slate-500">No voice note attached</div>`}<div class="grid grid-cols-2 gap-3 text-xs"><div><span class="text-slate-500">Reviews</span><div class="font-bold">${Number(item.reviewCount || 0)}</div></div><div><span class="text-slate-500">Flagged</span><div class="font-bold">${item.flagged ? "Yes 🚩" : "No"}</div></div></div><button type="button" class="w-full rounded-xl bg-amber-500 text-slate-950 px-4 py-2.5 text-sm font-bold hover:bg-amber-600" data-open-filtered-id="${escapeHtml(item.id)}">Open editable details</button></article>`;
         }).join("")}</div>`;
         content.querySelectorAll("[data-open-filtered-id]").forEach(btn => btn.addEventListener("click", () => { filteredPopupReturn = true; document.getElementById("filteredLogsModal").classList.add("hidden"); openDetail(btn.dataset.openFilteredId); }));
         content.querySelectorAll("[data-play-filtered-id]").forEach(btn => btn.addEventListener("click", () => playInlineAudio(btn.dataset.playFilteredId, btn)));
@@ -1595,7 +1660,7 @@
       try { localStorage.setItem("mcq_invert_study_images", on ? "1" : "0"); } catch (_) {}
       ["invertStudyImagesBtn", "invertDetailImagesBtn"].forEach(id => {
         const btn = document.getElementById(id);
-        if (btn) { btn.textContent = `Invert images: ${on ? "On" : "Off"}`; btn.setAttribute("aria-pressed", String(on)); btn.classList.toggle("bg-blue-600", on); btn.classList.toggle("text-white", on); }
+        if (btn) { btn.textContent = `Invert images: ${on ? "On" : "Off"}`; btn.setAttribute("aria-pressed", String(on)); btn.classList.toggle("bg-amber-500", on); btn.classList.toggle("text-slate-950", on); }
       });
     }
     function toggleStudyImageInversion() {
@@ -1603,8 +1668,6 @@
     }
     try { setStudyImageInversion(localStorage.getItem("mcq_invert_study_images") === "1"); } catch (_) { setStudyImageInversion(false); }
 
-    let activeDetailId = null;
-    let contextEntryId = null;
     function updateDashboard() {
       const active = errorEntries.filter(x => !x.deleted);
       const reviewed = active.filter(x => Number(x.reviewCount || 0) > 0).length;
@@ -1635,6 +1698,7 @@
     function renderTable() {
       const tbody = document.getElementById("logsTableBody"); if (!tbody) return;
       tbody.innerHTML = "";
+      const q = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
       const fSrcEl = document.getElementById("filterSource");
       const fSubEl = document.getElementById("filterSubject");
       const fSrc = fSrcEl?.multiple ? [...fSrcEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fSrcEl?.value || "ALL"].filter(v=>v!=="ALL");
@@ -1651,6 +1715,7 @@
         if (fChap.length && !fChap.includes(item.chapter)) return false;
         if (fErr.length && !fErr.includes(item.errorType)) return false;
         if (fStatus.length && !fStatus.some(status => status === "ALL" || (status === "NEW" && Number(item.reviewCount||0) === 0 && !item.flagged) || (status === "REVIEWED" && Number(item.reviewCount||0) > 0) || (status === "FLAGGED" && !!item.flagged))) return false;
+        if (q && ![item.questionNum,item.source,item.subject,item.chapter,item.remedialAction,item.errorType].join(" ").toLowerCase().includes(q)) return false;
         return true;
       });
       document.getElementById("emptyTableState")?.classList.toggle("hidden", list.length !== 0);
@@ -1663,17 +1728,17 @@
         const audioSrc = mediaFieldValue(item, "audioData");
         if (item.questionImage || item.solutionImage || item.questionImageDriveId || item.solutionImageDriveId) {
           visualsHtml = '<div class="flex flex-wrap items-center justify-center gap-2">';
-          if (questionSrc) visualsHtml += `<button type="button" data-no-row="1" class="relative" onclick="viewLightbox('${item.id}','question')" aria-label="View question image"><img src="${questionSrc}" alt="Question" class="w-9 h-9 rounded-lg object-cover border border-slate-300 dark:border-amoled-border"><span class="absolute -top-1 -right-1 bg-brand-600 text-white rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">Q</span></button>`;
+          if (questionSrc) visualsHtml += `<button type="button" data-no-row="1" class="relative" onclick="viewLightbox('${item.id}','question')" aria-label="View question image"><img src="${questionSrc}" alt="Question" class="w-9 h-9 rounded-lg object-cover border border-slate-300 dark:border-amoled-border"><span class="absolute -top-1 -right-1 bg-amber-500 text-slate-950 rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">Q</span></button>`;
           else if (item.questionImageDriveId) visualsHtml += '<span class="text-[10px] text-slate-400">Q…</span>';
-          if (solutionSrc) visualsHtml += `<button type="button" data-no-row="1" class="relative" onclick="viewLightbox('${item.id}','solution')" aria-label="View solution image"><img src="${solutionSrc}" alt="Solution" class="w-9 h-9 rounded-lg object-cover border border-slate-300 dark:border-amoled-border"><span class="absolute -top-1 -right-1 bg-emerald-600 text-white rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">S</span></button>`;
+          if (solutionSrc) visualsHtml += `<button type="button" data-no-row="1" class="relative" onclick="viewLightbox('${item.id}','solution')" aria-label="View solution image"><img src="${solutionSrc}" alt="Solution" class="w-9 h-9 rounded-lg object-cover border border-slate-300 dark:border-amoled-border"><span class="absolute -top-1 -right-1 bg-emerald-500 text-slate-950 rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">S</span></button>`;
           else if (item.solutionImageDriveId) visualsHtml += '<span class="text-[10px] text-slate-400">S…</span>';
           visualsHtml += '</div>';
         }
-        const audioHtml = (item.audioData || item.audioDriveId) ? `<button type="button" data-no-row="1" onclick="playInlineAudio('${item.id}',this)" class="w-8 h-8 mx-auto rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/30 flex items-center justify-center" title="Play voice note"><i data-lucide="play" class="w-3.5 h-3.5 audio-play-icon"></i></button>` : '<span class="text-slate-500 italic">No audio</span>';
+        const audioHtml = (item.audioData || item.audioDriveId) ? `<button type="button" data-no-row="1" onclick="playInlineAudio('${item.id}',this)" class="w-8 h-8 mx-auto rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/30 flex items-center justify-center" title="Play voice note"><i data-lucide="play" class="w-3.5 h-3.5 audio-play-icon"></i></button>` : '<span class="text-slate-500 italic">No audio</span>';
         if ((item.questionImageDriveId && !questionSrc) || (item.solutionImageDriveId && !solutionSrc) || (item.audioDriveId && !audioSrc)) loadEntryMedia(item).then(loaded => { if (loaded) renderTable(); });
         const tr = document.createElement("tr"); tr.dataset.id = item.id; tr.tabIndex = 0; tr.setAttribute("role","button"); tr.setAttribute("aria-label",`Open details for question ${item.questionNum}`);
         tr.className = "log-row hover:bg-slate-50 dark:hover:bg-[#0c1222] transition-colors border-b border-slate-100 dark:border-amoled-border";
-        tr.innerHTML = `<td class="py-3 px-3 text-center"><div class="flex flex-col items-center gap-1.5"><button type="button" data-no-row="1" onclick="toggleReviewStatus('${item.id}')" title="Mark as reviewed (+1 each click)" class="inline-flex items-center justify-center w-6 h-6 rounded-full ${isReviewed?'text-emerald-500':'text-slate-400 hover:text-slate-200'}"><i data-lucide="${isReviewed?'check-circle-2':'circle'}" class="w-4 h-4"></i></button><span class="inline-flex rounded-md px-1.5 py-0.5 text-[9px] leading-3 font-extrabold ${isReviewed?'bg-emerald-500/10 text-emerald-200 border-2 border-emerald-300/40 status-pastel':'bg-amber-500/10 text-amber-100 border-2 border-amber-200/40 status-pastel'}">${isReviewed?count+'×':'NEW'}</span></div></td>
+        tr.innerHTML = `<td class="py-3 px-3 text-center"><div class="flex flex-col items-center gap-1.5"><button type="button" data-no-row="1" onclick="toggleReviewStatus('${item.id}')" title="Mark as reviewed (+1 each click)" class="inline-flex items-center justify-center w-6 h-6 rounded-full ${isReviewed?'text-emerald-500':'text-slate-400 hover:text-slate-200'}"><i data-lucide="${isReviewed?'check-circle-2':'circle'}" class="w-4 h-4"></i></button><span class="inline-flex rounded-md px-1.5 py-0.5 text-[9px] leading-3 font-extrabold ${isReviewed?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 status-pastel':'bg-amber-500/10 text-amber-500 border border-amber-500/30 status-pastel'}">${isReviewed?count+'×':'NEW'}</span></div></td>
           <td class="py-3 px-3 font-extrabold text-black dark:text-white">${item.flagged?'<span class="text-rose-500 mr-1">🚩</span>':''}${escapeHtml(item.questionNum)}</td>
           <td class="py-3 px-3"><span class="inline-block max-w-full px-2 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border text-slate-700 dark:text-slate-300 break-words">${escapeHtml(item.source)}</span></td>
           <td class="py-3 px-3 font-bold text-black dark:text-white">${escapeHtml(item.subject)}</td>
@@ -1893,16 +1958,16 @@
       syncWithGoogleDriveImmediate();
     };
 
+    // DOM events initialization
     window.addEventListener("DOMContentLoaded", () => {
       updateUploadSizeUI();
-      const savedTheme = localStorage.getItem("mcq_theme_mode");
+      const savedTheme = localStorage.getItem("mcq_theme_mode") || "dark";
       if (savedTheme === "light") {
         document.documentElement.classList.remove("dark");
       } else {
         document.documentElement.classList.add("dark");
       }
 
-      // Buttons
       document.getElementById("openNewLogModalBtn")?.addEventListener("click", () => openEntryModal());
       const menuPanel = document.getElementById("mobileMenuPanel");
       const menuBtn = document.getElementById("mobileMenuBtn");
@@ -1997,10 +2062,10 @@
       document.querySelectorAll(".setting-tab").forEach(tab => {
         tab.addEventListener("click", () => {
           document.querySelectorAll(".setting-tab").forEach(b => {
-            b.classList.remove("border-brand-600", "text-brand-600", "dark:text-brand-400");
+            b.classList.remove("border-amber-500", "text-amber-500");
             b.classList.add("border-transparent", "text-slate-500");
           });
-          tab.classList.add("border-brand-600", "text-brand-600", "dark:text-brand-400");
+          tab.classList.add("border-amber-500", "text-amber-500");
           tab.classList.remove("border-transparent", "text-slate-500");
           document.querySelectorAll(".setting-panel").forEach(p => p.classList.add("hidden"));
           document.getElementById(tab.dataset.tab)?.classList.remove("hidden");
@@ -2176,7 +2241,7 @@
         if (!rows.length) { showToast("No matching logs to export"); return; }
         const esc = value => escapeHtml(value ?? "");
         const printHtml = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MCQ Mistake Logs</title><style>
-          *{box-sizing:border-box}body{font:12px Arial,sans-serif;color:#111;margin:20px}h1{font-size:18px}p{color:#555;font-size:10px}button{padding:10px 16px;background:#2563eb;color:#fff;border:0;border-radius:8px;font-weight:bold;margin:0 0 14px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #bbb;padding:6px;vertical-align:top;overflow-wrap:anywhere;white-space:pre-wrap}th{background:#eee;text-align:left}th:nth-child(1){width:7%}th:nth-child(2){width:16%}th:nth-child(3){width:11%}th:nth-child(4){width:17%}th:nth-child(5){width:14%}th:nth-child(6){width:35%}@media print{body{margin:10mm}button{display:none}tr{break-inside:avoid}thead{display:table-header-group}}
+          *{box-sizing:border-box}body{font:12px Arial,sans-serif;color:#111;margin:20px}h1{font-size:18px}p{color:#555;font-size:10px}button{padding:10px 16px;background:#f59e0b;color:#000;border:0;border-radius:8px;font-weight:bold;margin:0 0 14px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #bbb;padding:6px;vertical-align:top;overflow-wrap:anywhere;white-space:pre-wrap}th{background:#eee;text-align:left}th:nth-child(1){width:7%}th:nth-child(2){width:16%}th:nth-child(3){width:11%}th:nth-child(4){width:17%}th:nth-child(5){width:14%}th:nth-child(6){width:35%}@media print{body{margin:10mm}button{display:none}tr{break-inside:avoid}thead{display:table-header-group}}
           </style></head><body><button onclick="window.print()">Print / Save as PDF</button><h1>MCQ Error Tracker — Mistake Logs</h1><p>Exported ${new Date().toLocaleString()} · ${rows.length} entries</p><table><thead><tr><th>Question #</th><th>Source</th><th>Subject</th><th>Chapter</th><th>Error Type</th><th>Text Explanation</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.questionNum)}</td><td>${esc(x.source)}</td><td>${esc(x.subject)}</td><td>${esc(x.chapter)}</td><td>${esc(x.errorType)}</td><td>${esc(x.remedialAction)}</td></tr>`).join("")}</tbody></table></body></html>`;
         const w = window.open("about:blank", "_blank");
         if (!w) {
@@ -2233,7 +2298,6 @@
         } finally { btn.disabled = false; btn.textContent = "Export Safe Backup"; }
       });
 
-      // Snapshot Cloud Backup
       async function runCloudBackup(isAutomatic = false) {
         if (!gDriveAccessToken) {
           if (!isAutomatic) showToast("Connect Google Drive first");
@@ -2320,7 +2384,6 @@
         }
       }
 
-      // Restore Latest Snapshot
       async function restoreLatestCloudBackup() {
         if (!gDriveAccessToken) {
           showToast("Connect Google Drive first");
