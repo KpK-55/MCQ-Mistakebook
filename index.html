@@ -112,7 +112,7 @@
     #filterActionRow { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.5rem; }
     #filterActionRow button { width:100%; min-width:0; }
 
-    /* Universal Soft Pill Styles (Works identically on Dark & Light) */
+    /* Universal Soft Pill Styles (Works on Dark & Light) */
     .error-tag-pill {
       font-size: 11px;
       font-weight: 700;
@@ -131,7 +131,6 @@
     .error-tag-emerald { background: rgba(16, 185, 129, 0.12); color: #34d399; border-color: rgba(16, 185, 129, 0.4); }
     .error-tag-purple { background: rgba(168, 85, 247, 0.12); color: #c084fc; border-color: rgba(168, 85, 247, 0.4); }
 
-    /* Light Theme Adjustment for Pills to keep contrast legible */
     html:not(.dark) .error-tag-blue { background: #e0f2fe; color: #0369a1; border-color: #7dd3fc; }
     html:not(.dark) .error-tag-amber { background: #fef3c7; color: #b45309; border-color: #fcd34d; }
     html:not(.dark) .error-tag-red { background: #ffe4e6; color: #be123c; border-color: #fda4af; }
@@ -495,8 +494,8 @@
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-800 dark:text-slate-300 mb-1">Root Cause / Remedial Action *</label>
-          <textarea id="modalRemedial" rows="3" required placeholder="What was the misconception or calculation blunder?" class="w-full px-3 py-2 bg-white dark:bg-[#151619] border border-slate-200 dark:border-[#282a30] rounded-xl text-slate-900 dark:text-white leading-relaxed"></textarea>
+          <label class="block text-xs font-bold text-slate-800 dark:text-slate-300 mb-1">Root Cause / Action *</label>
+          <textarea id="modalRemedial" rows="3" required placeholder="What was the misconception or error?" class="w-full px-3 py-2 bg-white dark:bg-[#151619] border border-slate-200 dark:border-[#282a30] rounded-xl text-slate-900 dark:text-white leading-relaxed"></textarea>
         </div>
 
         <!-- Photos -->
@@ -561,45 +560,45 @@
     </div>
   </div>
 
-  <!-- Filtered Logs Popup -->
-  <div id="filteredLogsModal" class="fixed inset-0 z-[65] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 hidden" role="dialog">
+  <!-- Filtered logs popup -->
+  <div id="filteredLogsModal" class="fixed inset-0 z-[65] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 hidden" role="dialog" aria-modal="true" aria-labelledby="filteredLogsTitle">
     <div class="bg-white dark:bg-[#1a1b1e] rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92dvh] flex flex-col overflow-hidden border border-slate-200 dark:border-[#282a30]">
-      <div class="px-4 py-3 border-b border-slate-200 dark:border-[#282a30] flex items-center justify-between gap-3">
-        <div class="min-w-0"><h2 id="filteredLogsTitle" class="font-bold text-base text-slate-900 dark:text-white">Filtered logs</h2><p id="filteredLogsSubtitle" class="text-xs text-slate-500 mt-0.5">Matching current filters</p></div>
+      <div class="px-3 py-3 border-b border-slate-200 dark:border-[#282a30] flex items-center justify-between gap-3">
+        <div class="min-w-0"><h2 id="filteredLogsTitle" class="font-bold text-base text-slate-900 dark:text-white">Filtered logs</h2><p id="filteredLogsSubtitle" class="text-xs text-slate-500 mt-1">Matching current filters</p></div>
         <div class="flex items-center gap-2 shrink-0">
-          <button id="filteredListViewBtn" type="button" class="px-2.5 py-1.5 rounded-lg border text-xs font-bold">List</button>
-          <button id="filteredBookViewBtn" type="button" class="px-2.5 py-1.5 rounded-lg border text-xs font-bold">Book</button>
-          <button id="invertStudyImagesBtn" type="button" class="px-2.5 py-1.5 rounded-lg border text-xs font-bold" aria-pressed="false">Invert images: Off</button>
-          <button id="closeFilteredLogsBtn" type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <button id="filteredListViewBtn" type="button" class="px-2.5 py-2 rounded-lg border text-xs font-bold">List</button>
+          <button id="filteredBookViewBtn" type="button" class="px-2.5 py-2 rounded-lg border text-xs font-bold">Book</button>
+          <button id="invertStudyImagesBtn" type="button" class="px-2.5 py-2 rounded-lg border text-xs font-bold" aria-pressed="false">Invert images: Off</button>
+          <button id="closeFilteredLogsBtn" type="button" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-[#22242a]" aria-label="Close filtered logs"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
       </div>
-      <div id="filteredLogsContent" class="p-4 overflow-auto space-y-3"></div>
-      <div id="filteredBookNav" class="hidden px-4 py-2.5 border-t border-slate-200 dark:border-[#282a30] items-center justify-between gap-3">
-        <button id="filteredBookPrev" type="button" class="px-4 py-1.5 rounded-xl bg-slate-100 dark:bg-[#22242a] font-bold text-xs">← Previous</button>
+      <div id="filteredLogsContent" class="p-3 sm:p-4 overflow-auto space-y-3"></div>
+      <div id="filteredBookNav" class="hidden px-3 py-2 border-t border-slate-200 dark:border-[#282a30] items-center justify-between gap-3">
+        <button id="filteredBookPrev" type="button" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-[#22242a] font-bold text-xs" aria-label="Previous log">← Previous</button>
         <span id="filteredBookCounter" class="text-xs font-bold text-slate-500">1 / 1</span>
-        <button id="filteredBookNext" type="button" class="px-4 py-1.5 rounded-xl bg-slate-100 dark:bg-[#22242a] font-bold text-xs">Next →</button>
+        <button id="filteredBookNext" type="button" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-[#22242a] font-bold text-xs" aria-label="Next log">Next →</button>
       </div>
       <div class="p-3 border-t border-slate-200 dark:border-[#282a30] flex justify-end">
-        <button id="closeFilteredLogsFooterBtn" type="button" class="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold hover:bg-amber-600">Done</button>
+        <button id="closeFilteredLogsFooterBtn" type="button" class="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600">Done</button>
       </div>
     </div>
   </div>
 
-  <!-- Detailed Log Modal -->
-  <div id="detailModal" class="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 hidden">
+  <!-- Detailed log view -->
+  <div id="detailModal" class="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 hidden" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
     <div class="bg-white dark:bg-[#1a1b1e] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-slate-200 dark:border-[#282a30]">
       <div class="px-5 py-3.5 border-b border-slate-200 dark:border-[#282a30] flex items-center justify-between">
         <div><div class="text-[10px] uppercase tracking-wider text-slate-500">Mistake details</div><h2 id="detailTitle" class="font-bold text-base text-slate-900 dark:text-white">Question</h2></div>
         <div class="flex items-center gap-2">
-          <button id="invertDetailImagesBtn" type="button" class="px-2 py-1.5 rounded-lg border text-[10px] font-bold" aria-pressed="false">Invert images: Off</button>
-          <button id="closeDetailBtn" class="p-2 text-slate-400 hover:text-white" type="button"><i data-lucide="x" class="w-5 h-5"></i></button>
+          <button id="invertDetailImagesBtn" type="button" class="px-2 py-2 rounded-lg border text-[10px] font-bold" aria-pressed="false">Invert images: Off</button>
+          <button id="closeDetailBtn" class="p-2 text-slate-400 hover:text-white" type="button" aria-label="Close details"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
       </div>
-      <div id="detailContent" class="p-5 overflow-y-auto custom-scrollbar space-y-4 text-sm"></div>
+      <div id="detailContent" class="p-4 sm:p-5 overflow-y-auto custom-scrollbar space-y-4 text-sm"></div>
       <div class="p-3 border-t border-slate-200 dark:border-[#282a30] flex flex-wrap justify-end gap-2">
-        <button id="detailReviewBtn" type="button" class="px-3.5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold">Mark reviewed</button>
-        <button id="detailEditBtn" type="button" class="px-3.5 py-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold hover:bg-amber-600">Edit</button>
-        <button id="detailDeleteBtn" type="button" class="px-3.5 py-2 rounded-xl border border-rose-500/40 text-rose-500 text-xs font-bold hover:bg-rose-500/10">Delete</button>
+        <button id="detailReviewBtn" type="button" class="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold">Mark reviewed</button>
+        <button id="detailEditBtn" type="button" class="px-3 py-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold hover:bg-amber-600">Edit</button>
+        <button id="detailDeleteBtn" type="button" class="px-3 py-2 rounded-xl border border-rose-500/40 text-rose-500 text-xs font-bold hover:bg-rose-500/10">Delete</button>
       </div>
     </div>
   </div>
@@ -609,7 +608,7 @@
     <button id="contextDeleteBtn" type="button" class="block w-full rounded-lg px-3 py-2 text-left text-xs text-rose-400 hover:bg-[#22242a]">⌫ Delete log</button>
   </div>
 
-  <!-- Lightbox Modal -->
+  <!-- Image Lightbox Modal -->
   <div id="imageLightboxModal" class="fixed inset-0 z-[90] bg-black/90 backdrop-blur-md flex items-center justify-center p-3 hidden">
     <div class="relative max-w-4xl max-h-[92vh] flex flex-col items-center">
       <button id="closeLightboxBtn" type="button" class="absolute -top-9 right-0 text-white hover:text-slate-300 p-1">
@@ -656,17 +655,22 @@
     try {
       const cfg = localStorage.getItem(LOCAL_CONFIG_KEY);
       if (cfg) appConfig = JSON.parse(cfg);
-    } catch(e) { appConfig = DEFAULT_CONFIG; }
+    } catch(e) {
+      appConfig = DEFAULT_CONFIG;
+    }
 
     let errorEntries = [];
     try {
       const stored = localStorage.getItem(LOCAL_DATA_KEY);
-      if (stored !== null) errorEntries = JSON.parse(stored);
-      else {
+      if (stored !== null) {
+        errorEntries = JSON.parse(stored);
+      } else {
         errorEntries = [];
         localStorage.setItem(LOCAL_DATA_KEY, JSON.stringify(errorEntries));
       }
-    } catch(e) { errorEntries = []; }
+    } catch(e) {
+      errorEntries = [];
+    }
 
     let gTokenClient = null;
     let gDriveAccessToken = localStorage.getItem(DRIVE_TOKEN_KEY) || null;
@@ -681,6 +685,12 @@
     let questionImgBase64 = null;
     let solutionImgBase64 = null;
     let currentPlayingAudio = null;
+
+    let activeDetailId = null;
+    let contextEntryId = null;
+    let filteredLogsViewMode = "list";
+    let filteredBookRows = [];
+    let filteredPopupReturn = false;
 
     const MEDIA_SPECS = [
       { field: "questionImage", idField: "questionImageDriveId", kind: "question-image", folder: "Question Images", prefix: "question" },
@@ -720,8 +730,16 @@
           localStorage.setItem(CONFIG_UPDATED_KEY, String(configUpdatedAt));
         }
       } catch (e) {
-        showToast("Storage limit reached. Clear space or export backup.");
+        showToast("Storage full. Export backup and reduce attachments.");
       }
+    }
+
+    function normalizeConfig(config = {}) {
+      return {
+        sources: Array.isArray(config.sources) ? config.sources : [...DEFAULT_CONFIG.sources],
+        subjects: config.subjects && typeof config.subjects === "object" ? config.subjects : structuredClone(DEFAULT_CONFIG.subjects),
+        errorTypes: Array.isArray(config.errorTypes) && config.errorTypes.length ? config.errorTypes : DEFAULT_CONFIG.errorTypes.map(x => ({...x}))
+      };
     }
 
     function getErrorTypeBadge(label) {
@@ -736,6 +754,218 @@
       }[color] || "error-tag-blue";
 
       return `<span class="error-tag-pill ${styleClass}"><span class="w-1.5 h-1.5 rounded-full bg-current"></span>${escapeHtml(label)}</span>`;
+    }
+
+    function mediaFieldValue(entry, field) {
+      if (!entry) return null;
+      if (typeof entry[field] === "string" && entry[field].startsWith("data:")) return entry[field];
+      const spec = MEDIA_SPECS.find(x => x.field === field);
+      const fileId = spec ? entry[spec.idField] : null;
+      return fileId ? (mediaObjectUrlCache.get(fileId) || null) : null;
+    }
+
+    async function loadDriveMedia(entry, spec, asDataUrl = false) {
+      if (entry?.[spec.field] && entry[spec.field].startsWith("data:")) return entry[spec.field];
+      const fileId = entry?.[spec.idField];
+      if (!fileId) return null;
+      if (!asDataUrl && mediaObjectUrlCache.has(fileId)) return mediaObjectUrlCache.get(fileId);
+      const cacheKey = `${fileId}:${asDataUrl ? "data" : "url"}`;
+      if (mediaLoadPromises.has(cacheKey)) return mediaLoadPromises.get(cacheKey);
+      const promise = (async () => {
+        const res = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media`, { headers: { Authorization: `Bearer ${gDriveAccessToken}` } });
+        if (!res.ok) throw new Error(`Could not download media (${res.status})`);
+        const blob = await res.blob();
+        if (asDataUrl) {
+          return await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result));
+            reader.onerror = () => reject(new Error("Failed reading data URL"));
+            reader.readAsDataURL(blob);
+          });
+        }
+        const url = URL.createObjectURL(blob);
+        mediaObjectUrlCache.set(fileId, url);
+        return url;
+      })().finally(() => mediaLoadPromises.delete(cacheKey));
+      mediaLoadPromises.set(cacheKey, promise);
+      return promise;
+    }
+
+    async function loadEntryMedia(entry) {
+      const tasks = MEDIA_SPECS.filter(spec => !entry?.[spec.field] && entry?.[spec.idField] && !mediaObjectUrlCache.has(entry[spec.idField])).map(spec => loadDriveMedia(entry, spec, false).then(() => true).catch(() => false));
+      const results = await Promise.all(tasks);
+      return results.some(Boolean);
+    }
+
+    function getFilteredEntries() {
+      const fSrcEl = document.getElementById("filterSource");
+      const fSubEl = document.getElementById("filterSubject");
+      const fSrc = fSrcEl?.multiple ? [...fSrcEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fSrcEl?.value || "ALL"].filter(v=>v!=="ALL");
+      const fSub = fSubEl?.multiple ? [...fSubEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fSubEl?.value || "ALL"].filter(v=>v!=="ALL");
+      const fChapEl = document.getElementById("filterChapter");
+      const fChap = fChapEl?.multiple ? [...fChapEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fChapEl?.value || "ALL"].filter(v=>v!=="ALL");
+      const fErrEl = document.getElementById("filterErrorType");
+      const fErr = fErrEl ? [...fErrEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [];
+      const fStatusEl = document.getElementById("filterReviewStatus");
+      const fStatus = fStatusEl?.multiple ? [...fStatusEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fStatusEl?.value || "ALL"].filter(v=>v!=="ALL");
+      return errorEntries.filter(item => item && !item.deleted).filter(item => {
+        if (fSrc.length && !fSrc.includes(item.source)) return false;
+        if (fSub.length && !fSub.includes(item.subject)) return false;
+        if (fChap.length && !fChap.includes(item.chapter)) return false;
+        if (fErr.length && !fErr.includes(item.errorType)) return false;
+        if (fStatus.length && !((fStatus.includes("NEW") && Number(item.reviewCount || 0) === 0) || (fStatus.includes("REVIEWED") && Number(item.reviewCount || 0) > 0) || (fStatus.includes("FLAGGED") && item.flagged))) return false;
+        return true;
+      }).sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("logsTableBody"); if (!tbody) return;
+      tbody.innerHTML = "";
+      const list = getFilteredEntries();
+      document.getElementById("emptyTableState")?.classList.toggle("hidden", list.length !== 0);
+      const filteredCount = document.getElementById("filteredLogsCount"); if (filteredCount) filteredCount.textContent = list.length;
+      
+      list.forEach(item => {
+        const count = Number(item.reviewCount || 0); const isReviewed = count > 0;
+        let visualsHtml = '<span class="text-slate-400 italic">None</span>';
+        const questionSrc = mediaFieldValue(item, "questionImage");
+        const solutionSrc = mediaFieldValue(item, "solutionImage");
+        if (item.questionImage || item.solutionImage || item.questionImageDriveId || item.solutionImageDriveId) {
+          visualsHtml = '<div class="flex flex-wrap items-center justify-center gap-2">';
+          if (questionSrc) visualsHtml += `<button type="button" data-no-row="1" class="relative" onclick="viewLightbox('${item.id}','question')"><img src="${questionSrc}" alt="Question" class="w-8 h-8 rounded-lg object-cover border border-slate-300 dark:border-[#282a30]"><span class="absolute -top-1 -right-1 bg-amber-500 text-slate-950 rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">Q</span></button>`;
+          if (solutionSrc) visualsHtml += `<button type="button" data-no-row="1" class="relative" onclick="viewLightbox('${item.id}','solution')"><img src="${solutionSrc}" alt="Solution" class="w-8 h-8 rounded-lg object-cover border border-slate-300 dark:border-[#282a30]"><span class="absolute -top-1 -right-1 bg-emerald-500 text-slate-950 rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">S</span></button>`;
+          visualsHtml += '</div>';
+        }
+        const audioHtml = (item.audioData || item.audioDriveId) ? `<button type="button" data-no-row="1" onclick="playInlineAudio('${item.id}',this)" class="w-8 h-8 mx-auto rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/30 flex items-center justify-center" title="Play voice note"><i data-lucide="play" class="w-3.5 h-3.5 audio-play-icon"></i></button>` : '<span class="text-slate-400 italic">No audio</span>';
+
+        const tr = document.createElement("tr"); tr.dataset.id = item.id; tr.tabIndex = 0; tr.setAttribute("role","button");
+        tr.className = "log-row hover:bg-slate-50 dark:hover:bg-[#151619] transition-colors border-b border-slate-100 dark:border-[#24262b]";
+        tr.innerHTML = `<td class="py-3 px-3 text-center"><div class="flex flex-col items-center gap-1.5"><button type="button" data-no-row="1" onclick="toggleReviewStatus('${item.id}')" class="inline-flex items-center justify-center w-6 h-6 rounded-full ${isReviewed?'text-emerald-500':'text-slate-400 hover:text-slate-200'}"><i data-lucide="${isReviewed?'check-circle-2':'circle'}" class="w-4 h-4"></i></button><span class="inline-flex rounded-md px-1.5 py-0.5 text-[9px] font-bold ${isReviewed?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30':'bg-amber-500/10 text-amber-500 border border-amber-500/30'}">${isReviewed?count+'×':'NEW'}</span></div></td>
+          <td class="py-3 px-3 font-bold text-slate-900 dark:text-white">${item.flagged?'<span class="text-rose-500 mr-1">🚩</span>':''}${escapeHtml(item.questionNum)}</td>
+          <td class="py-3 px-3"><span class="inline-block px-2 py-1 rounded-lg text-[11px] font-medium bg-slate-100 dark:bg-[#151619] border border-slate-200 dark:border-[#282a30] text-slate-700 dark:text-slate-300 break-words">${escapeHtml(item.source)}</span></td>
+          <td class="py-3 px-3 font-semibold text-slate-900 dark:text-white">${escapeHtml(item.subject)}</td>
+          <td class="py-3 px-3 text-slate-600 dark:text-slate-300">${escapeHtml(item.chapter)}</td>
+          <td class="py-3 px-3">${getErrorTypeBadge(item.errorType)}</td>
+          <td class="py-3 px-4 text-slate-700 dark:text-slate-300"><div class="whitespace-pre-wrap break-words line-clamp-3">${escapeHtml(item.remedialAction)}</div></td>
+          <td class="py-3 px-3 text-center">${visualsHtml}</td><td class="py-3 px-3 text-center">${audioHtml}</td>`;
+        
+        tr.addEventListener("click", e => { if (!e.target.closest('[data-no-row="1"]') && !e.target.closest("button")) openDetail(item.id); });
+        tr.addEventListener("contextmenu", e => { e.preventDefault(); showContextMenu(item.id, e.clientX, e.clientY); });
+        tbody.appendChild(tr);
+      });
+      updateDashboard();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function openDetail(id) {
+      const item = errorEntries.find(x => x.id === id && !x.deleted); if (!item) return;
+      activeDetailId = id;
+      document.getElementById("detailTitle").textContent = `Question ${item.questionNum || "—"}`;
+      const content = document.getElementById("detailContent");
+      const qSrc = mediaFieldValue(item, "questionImage"), sSrc = mediaFieldValue(item, "solutionImage"), aSrc = mediaFieldValue(item, "audioData");
+      const imageBlock = (src, label, hasRef, type) => src ? `<div><div class="mb-1 text-xs font-bold text-slate-500">${label}</div><img src="${src}" alt="${label}" class="max-h-72 max-w-full rounded-xl border border-slate-700 object-contain cursor-zoom-in" onclick="viewLightbox('${item.id}','${type}')"></div>` : hasRef ? `<div class="text-xs text-slate-500">Loading ${label.toLowerCase()}…</div>` : "";
+      const hasAnyAudio = Boolean(item.audioData || item.audioDriveId);
+      
+      content.innerHTML = `<div class="grid grid-cols-2 gap-3"><div><div class="text-[10px] uppercase text-slate-500">Source</div><div class="font-semibold">${escapeHtml(item.source)}</div></div><div><div class="text-[10px] uppercase text-slate-500">Subject</div><div class="font-semibold">${escapeHtml(item.subject)}</div></div><div class="col-span-2"><div class="text-[10px] uppercase text-slate-500">Chapter</div><div class="font-semibold">${escapeHtml(item.chapter)}</div></div><div class="col-span-2"><div class="text-[10px] uppercase text-slate-500 mb-1">Error type</div>${getErrorTypeBadge(item.errorType)}</div><div class="col-span-2"><div class="text-[10px] uppercase text-slate-500 mb-1">Root cause / action</div><div class="whitespace-pre-wrap break-words rounded-xl bg-slate-50 dark:bg-[#151619] border border-slate-200 dark:border-[#282a30] p-3">${escapeHtml(item.remedialAction)}</div></div><div><div class="text-[10px] uppercase text-slate-500">Review count</div><div class="font-bold">${Number(item.reviewCount || 0)}×</div></div><div><div class="text-[10px] uppercase text-slate-500">Flagged</div><div class="font-bold">${item.flagged ? "Yes 🚩" : "No"}</div></div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${imageBlock(qSrc,"Question image",Boolean(item.questionImageDriveId),"question")}${imageBlock(sSrc,"Solution image",Boolean(item.solutionImageDriveId),"solution")}</div>${aSrc ? `<div><div class="text-xs font-bold text-slate-500 mb-1">Voice explanation</div><audio controls class="w-full" src="${aSrc}"></audio></div>` : hasAnyAudio ? '<div class="text-xs text-slate-500">Loading voice explanation…</div>' : '<div class="text-xs italic text-slate-500">No voice note attached</div>'}`;
+      document.getElementById("detailReviewBtn").textContent = Number(item.reviewCount || 0) > 0 ? "Review again (+1)" : "Mark reviewed";
+      document.getElementById("detailModal").classList.remove("hidden");
+      if ((item.questionImageDriveId && !qSrc) || (item.solutionImageDriveId && !sSrc) || (item.audioDriveId && !aSrc)) {
+        loadEntryMedia(item).then(loaded => { if (loaded && activeDetailId === id) openDetail(id); });
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderFilteredLogsPopup() {
+      const rows = getFilteredEntries();
+      filteredBookRows = rows;
+      const content = document.getElementById("filteredLogsContent");
+      document.getElementById("filteredLogsCount").textContent = rows.length;
+      document.getElementById("filteredLogsSubtitle").textContent = `${rows.length} matching ${rows.length === 1 ? "log" : "logs"} · ${filteredLogsViewMode === "book" ? "swipe or use arrows" : "list view"}`;
+      
+      if (!rows.length) {
+        content.innerHTML = '<div class="py-12 text-center text-sm text-slate-500">No logs match the current filters.</div>';
+      } else if (filteredLogsViewMode === "list") {
+        content.className = "p-3 sm:p-4 overflow-auto space-y-3";
+        content.innerHTML = rows.map(item => `<article tabindex="0" role="button" data-filtered-card="${escapeHtml(item.id)}" class="rounded-xl border border-slate-200 dark:border-[#282a30] p-3 space-y-2"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="text-[10px] uppercase tracking-wide text-slate-500">${escapeHtml(item.subject || "No subject")} · Q${escapeHtml(item.questionNum || "—")}</div><div class="font-extrabold text-sm break-words mt-1">${escapeHtml(item.chapter || "No chapter")}</div></div><button type="button" class="shrink-0 rounded-lg bg-amber-500 text-slate-950 font-bold px-3 py-1.5 text-xs hover:bg-amber-600" data-open-filtered-id="${escapeHtml(item.id)}">Details</button></div><div>${getErrorTypeBadge(item.errorType || "Unspecified")}</div><div class="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap break-words">${escapeHtml(item.remedialAction || "No explanation recorded")}</div><div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-500"><span>Source: ${escapeHtml(item.source || "—")}</span><span>Reviews: ${Number(item.reviewCount || 0)}</span>${item.audioData || item.audioDriveId ? `<button type="button" class="text-amber-500 font-bold" data-play-filtered-id="${escapeHtml(item.id)}">▶ Play audio</button>` : ""}</div></article>`).join("");
+        
+        content.querySelectorAll("[data-filtered-card]").forEach(card => {
+          const openCard = e => { if (e.target.closest("button, audio, a, input, select, textarea")) return; filteredPopupReturn = true; document.getElementById("filteredLogsModal").classList.add("hidden"); openDetail(card.dataset.filteredCard); };
+          card.addEventListener("click", openCard);
+        });
+        content.querySelectorAll("[data-open-filtered-id]").forEach(btn => btn.addEventListener("click", e => { e.stopPropagation(); filteredPopupReturn = true; document.getElementById("filteredLogsModal").classList.add("hidden"); openDetail(btn.dataset.openFilteredId); }));
+        content.querySelectorAll("[data-play-filtered-id]").forEach(btn => btn.addEventListener("click", e => { e.stopPropagation(); playInlineAudio(btn.dataset.playFilteredId, btn); }));
+      } else {
+        content.className = "p-0 overflow-hidden";
+        content.innerHTML = `<div id="filteredBookTrack" class="flex overflow-x-auto snap-x snap-mandatory" style="scroll-behavior:smooth;align-items:stretch">${rows.map((item, index) => {
+          const qImg = mediaFieldValue(item, "questionImage"), sImg = mediaFieldValue(item, "solutionImage"), audio = mediaFieldValue(item, "audioData");
+          const img = (src,label,type) => src ? `<button type="button" class="block w-full text-left" data-book-image="${escapeHtml(item.id)}" data-book-image-type="${type}"><img src="${src}" alt="${label}" class="max-h-64 w-full object-contain rounded-xl border border-slate-200 dark:border-[#282a30]"><span class="block text-[10px] text-amber-500 mt-1">Tap image to enlarge</span></button>` : "";
+          return `<article class="filtered-book-page p-4 sm:p-6 space-y-4 overflow-y-auto" style="max-height:calc(100dvh - 190px)"><div class="flex items-start justify-between gap-3"><div><div class="text-[10px] uppercase tracking-wide text-slate-500">${escapeHtml(item.subject || "No subject")} · Question ${escapeHtml(item.questionNum || "—")}</div><h3 class="text-lg font-extrabold mt-1">${escapeHtml(item.chapter || "No chapter")}</h3></div><span class="text-xs font-bold text-slate-500">${index+1}/${rows.length}</span></div><div><div class="text-[10px] uppercase text-slate-500 mb-1">Source</div><div class="font-semibold">${escapeHtml(item.source || "—")}</div></div><div><div class="text-[10px] uppercase text-slate-500 mb-1">Error type</div>${getErrorTypeBadge(item.errorType || "Unspecified")}</div><div><div class="text-[10px] uppercase text-slate-500 mb-1">Root cause / action</div><div class="rounded-xl border border-slate-200 dark:border-[#282a30] p-3 whitespace-pre-wrap break-words">${escapeHtml(item.remedialAction || "No explanation recorded")}</div></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${img(qImg,"Question image","question")}${img(sImg,"Solution image","solution")}</div>${audio ? `<div><div class="text-[10px] uppercase text-slate-500 mb-1">Voice explanation</div><audio controls class="w-full" src="${audio}"></audio></div>` : ""}<button type="button" class="w-full rounded-xl bg-amber-500 text-slate-950 font-bold px-4 py-2.5 text-sm hover:bg-amber-600" data-open-filtered-id="${escapeHtml(item.id)}">Open editable details</button></article>`;
+        }).join("")}</div>`;
+        
+        content.querySelectorAll("[data-open-filtered-id]").forEach(btn => btn.addEventListener("click", () => { filteredPopupReturn = true; document.getElementById("filteredLogsModal").classList.add("hidden"); openDetail(btn.dataset.openFilteredId); }));
+        content.querySelectorAll("[data-book-image]").forEach(btn => btn.addEventListener("click", () => window.viewLightbox(btn.dataset.bookImage, btn.dataset.bookImageType)));
+      }
+      updateFilteredBookCounter();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function setFilteredLogsView(mode) {
+      filteredLogsViewMode = mode === "book" ? "book" : "list";
+      document.getElementById("filteredListViewBtn")?.classList.toggle("bg-amber-500", filteredLogsViewMode === "list");
+      document.getElementById("filteredListViewBtn")?.classList.toggle("text-slate-950", filteredLogsViewMode === "list");
+      document.getElementById("filteredBookViewBtn")?.classList.toggle("bg-amber-500", filteredLogsViewMode === "book");
+      document.getElementById("filteredBookViewBtn")?.classList.toggle("text-slate-950", filteredLogsViewMode === "book");
+      document.getElementById("filteredBookNav")?.classList.toggle("hidden", filteredLogsViewMode !== "book");
+      document.getElementById("filteredBookNav")?.classList.toggle("flex", filteredLogsViewMode === "book");
+      renderFilteredLogsPopup();
+    }
+
+    function updateFilteredBookCounter() {
+      const track = document.getElementById("filteredBookTrack");
+      const counter = document.getElementById("filteredBookCounter");
+      if (!counter) return;
+      const width = track?.clientWidth || 1;
+      const index = track ? Math.max(0, Math.min(filteredBookRows.length - 1, Math.round(track.scrollLeft / width))) : 0;
+      counter.dataset.index = String(index);
+      counter.textContent = `${filteredBookRows.length ? index + 1 : 0} / ${filteredBookRows.length}`;
+      const prev = document.getElementById("filteredBookPrev"), next = document.getElementById("filteredBookNext");
+      if (prev) prev.disabled = index <= 0;
+      if (next) next.disabled = index >= filteredBookRows.length - 1;
+    }
+
+    function moveFilteredBook(direction) {
+      const track = document.getElementById("filteredBookTrack");
+      if (!track) return;
+      const width = track.clientWidth || 1;
+      const index = Math.max(0, Math.min(filteredBookRows.length - 1, Math.round(track.scrollLeft / width) + direction));
+      track.scrollTo({ left: index * width, behavior: "smooth" });
+      updateFilteredBookCounter();
+    }
+
+    function setStudyImageInversion(enabled) {
+      const on = Boolean(enabled);
+      document.documentElement.classList.toggle("invert-study-images", on);
+      try { localStorage.setItem("mcq_invert_study_images", on ? "1" : "0"); } catch (_) {}
+      ["invertStudyImagesBtn", "invertDetailImagesBtn"].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) { btn.textContent = `Invert images: ${on ? "On" : "Off"}`; btn.setAttribute("aria-pressed", String(on)); btn.classList.toggle("bg-amber-500", on); btn.classList.toggle("text-slate-950", on); }
+      });
+    }
+
+    function toggleStudyImageInversion() {
+      setStudyImageInversion(!document.documentElement.classList.contains("invert-study-images"));
+    }
+
+    function updateDashboard() {
+      const active = errorEntries.filter(x => !x.deleted);
+      const reviewed = active.filter(x => Number(x.reviewCount || 0) > 0).length;
+      document.getElementById("statTotalLogs").textContent = active.length;
+      document.getElementById("statNewLogs").textContent = active.length - reviewed;
+      document.getElementById("statReviewedLogs").textContent = reviewed;
+      document.getElementById("statErrorTypes").textContent = appConfig.errorTypes.length;
+      const holder = document.getElementById("errorTypeStats");
+      const counts = new Map(); active.forEach(x => counts.set(x.errorType, (counts.get(x.errorType) || 0) + 1));
+      holder.innerHTML = appConfig.errorTypes.map(et => `<span class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-[#282a30] bg-slate-50 dark:bg-[#151619] px-3 py-1.5 text-xs font-medium"><span class="text-slate-700 dark:text-slate-300">${escapeHtml(et.label)}</span><span class="font-bold text-slate-900 dark:text-white px-1.5 py-0.5 rounded-md bg-slate-200 dark:bg-[#282a30] text-[10px]">${counts.get(et.label) || 0}</span></span>`).join("") || '<span class="text-xs text-slate-500">No error types configured</span>';
     }
 
     function renderErrorTypeRadioPills(sel = "") {
@@ -753,80 +983,337 @@
       });
     }
 
-    function updateDashboard() {
-      const active = errorEntries.filter(x => !x.deleted);
-      const reviewed = active.filter(x => Number(x.reviewCount || 0) > 0).length;
-      document.getElementById("statTotalLogs").textContent = active.length;
-      document.getElementById("statNewLogs").textContent = active.length - reviewed;
-      document.getElementById("statReviewedLogs").textContent = reviewed;
-      document.getElementById("statErrorTypes").textContent = appConfig.errorTypes.length;
-      const holder = document.getElementById("errorTypeStats");
-      const counts = new Map(); active.forEach(x => counts.set(x.errorType, (counts.get(x.errorType) || 0) + 1));
-      holder.innerHTML = appConfig.errorTypes.map(et => {
-        return `<span class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-[#282a30] bg-slate-50 dark:bg-[#151619] px-3 py-1.5 text-xs font-medium"><span class="text-slate-700 dark:text-slate-300">${escapeHtml(et.label)}</span><span class="font-bold text-slate-900 dark:text-white px-1.5 py-0.5 rounded-md bg-slate-200 dark:bg-[#282a30] text-[10px]">${counts.get(et.label) || 0}</span></span>`;
-      }).join("") || '<span class="text-xs text-slate-500">No error types configured</span>';
-    }
+    function renderTaxonomyLists() {
+      const sList = document.getElementById("sourcesList");
+      if (sList) {
+        sList.innerHTML = "";
+        appConfig.sources.forEach((src, idx) => {
+          sList.innerHTML += `
+            <div class="flex items-center justify-between p-2.5 bg-white dark:bg-[#151619]">
+              <span class="text-slate-800 dark:text-slate-200 text-xs font-medium">${escapeHtml(src)}</span>
+              <button type="button" onclick="removeTaxSource(${idx})" class="text-rose-500 hover:text-rose-700 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            </div>`;
+        });
+      }
 
-    function renderTable() {
-      const tbody = document.getElementById("logsTableBody"); if (!tbody) return;
-      tbody.innerHTML = "";
-      const fSrcEl = document.getElementById("filterSource");
-      const fSubEl = document.getElementById("filterSubject");
-      const fSrc = fSrcEl?.multiple ? [...fSrcEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fSrcEl?.value || "ALL"].filter(v=>v!=="ALL");
-      const fSub = fSubEl?.multiple ? [...fSubEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fSubEl?.value || "ALL"].filter(v=>v!=="ALL");
-      const fChapEl = document.getElementById("filterChapter");
-      const fChap = fChapEl?.multiple ? [...fChapEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fChapEl?.value || "ALL"].filter(v=>v!=="ALL");
-      const fErrEl = document.getElementById("filterErrorType");
-      const fErr = fErrEl?.multiple ? [...fErrEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fErrEl?.value || "ALL"].filter(v=>v!=="ALL");
-      const fStatusEl = document.getElementById("filterReviewStatus");
-      const fStatus = fStatusEl?.multiple ? [...fStatusEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fStatusEl?.value || "ALL"].filter(v=>v!=="ALL");
-      const list = errorEntries.filter(item => !item.deleted).sort((a,b) => (b.createdAt||0)-(a.createdAt||0)).filter(item => {
-        if (fSrc.length && !fSrc.includes(item.source)) return false;
-        if (fSub.length && !fSub.includes(item.subject)) return false;
-        if (fChap.length && !fChap.includes(item.chapter)) return false;
-        if (fErr.length && !fErr.includes(item.errorType)) return false;
-        if (fStatus.length && !fStatus.some(status => status === "ALL" || (status === "NEW" && Number(item.reviewCount||0) === 0 && !item.flagged) || (status === "REVIEWED" && Number(item.reviewCount||0) > 0) || (status === "FLAGGED" && !!item.flagged))) return false;
-        return true;
-      });
-      document.getElementById("emptyTableState")?.classList.toggle("hidden", list.length !== 0);
-      const filteredCount = document.getElementById("filteredLogsCount"); if (filteredCount) filteredCount.textContent = list.length;
-      list.forEach(item => {
-        const count = Number(item.reviewCount || 0); const isReviewed = count > 0;
-        let visualsHtml = '<span class="text-slate-400 italic">None</span>';
-        const questionSrc = mediaFieldValue(item, "questionImage");
-        const solutionSrc = mediaFieldValue(item, "solutionImage");
-        if (item.questionImage || item.solutionImage || item.questionImageDriveId || item.solutionImageDriveId) {
-          visualsHtml = '<div class="flex flex-wrap items-center justify-center gap-2">';
-          if (questionSrc) visualsHtml += `<button type="button" data-no-row="1" class="relative" onclick="viewLightbox('${item.id}','question')"><img src="${questionSrc}" alt="Question" class="w-8 h-8 rounded-lg object-cover border border-slate-300 dark:border-[#282a30]"><span class="absolute -top-1 -right-1 bg-amber-500 text-slate-950 rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">Q</span></button>`;
-          if (solutionSrc) visualsHtml += `<button type="button" data-no-row="1" class="relative" onclick="viewLightbox('${item.id}','solution')"><img src="${solutionSrc}" alt="Solution" class="w-8 h-8 rounded-lg object-cover border border-slate-300 dark:border-[#282a30]"><span class="absolute -top-1 -right-1 bg-emerald-500 text-slate-950 rounded-full text-[9px] font-black w-3.5 h-3.5 flex items-center justify-center">S</span></button>`;
-          visualsHtml += '</div>';
-        }
-        const audioHtml = (item.audioData || item.audioDriveId) ? `<button type="button" data-no-row="1" onclick="playInlineAudio('${item.id}',this)" class="w-8 h-8 mx-auto rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/30 flex items-center justify-center" title="Play voice note"><i data-lucide="play" class="w-3.5 h-3.5"></i></button>` : '<span class="text-slate-400 italic">No audio</span>';
+      const selectedSub = document.getElementById("taxSubjectSelect")?.value;
+      const cList = document.getElementById("chaptersList");
+      if (cList && selectedSub && appConfig.subjects[selectedSub]) {
+        cList.innerHTML = "";
+        appConfig.subjects[selectedSub].forEach((ch, idx) => {
+          cList.innerHTML += `
+            <div class="flex items-center justify-between p-2.5 bg-white dark:bg-[#151619]">
+              <span class="text-slate-800 dark:text-slate-200 text-xs font-medium">${escapeHtml(ch)}</span>
+              <button type="button" onclick="removeTaxChapter('${escapeHtml(selectedSub)}', ${idx})" class="text-rose-500 hover:text-rose-700 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            </div>`;
+        });
+      }
 
-        const tr = document.createElement("tr"); tr.dataset.id = item.id; tr.tabIndex = 0; tr.setAttribute("role","button");
-        tr.className = "log-row hover:bg-slate-50 dark:hover:bg-[#151619] transition-colors border-b border-slate-100 dark:border-[#24262b]";
-        tr.innerHTML = `<td class="py-3 px-3 text-center"><div class="flex flex-col items-center gap-1.5"><button type="button" data-no-row="1" onclick="toggleReviewStatus('${item.id}')" class="inline-flex items-center justify-center w-6 h-6 rounded-full ${isReviewed?'text-emerald-500':'text-slate-400 hover:text-slate-200'}"><i data-lucide="${isReviewed?'check-circle-2':'circle'}" class="w-4 h-4"></i></button><span class="inline-flex rounded-md px-1.5 py-0.5 text-[9px] font-bold ${isReviewed?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30':'bg-amber-500/10 text-amber-500 border border-amber-500/30'}">${isReviewed?count+'×':'NEW'}</span></div></td>
-          <td class="py-3 px-3 font-bold text-slate-900 dark:text-white">${item.flagged?'<span class="text-rose-500 mr-1">🚩</span>':''}${escapeHtml(item.questionNum)}</td>
-          <td class="py-3 px-3"><span class="inline-block px-2 py-1 rounded-lg text-[11px] font-medium bg-slate-100 dark:bg-[#151619] border border-slate-200 dark:border-[#282a30] text-slate-700 dark:text-slate-300 break-words">${escapeHtml(item.source)}</span></td>
-          <td class="py-3 px-3 font-semibold text-slate-900 dark:text-white">${escapeHtml(item.subject)}</td>
-          <td class="py-3 px-3 text-slate-600 dark:text-slate-300">${escapeHtml(item.chapter)}</td>
-          <td class="py-3 px-3">${getErrorTypeBadge(item.errorType)}</td>
-          <td class="py-3 px-4 text-slate-700 dark:text-slate-300"><div class="whitespace-pre-wrap break-words line-clamp-3">${escapeHtml(item.remedialAction)}</div></td>
-          <td class="py-3 px-3 text-center">${visualsHtml}</td><td class="py-3 px-3 text-center">${audioHtml}</td>`;
-        tr.addEventListener("click", e => { if (!e.target.closest('[data-no-row="1"]') && !e.target.closest("button")) openDetail(item.id); });
-        tbody.appendChild(tr);
-      });
-      updateDashboard();
+      const eList = document.getElementById("errorTypesList");
+      if (eList) {
+        eList.innerHTML = "";
+        appConfig.errorTypes.forEach((et, idx) => {
+          eList.innerHTML += `
+            <div class="flex items-center justify-between p-2.5 bg-white dark:bg-[#151619]">
+              <span class="text-slate-800 dark:text-slate-200 text-xs font-bold">${escapeHtml(et.label)}</span>
+              <button type="button" onclick="removeTaxErrorType(${idx})" class="text-rose-500 hover:text-rose-700 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            </div>`;
+        });
+      }
       if (window.lucide) lucide.createIcons();
     }
 
-    // Media and Drive helper functions
-    function mediaFieldValue(entry, field) {
-      if (!entry) return null;
-      if (typeof entry[field] === "string" && entry[field].startsWith("data:")) return entry[field];
-      const spec = MEDIA_SPECS.find(x => x.field === field);
-      const fileId = spec ? entry[spec.idField] : null;
-      return fileId ? (mediaObjectUrlCache.get(fileId) || null) : null;
+    window.removeTaxSource = idx => { appConfig.sources.splice(idx, 1); saveLocalCache(true); populateDropdowns(); };
+    window.removeTaxChapter = (subj, idx) => { if (appConfig.subjects[subj]) { appConfig.subjects[subj].splice(idx, 1); saveLocalCache(true); populateDropdowns(); } };
+    window.removeTaxErrorType = idx => { if (appConfig.errorTypes.length > 1) { appConfig.errorTypes.splice(idx, 1); saveLocalCache(true); populateDropdowns(); } };
+
+    function populateDropdowns() {
+      const fSrc = document.getElementById("filterSource");
+      const mSrc = document.getElementById("modalSource");
+      if (fSrc && mSrc) {
+        fSrc.innerHTML = '<option value="ALL">All Sources</option>';
+        mSrc.innerHTML = '<option value="" disabled selected>Select Source...</option>';
+        appConfig.sources.forEach(src => {
+          fSrc.innerHTML += `<option value="${escapeHtml(src)}">${escapeHtml(src)}</option>`;
+          mSrc.innerHTML += `<option value="${escapeHtml(src)}">${escapeHtml(src)}</option>`;
+        });
+      }
+
+      const fSub = document.getElementById("filterSubject");
+      const mSub = document.getElementById("modalSubject");
+      const tSub = document.getElementById("taxSubjectSelect");
+      if (fSub && mSub && tSub) {
+        fSub.innerHTML = '<option value="ALL">All Subjects</option>';
+        mSub.innerHTML = '<option value="" disabled selected>Select Subject...</option>';
+        tSub.innerHTML = '';
+        Object.keys(appConfig.subjects).forEach(sub => {
+          fSub.innerHTML += `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`;
+          mSub.innerHTML += `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`;
+          tSub.innerHTML += `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`;
+        });
+      }
+
+      const fChap = document.getElementById("filterChapter");
+      if (fChap) {
+        const pool = Object.values(appConfig.subjects).flat();
+        fChap.innerHTML = '<option value="ALL">All Chapters</option>' + [...new Set(pool)].sort().map(ch => `<option value="${escapeHtml(ch)}">${escapeHtml(ch)}</option>`).join("");
+      }
+
+      const fErr = document.getElementById("filterErrorType");
+      if (fErr) {
+        fErr.innerHTML = '<option value="ALL">All Error Types</option>' + appConfig.errorTypes.map(et => `<option value="${escapeHtml(et.label)}">${escapeHtml(et.label)}</option>`).join("");
+      }
+
+      if (mSub) updateChapterSelect(mSub.value);
+      renderErrorTypeRadioPills();
+      renderTaxonomyLists();
+      updateDashboard();
+    }
+
+    function updateChapterSelect(sub, sel = "") {
+      const mChap = document.getElementById("modalChapter");
+      if (!mChap) return;
+      mChap.innerHTML = "";
+      if (!sub || !appConfig.subjects[sub]) {
+        mChap.innerHTML = '<option value="">Select Subject First</option>';
+        mChap.disabled = true;
+        return;
+      }
+      mChap.disabled = false;
+      mChap.innerHTML = '<option value="" disabled selected>Select Chapter...</option>';
+      appConfig.subjects[sub].forEach(c => {
+        mChap.innerHTML += `<option value="${escapeHtml(c)}" ${c === sel ? 'selected' : ''}>${escapeHtml(c)}</option>`;
+      });
+    }
+
+    function showContextMenu(id, x, y) {
+      contextEntryId = id; const menu = document.getElementById("logContextMenu");
+      menu.classList.remove("hidden");
+      menu.style.left = Math.min(x, window.innerWidth - 170) + "px";
+      menu.style.top = Math.min(y, window.innerHeight - 100) + "px";
+    }
+    function hideContextMenu() { document.getElementById("logContextMenu")?.classList.add("hidden"); }
+
+    window.playInlineAudio = async (id, btn) => {
+      const item = errorEntries.find(i => i.id === id);
+      if (!item) return;
+      let src = mediaFieldValue(item, "audioData");
+      if (!src && item.audioDriveId) {
+        try { src = await loadDriveMedia(item, MEDIA_SPECS.find(x => x.field === "audioData"), false); }
+        catch (err) { showToast("Could not download voice note."); return; }
+      }
+      if (!src) return;
+      if (currentPlayingAudio && currentPlayingAudio.src === src) {
+        if (!currentPlayingAudio.paused) { currentPlayingAudio.pause(); btn.querySelector('.audio-play-icon')?.setAttribute('data-lucide', 'play'); if (window.lucide) lucide.createIcons(); return; }
+      }
+      if (currentPlayingAudio) currentPlayingAudio.pause();
+      currentPlayingAudio = new Audio(src);
+      try { await currentPlayingAudio.play(); } catch (err) { showToast("Playback error"); return; }
+      btn.querySelector('.audio-play-icon')?.setAttribute('data-lucide', 'pause'); if (window.lucide) lucide.createIcons();
+      currentPlayingAudio.onended = () => { btn.querySelector('.audio-play-icon')?.setAttribute('data-lucide', 'play'); if (window.lucide) lucide.createIcons(); };
+    };
+
+    window.toggleReviewStatus = id => {
+      const item = errorEntries.find(i => i.id === id);
+      if (item) {
+        item.reviewCount = Number(item.reviewCount || 0) + 1;
+        item.updatedAt = Date.now();
+        saveLocalCache();
+        renderTable();
+      }
+    };
+
+    window.editEntry = id => {
+      const item = errorEntries.find(i => i.id === id);
+      if (!item) return;
+      openEntryModal(item.id);
+    };
+
+    window.deleteEntry = id => {
+      if (!confirm("Are you sure you want to delete this log?")) return;
+      const item = errorEntries.find(i => i.id === id);
+      if (item) {
+        item.deleted = true;
+        item.updatedAt = Date.now();
+        saveLocalCache();
+        renderTable();
+        showToast("Log deleted");
+      }
+    };
+
+    async function openEntryModal(editId = null) {
+      document.getElementById("entryForm").reset();
+      document.getElementById("editEntryId").value = "";
+      questionImgBase64 = null; solutionImgBase64 = null; recordedAudioBase64 = null;
+      document.getElementById("modalQImgPreview").classList.add("hidden");
+      document.getElementById("modalSImgPreview").classList.add("hidden");
+      document.getElementById("modalRemoveQImgBtn").classList.add("hidden");
+      document.getElementById("modalRemoveSImgBtn").classList.add("hidden");
+      document.getElementById("voicePlaybackContainer").classList.add("hidden");
+      document.getElementById("voiceTimer").textContent = "00:00";
+      document.getElementById("modalFlagged").checked = false;
+      populateDropdowns();
+
+      if (editId) {
+        const item = errorEntries.find(i => i.id === editId);
+        if (item) {
+          document.getElementById("modalHeading").textContent = "Edit Error Log";
+          document.getElementById("editEntryId").value = item.id;
+          document.getElementById("modalQNum").value = item.questionNum;
+          document.getElementById("modalSource").value = item.source || "";
+          document.getElementById("modalSubject").value = item.subject || "";
+          updateChapterSelect(item.subject, item.chapter);
+          document.getElementById("modalRemedial").value = item.remedialAction || "";
+          document.getElementById("modalFlagged").checked = Boolean(item.flagged);
+          renderErrorTypeRadioPills(item.errorType);
+
+          if (item.questionImage || item.questionImageDriveId) {
+            questionImgBase64 = item.questionImage || await loadDriveMedia(item, MEDIA_SPECS.find(x => x.field === "questionImage"), true);
+            const qP = document.getElementById("modalQImgPreview");
+            qP.src = questionImgBase64; qP.classList.remove("hidden");
+            document.getElementById("modalRemoveQImgBtn").classList.remove("hidden");
+          }
+          if (item.solutionImage || item.solutionImageDriveId) {
+            solutionImgBase64 = item.solutionImage || await loadDriveMedia(item, MEDIA_SPECS.find(x => x.field === "solutionImage"), true);
+            const sP = document.getElementById("modalSImgPreview");
+            sP.src = solutionImgBase64; sP.classList.remove("hidden");
+            document.getElementById("modalRemoveSImgBtn").classList.remove("hidden");
+          }
+          if (item.audioData || item.audioDriveId) {
+            recordedAudioBase64 = item.audioData || await loadDriveMedia(item, MEDIA_SPECS.find(x => x.field === "audioData"), true);
+            document.getElementById("modalAudioEl").src = recordedAudioBase64;
+            document.getElementById("voicePlaybackContainer").classList.remove("hidden");
+          }
+        }
+      } else {
+        document.getElementById("modalHeading").textContent = "Record MCQ Mistake";
+        renderErrorTypeRadioPills();
+      }
+      document.getElementById("entryModal").classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeEntryModal() {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(t => t.stop());
+      }
+      document.getElementById("entryModal").classList.add("hidden");
+    }
+
+    window.viewLightbox = async (id, type) => {
+      const item = errorEntries.find(i => i.id === id);
+      if (!item) return;
+      const spec = MEDIA_SPECS.find(x => x.field === (type === "question" ? "questionImage" : "solutionImage"));
+      let url = mediaFieldValue(item, spec.field);
+      if (!url && item[spec.idField]) {
+        try { url = await loadDriveMedia(item, spec, false); }
+        catch (err) { showToast("Could not download image."); return; }
+      }
+      if (url) {
+        document.getElementById("lightboxImg").src = url;
+        document.getElementById("imageLightboxModal").classList.remove("hidden");
+      }
+    };
+
+    // Google Drive Integration & Snapshot Backups
+    function initGoogleClient() {
+      const clientId = localStorage.getItem(CLIENT_ID_KEY) || "";
+      const input = document.getElementById("gDriveClientIdInput");
+      if (input) input.value = clientId;
+      if (!clientId) { updateDriveUI(false); return; }
+
+      if (window.google?.accounts?.oauth2) {
+        try {
+          gTokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: clientId,
+            scope: "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email",
+            callback: async (res) => {
+              if (res?.access_token) {
+                gDriveAccessToken = res.access_token;
+                localStorage.setItem(DRIVE_TOKEN_KEY, gDriveAccessToken);
+                await fetchGoogleUserInfo();
+                updateDriveUI(true);
+                showToast("Drive Connected");
+              }
+            }
+          });
+          if (gDriveAccessToken) {
+            updateDriveUI(true);
+            fetchGoogleUserInfo().catch(() => {
+              gDriveAccessToken = null;
+              localStorage.removeItem(DRIVE_TOKEN_KEY);
+              updateDriveUI(false);
+            });
+          }
+        } catch (e) {}
+      }
+    }
+
+    async function fetchGoogleUserInfo() {
+      if (!gDriveAccessToken) return;
+      try {
+        const res = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", { headers: { Authorization: `Bearer ${gDriveAccessToken}` } });
+        if (res.ok) {
+          const user = await res.json();
+          if (user.email) {
+            localStorage.setItem(DRIVE_EMAIL_KEY, user.email);
+            const userEl = document.getElementById("driveUserEmail");
+            if (userEl) userEl.textContent = user.email;
+            document.getElementById("driveEmailRow")?.classList.remove("hidden");
+          }
+        }
+      } catch (e) {}
+    }
+
+    function triggerGoogleAuth() {
+      const val = document.getElementById("gDriveClientIdInput").value.trim();
+      if (!val) { showToast("Enter Client ID"); return; }
+      localStorage.setItem(CLIENT_ID_KEY, val);
+      if (window.google?.accounts?.oauth2) {
+        gTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: val,
+          scope: "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email",
+          callback: async (res) => {
+            if (res?.access_token) {
+              gDriveAccessToken = res.access_token;
+              localStorage.setItem(DRIVE_TOKEN_KEY, gDriveAccessToken);
+              await fetchGoogleUserInfo();
+              updateDriveUI(true);
+              showToast("Connected to Drive");
+            }
+          }
+        });
+        gTokenClient.requestAccessToken({ prompt: 'consent' });
+      }
+    }
+
+    function disconnectGoogleDrive() {
+      gDriveAccessToken = null;
+      localStorage.removeItem(DRIVE_TOKEN_KEY);
+      localStorage.removeItem(DRIVE_EMAIL_KEY);
+      updateDriveUI(false);
+      showToast("Drive disconnected");
+    }
+
+    function updateDriveUI(connected) {
+      const dot = document.getElementById("driveIndicatorDot");
+      const statusText = document.getElementById("syncStatusText");
+      const statusPill = document.getElementById("driveStatusPill");
+      const disconnectBtn = document.getElementById("disconnectDriveBtn");
+      const email = localStorage.getItem(DRIVE_EMAIL_KEY) || "";
+
+      if (connected && gDriveAccessToken) {
+        if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-500 inline-block";
+        if (statusText) statusText.textContent = email ? `Linked (${email})` : "Drive Connected";
+        if (statusPill) { statusPill.textContent = "Connected"; statusPill.className = "font-bold text-emerald-500"; }
+        if (disconnectBtn) disconnectBtn.classList.remove("hidden");
+      } else {
+        if (dot) dot.className = "w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-700 inline-block";
+        if (statusText) statusText.textContent = "Drive Unlinked";
+        if (statusPill) { statusPill.textContent = "Unlinked"; statusPill.className = "font-bold text-slate-500"; }
+        if (disconnectBtn) disconnectBtn.classList.add("hidden");
+      }
     }
 
     async function ensureMediaFolders() {
@@ -856,7 +1343,7 @@
         const params = new URLSearchParams({ q: query, pageSize: "1000", fields });
         if (pageToken) params.set("pageToken", pageToken);
         const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params.toString()}`, { headers: { Authorization: `Bearer ${gDriveAccessToken}` } });
-        if (!res.ok) throw new Error(`Drive file listing failed (${res.status})`);
+        if (!res.ok) throw new Error(`Drive listing error (${res.status})`);
         const data = await res.json();
         results.push(...(data.files || []));
         pageToken = data.nextPageToken || "";
@@ -873,15 +1360,6 @@
       return res.json();
     }
 
-    function normalizeConfig(config = {}) {
-      return {
-        sources: Array.isArray(config.sources) ? config.sources : [...DEFAULT_CONFIG.sources],
-        subjects: config.subjects && typeof config.subjects === "object" ? config.subjects : structuredClone(DEFAULT_CONFIG.subjects),
-        errorTypes: Array.isArray(config.errorTypes) && config.errorTypes.length ? config.errorTypes : DEFAULT_CONFIG.errorTypes.map(x => ({...x}))
-      };
-    }
-
-    // Backup & Restore Methods
     async function runCloudBackup(isAutomatic = false) {
       if (!gDriveAccessToken) {
         if (!isAutomatic) showToast("Connect Google Drive first");
@@ -952,7 +1430,7 @@
         localStorage.setItem("mcq_latest_cloud_backup_time", String(now.getTime()));
         localStorage.setItem("mcq_latest_cloud_backup_name", saved.name || filename);
 
-        if (status) status.textContent = `Last cloud backup: ${now.toLocaleDateString()} ${now.toLocaleTimeString()} · ${activeEntries.length} logs`;
+        if (status) status.textContent = `Last cloud backup: ${now.toLocaleDateString()} ${now.toLocaleTimeString()} · ${activeEntries.length} active logs`;
         if (!isAutomatic) showToast(`Backup created (${activeEntries.length} logs saved)`);
         return true;
       } catch (err) {
@@ -1045,83 +1523,9 @@
 
         if (status) status.textContent = `Restored ${mergedCount} logs from ${newestFile.name}`;
         showToast(`Restored & merged ${mergedCount} logs successfully`);
-
-        setTimeout(() => syncWithGoogleDriveImmediate(), 400);
       } catch (err) {
         if (status) status.textContent = "Restore failed: " + (err.message || "error");
         showToast(err.message || "Restore failed");
-      }
-    }
-
-    function populateDropdowns() {
-      const fSrc = document.getElementById("filterSource");
-      const mSrc = document.getElementById("modalSource");
-      if (fSrc && mSrc) {
-        fSrc.innerHTML = '<option value="ALL">All Sources</option>';
-        mSrc.innerHTML = '<option value="" disabled selected>Select Source...</option>';
-        appConfig.sources.forEach(src => {
-          fSrc.innerHTML += `<option value="${escapeHtml(src)}">${escapeHtml(src)}</option>`;
-          mSrc.innerHTML += `<option value="${escapeHtml(src)}">${escapeHtml(src)}</option>`;
-        });
-      }
-      const fSub = document.getElementById("filterSubject");
-      const mSub = document.getElementById("modalSubject");
-      const tSub = document.getElementById("taxSubjectSelect");
-      if (fSub && mSub && tSub) {
-        fSub.innerHTML = '<option value="ALL">All Subjects</option>';
-        mSub.innerHTML = '<option value="" disabled selected>Select Subject...</option>';
-        tSub.innerHTML = '';
-        Object.keys(appConfig.subjects).forEach(sub => {
-          fSub.innerHTML += `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`;
-          mSub.innerHTML += `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`;
-          tSub.innerHTML += `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`;
-        });
-      }
-      const fChap = document.getElementById("filterChapter");
-      if (fChap) {
-        const pool = Object.values(appConfig.subjects).flat();
-        fChap.innerHTML = '<option value="ALL">All Chapters</option>' + [...new Set(pool)].sort().map(ch => `<option value="${escapeHtml(ch)}">${escapeHtml(ch)}</option>`).join("");
-      }
-      const fErr = document.getElementById("filterErrorType");
-      if (fErr) {
-        fErr.innerHTML = '<option value="ALL">All Error Types</option>' + appConfig.errorTypes.map(et => `<option value="${escapeHtml(et.label)}">${escapeHtml(et.label)}</option>`).join("");
-      }
-      renderErrorTypeRadioPills();
-      updateDashboard();
-    }
-
-    function updateChapterSelect(sub, sel = "") {
-      const mChap = document.getElementById("modalChapter");
-      if (!mChap) return;
-      mChap.innerHTML = "";
-      if (!sub || !appConfig.subjects[sub]) {
-        mChap.innerHTML = '<option value="">Select Subject First</option>';
-        mChap.disabled = true;
-        return;
-      }
-      mChap.disabled = false;
-      mChap.innerHTML = '<option value="" disabled selected>Select Chapter...</option>';
-      appConfig.subjects[sub].forEach(c => {
-        mChap.innerHTML += `<option value="${escapeHtml(c)}" ${c === sel ? 'selected' : ''}>${escapeHtml(c)}</option>`;
-      });
-    }
-
-    async function syncWithGoogleDriveImmediate() {
-      if (!gDriveAccessToken) return;
-      if (isSyncing) { syncRequestedWhileBusy = true; return; }
-      isSyncing = true;
-      const syncBtn = document.getElementById("quickSyncBtn");
-      syncBtn?.classList.add("syncing");
-      try {
-        setSyncProgress("Syncing…", 50);
-        await new Promise(r => setTimeout(r, 400));
-        setSyncProgress("Sync complete", 100, "success");
-      } catch (e) {
-        setSyncProgress("Sync failed", null, "error");
-      } finally {
-        isSyncing = false;
-        syncBtn?.classList.remove("syncing");
-        if (syncRequestedWhileBusy) { syncRequestedWhileBusy = false; syncWithGoogleDriveImmediate(); }
       }
     }
 
@@ -1138,42 +1542,67 @@
       document.getElementById("themeToggleBtn")?.addEventListener("click", toggleTheme);
       document.getElementById("mobileMenuThemeBtn")?.addEventListener("click", toggleTheme);
 
-      document.getElementById("manualCloudBackupBtn")?.addEventListener("click", () => runCloudBackup(false));
-      document.getElementById("restoreCloudBackupBtn")?.addEventListener("click", restoreLatestCloudBackup);
-      document.getElementById("openNewLogModalBtn")?.addEventListener("click", () => {
-        document.getElementById("entryForm").reset();
-        document.getElementById("editEntryId").value = "";
-        document.getElementById("entryModal").classList.remove("hidden");
+      // Mobile Menu
+      const menuPanel = document.getElementById("mobileMenuPanel");
+      const menuBtn = document.getElementById("mobileMenuBtn");
+      menuBtn?.addEventListener("click", () => {
+        const opening = menuPanel.classList.contains("hidden");
+        menuPanel.classList.toggle("hidden", !opening);
+        menuBtn.setAttribute("aria-expanded", String(opening));
+        if (window.lucide) lucide.createIcons();
       });
-      document.getElementById("closeModalBtn")?.addEventListener("click", () => document.getElementById("entryModal").classList.add("hidden"));
-      document.getElementById("cancelEntryModalBtn")?.addEventListener("click", () => document.getElementById("entryModal").classList.add("hidden"));
-      document.getElementById("openSettingsModalBtn")?.addEventListener("click", () => document.getElementById("settingsModal").classList.remove("hidden"));
-      document.getElementById("closeSettingsBtn")?.addEventListener("click", () => document.getElementById("settingsModal").classList.add("hidden"));
-      document.getElementById("modalSubject")?.addEventListener("change", e => updateChapterSelect(e.target.value));
+      document.addEventListener("click", e => {
+        if (menuPanel && !menuPanel.classList.contains("hidden") && !e.target.closest("#mobileMenuPanel") && !e.target.closest("#mobileMenuBtn")) {
+          menuPanel.classList.add("hidden");
+        }
+      });
+      document.getElementById("mobileMenuSettingsBtn")?.addEventListener("click", () => {
+        menuPanel.classList.add("hidden");
+        document.getElementById("openSettingsModalBtn")?.click();
+      });
 
-      document.getElementById("entryForm")?.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const chosenRadio = document.querySelector('input[name="modalErrorTypeRadio"]:checked');
-        const entry = {
-          id: "err_" + Date.now(),
-          questionNum: document.getElementById("modalQNum").value.trim(),
-          source: document.getElementById("modalSource").value,
-          subject: document.getElementById("modalSubject").value,
-          chapter: document.getElementById("modalChapter").value,
-          errorType: chosenRadio ? chosenRadio.value : "Calculation / Silly Mistake",
-          remedialAction: document.getElementById("modalRemedial").value.trim(),
-          flagged: document.getElementById("modalFlagged").checked,
-          reviewCount: 0,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          deleted: false
-        };
-        errorEntries.unshift(entry);
-        saveLocalCache();
-        document.getElementById("entryModal").classList.add("hidden");
-        renderTable();
-        showToast("Logged question");
+      // Filtered logs modal controls
+      document.getElementById("showFilteredLogsBtn")?.addEventListener("click", () => {
+        renderFilteredLogsPopup();
+        document.getElementById("filteredLogsModal")?.classList.remove("hidden");
       });
+      document.getElementById("filteredListViewBtn")?.addEventListener("click", () => setFilteredLogsView("list"));
+      document.getElementById("filteredBookViewBtn")?.addEventListener("click", () => setFilteredLogsView("book"));
+      document.getElementById("filteredBookPrev")?.addEventListener("click", () => moveFilteredBook(-1));
+      document.getElementById("filteredBookNext")?.addEventListener("click", () => moveFilteredBook(1));
+      document.getElementById("closeFilteredLogsBtn")?.addEventListener("click", () => document.getElementById("filteredLogsModal")?.classList.add("hidden"));
+      document.getElementById("closeFilteredLogsFooterBtn")?.addEventListener("click", () => document.getElementById("filteredLogsModal")?.classList.add("hidden"));
+      document.getElementById("invertStudyImagesBtn")?.addEventListener("click", toggleStudyImageInversion);
+      document.getElementById("invertDetailImagesBtn")?.addEventListener("click", toggleStudyImageInversion);
+
+      // Details modal controls
+      const closeDetail = () => {
+        document.getElementById("detailModal")?.classList.add("hidden");
+        if (filteredPopupReturn) {
+          filteredPopupReturn = false;
+          document.getElementById("filteredLogsModal")?.classList.remove("hidden");
+          renderFilteredLogsPopup();
+        }
+      };
+      document.getElementById("closeDetailBtn")?.addEventListener("click", closeDetail);
+      document.getElementById("detailReviewBtn")?.addEventListener("click", () => {
+        if (activeDetailId) { window.toggleReviewStatus(activeDetailId); openDetail(activeDetailId); }
+      });
+      document.getElementById("detailEditBtn")?.addEventListener("click", () => {
+        const id = activeDetailId; closeDetail(); if (id) openEntryModal(id);
+      });
+      document.getElementById("detailDeleteBtn")?.addEventListener("click", () => {
+        const id = activeDetailId; closeDetail(); if (id) window.deleteEntry(id);
+      });
+
+      // Context menu
+      document.getElementById("contextEditBtn")?.addEventListener("click", () => {
+        const id = contextEntryId; hideContextMenu(); if (id) openEntryModal(id);
+      });
+      document.getElementById("contextDeleteBtn")?.addEventListener("click", () => {
+        const id = contextEntryId; hideContextMenu(); if (id) window.deleteEntry(id);
+      });
+      document.addEventListener("click", e => { if (!e.target.closest("#logContextMenu")) hideContextMenu(); });
 
       // Settings tabs
       document.querySelectorAll(".setting-tab").forEach(tab => {
@@ -1189,9 +1618,284 @@
         });
       });
 
+      document.getElementById("openSettingsModalBtn")?.addEventListener("click", () => document.getElementById("settingsModal")?.classList.remove("hidden"));
+      document.getElementById("closeSettingsBtn")?.addEventListener("click", () => document.getElementById("settingsModal")?.classList.add("hidden"));
+      document.getElementById("openNewLogModalBtn")?.addEventListener("click", () => openEntryModal());
+      document.getElementById("closeModalBtn")?.addEventListener("click", closeEntryModal);
+      document.getElementById("cancelEntryModalBtn")?.addEventListener("click", closeEntryModal);
+
+      // Taxonomy adding listeners
+      document.getElementById("addSourceBtn")?.addEventListener("click", () => {
+        const input = document.getElementById("newSourceInput");
+        const val = input?.value.trim();
+        if (val && !appConfig.sources.includes(val)) {
+          appConfig.sources.push(val);
+          input.value = "";
+          saveLocalCache(true);
+          populateDropdowns();
+        }
+      });
+      document.getElementById("addSubjectBtn")?.addEventListener("click", () => {
+        const input = document.getElementById("newSubjectInput");
+        const val = input?.value.trim();
+        if (val && !appConfig.subjects[val]) {
+          appConfig.subjects[val] = [];
+          input.value = "";
+          saveLocalCache(true);
+          populateDropdowns();
+        }
+      });
+      document.getElementById("addChapterBtn")?.addEventListener("click", () => {
+        const subj = document.getElementById("taxSubjectSelect")?.value;
+        const input = document.getElementById("newChapterInput");
+        const val = input?.value.trim();
+        if (subj && val && appConfig.subjects[subj] && !appConfig.subjects[subj].includes(val)) {
+          appConfig.subjects[subj].push(val);
+          input.value = "";
+          saveLocalCache(true);
+          populateDropdowns();
+        }
+      });
+      document.getElementById("addErrorTypeBtn")?.addEventListener("click", () => {
+        const input = document.getElementById("newErrorTypeName");
+        const name = input?.value.trim();
+        const col = document.getElementById("newErrorTypeColor")?.value || "blue";
+        if (name) {
+          appConfig.errorTypes.push({ id: "et_" + Date.now(), label: name, color: col });
+          input.value = "";
+          saveLocalCache(true);
+          populateDropdowns();
+        }
+      });
+      document.getElementById("taxSubjectSelect")?.addEventListener("change", renderTaxonomyLists);
+
+      // Taxonomy Quick-adds inside Entry Form
+      document.getElementById("quickAddSourceBtn")?.addEventListener("click", () => {
+        const name = prompt("New source name:"); if (!name?.trim()) return; const v = name.trim();
+        if (!appConfig.sources.includes(v)) { appConfig.sources.push(v); saveLocalCache(true); populateDropdowns(); }
+        document.getElementById("modalSource").value = v;
+      });
+      document.getElementById("quickAddSubjectBtn")?.addEventListener("click", () => {
+        const name = prompt("New subject name:"); if (!name?.trim()) return; const v = name.trim();
+        if (!appConfig.subjects[v]) { appConfig.subjects[v] = []; saveLocalCache(true); populateDropdowns(); }
+        document.getElementById("modalSubject").value = v; updateChapterSelect(v);
+      });
+      document.getElementById("quickAddChapterBtn")?.addEventListener("click", () => {
+        const sub = document.getElementById("modalSubject").value; if (!sub) { showToast("Select a subject first"); return; }
+        const name = prompt(`New chapter for ${sub}:`); if (!name?.trim()) return; const v = name.trim();
+        appConfig.subjects[sub] ||= []; if (!appConfig.subjects[sub].includes(v)) { appConfig.subjects[sub].push(v); saveLocalCache(true); }
+        updateChapterSelect(sub, v); populateDropdowns(); document.getElementById("modalChapter").value = v;
+      });
+      document.getElementById("quickAddErrorTypeBtn")?.addEventListener("click", () => {
+        const name = prompt("New error classification:"); if (!name?.trim()) return; const v = name.trim();
+        if (!appConfig.errorTypes.some(et => et.label.toLowerCase() === v.toLowerCase())) { appConfig.errorTypes.push({ id: "et_" + Date.now(), label: v, color: "purple" }); saveLocalCache(true); }
+        renderErrorTypeRadioPills(v); populateDropdowns();
+      });
+
+      // Mistake type collapse view
+      const mistakeStats = document.getElementById("errorTypeStats");
+      const mistakeToggle = document.getElementById("toggleMistakeTypeStatsBtn");
+      mistakeToggle?.addEventListener("click", () => {
+        const isHidden = mistakeStats.classList.contains("hidden");
+        mistakeStats.classList.toggle("hidden", !isHidden);
+        mistakeStats.classList.toggle("flex", isHidden);
+        mistakeToggle.querySelector("span").textContent = isHidden ? "Hide active entries" : "Show active entries";
+        const icon = mistakeToggle.querySelector("i");
+        if (icon) icon.setAttribute("data-lucide", isHidden ? "chevron-up" : "chevron-down");
+        if (window.lucide) lucide.createIcons();
+      });
+
+      // Photos & Audio attachments
+      const compressImage = file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("Image read failed"));
+        reader.onload = () => {
+          const img = new Image();
+          img.onerror = () => reject(new Error("Image decode failed"));
+          img.onload = () => {
+            const maxSide = 1600, scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(img.width * scale)); canvas.height = Math.max(1, Math.round(img.height * scale));
+            const ctx = canvas.getContext("2d"); if (!ctx) { reject(new Error("Canvas unavailable")); return; }
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", 0.78));
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+
+      const bindImageInput = (inputId, previewId, labelId, removeId, setter) => {
+        document.getElementById(inputId)?.addEventListener("change", async e => {
+          const file = e.target.files?.[0]; if (!file) return;
+          if (!file.type.startsWith("image/")) { showToast("Choose an image file"); return; }
+          try {
+            const data = await compressImage(file);
+            setter(data);
+            const preview = document.getElementById(previewId); preview.src = data; preview.classList.remove("hidden");
+            document.getElementById(labelId).textContent = file.name;
+            document.getElementById(removeId).classList.remove("hidden");
+          } catch (err) { showToast("Image upload failed"); }
+        });
+        document.getElementById(removeId)?.addEventListener("click", () => {
+          setter(null); document.getElementById(previewId).src = ""; document.getElementById(previewId).classList.add("hidden");
+          document.getElementById(labelId).textContent = "Upload photo"; document.getElementById(inputId).value = "";
+          document.getElementById(removeId).classList.add("hidden");
+        });
+      };
+      bindImageInput("modalQImgInput", "modalQImgPreview", "modalQImgLabel", "modalRemoveQImgBtn", val => { questionImgBase64 = val; });
+      bindImageInput("modalSImgInput", "modalSImgPreview", "modalSImgLabel", "modalRemoveSImgBtn", val => { solutionImgBase64 = val; });
+
+      document.getElementById("modalAudioInput")?.addEventListener("change", async e => {
+        const file = e.target.files?.[0]; if (!file) return;
+        if (!file.type.startsWith("audio/")) { showToast("Choose an audio file"); return; }
+        const reader = new FileReader();
+        reader.onload = () => {
+          recordedAudioBase64 = String(reader.result);
+          document.getElementById("modalAudioEl").src = recordedAudioBase64;
+          document.getElementById("voicePlaybackContainer").classList.remove("hidden");
+          showToast("Audio attached");
+        };
+        reader.readAsDataURL(file);
+      });
+      document.getElementById("deleteVoiceBtn")?.addEventListener("click", () => {
+        recordedAudioBase64 = null; document.getElementById("modalAudioEl").removeAttribute("src");
+        document.getElementById("modalAudioInput").value = ""; document.getElementById("voicePlaybackContainer").classList.add("hidden");
+      });
+
+      // Voice recorder
+      document.getElementById("startVoiceRecBtn")?.addEventListener("click", async () => {
+        try {
+          if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw new Error("Audio recording not supported");
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          audioChunks = []; mediaRecorder = new MediaRecorder(stream);
+          mediaRecorder.ondataavailable = ev => { if (ev.data?.size) audioChunks.push(ev.data); };
+          mediaRecorder.onstop = async () => {
+            const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+            const reader = new FileReader();
+            reader.onload = () => {
+              recordedAudioBase64 = String(reader.result);
+              document.getElementById("modalAudioEl").src = recordedAudioBase64;
+              document.getElementById("voicePlaybackContainer").classList.remove("hidden");
+            };
+            reader.readAsDataURL(blob);
+            stream.getTracks().forEach(track => track.stop());
+            clearInterval(recordInterval); recordInterval = null;
+            document.getElementById("startVoiceRecBtn").disabled = false; document.getElementById("stopVoiceRecBtn").disabled = true;
+          };
+          mediaRecorder.start(); recordSeconds = 0;
+          document.getElementById("startVoiceRecBtn").disabled = true; document.getElementById("stopVoiceRecBtn").disabled = false;
+          recordInterval = setInterval(() => { recordSeconds++; document.getElementById("voiceTimer").textContent = `${String(Math.floor(recordSeconds/60)).padStart(2,"0")}:${String(recordSeconds%60).padStart(2,"0")}`; }, 1000);
+        } catch (err) { showToast(err.message || "Microphone access denied"); }
+      });
+      document.getElementById("stopVoiceRecBtn")?.addEventListener("click", () => { if (mediaRecorder?.state === "recording") mediaRecorder.stop(); });
+
+      // Entry Form Submission
+      document.getElementById("modalSubject")?.addEventListener("change", e => updateChapterSelect(e.target.value));
+      document.getElementById("entryForm")?.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const editId = document.getElementById("editEntryId").value;
+        const isEdit = Boolean(editId);
+        const chosenRadio = document.querySelector('input[name="modalErrorTypeRadio"]:checked');
+
+        const entry = {
+          id: isEdit ? editId : ("err_" + Date.now()),
+          questionNum: document.getElementById("modalQNum").value.trim(),
+          source: document.getElementById("modalSource").value,
+          subject: document.getElementById("modalSubject").value,
+          chapter: document.getElementById("modalChapter").value,
+          errorType: chosenRadio ? chosenRadio.value : "Calculation / Silly Mistake",
+          remedialAction: document.getElementById("modalRemedial").value.trim(),
+          flagged: document.getElementById("modalFlagged").checked,
+          questionImage: questionImgBase64,
+          solutionImage: solutionImgBase64,
+          audioData: recordedAudioBase64,
+          questionImageDriveId: questionImgBase64 ? (errorEntries.find(x => x.id === editId)?.questionImageDriveId || null) : null,
+          solutionImageDriveId: solutionImgBase64 ? (errorEntries.find(x => x.id === editId)?.solutionImageDriveId || null) : null,
+          audioDriveId: recordedAudioBase64 ? (errorEntries.find(x => x.id === editId)?.audioDriveId || null) : null,
+          reviewCount: isEdit ? (errorEntries.find(x => x.id === editId)?.reviewCount || 0) : 0,
+          createdAt: isEdit ? (errorEntries.find(x => x.id === editId)?.createdAt || Date.now()) : Date.now(),
+          updatedAt: Date.now(),
+          deleted: false
+        };
+
+        if (isEdit) {
+          const idx = errorEntries.findIndex(x => x.id === editId);
+          if (idx !== -1) errorEntries[idx] = entry;
+        } else {
+          errorEntries.unshift(entry);
+        }
+
+        saveLocalCache();
+        closeEntryModal();
+        renderTable();
+        showToast(isEdit ? "Entry updated" : "Logged question");
+      });
+
+      // Filter change listeners
+      ["filterSource", "filterSubject", "filterChapter", "filterErrorType", "filterReviewStatus"].forEach(id => {
+        document.getElementById(id)?.addEventListener("change", () => {
+          renderTable();
+          if (!document.getElementById("filteredLogsModal")?.classList.contains("hidden")) {
+            renderFilteredLogsPopup();
+          }
+        });
+      });
+
+      // Export PDF button
+      document.getElementById("exportPdfBtn")?.addEventListener("click", () => {
+        const rows = getFilteredEntries();
+        if (!rows.length) { showToast("No matching logs to export"); return; }
+        const esc = value => escapeHtml(value ?? "");
+        const printHtml = `<!doctype html><html><head><meta charset="utf-8"><title>MCQ Mistake Logs</title><style>
+          body{font:12px Arial,sans-serif;margin:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:6px;vertical-align:top}th{background:#f3f4f6;text-align:left}
+          </style></head><body><h1>MCQ Error Logs (${rows.length})</h1><table><thead><tr><th>Question #</th><th>Source</th><th>Subject</th><th>Chapter</th><th>Error Type</th><th>Action</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.questionNum)}</td><td>${esc(x.source)}</td><td>${esc(x.subject)}</td><td>${esc(x.chapter)}</td><td>${esc(x.errorType)}</td><td>${esc(x.remedialAction)}</td></tr>`).join("")}</tbody></table><script>window.print()<\/script></body></html>`;
+        const w = window.open("about:blank", "_blank");
+        if (w) { w.document.open(); w.document.write(printHtml); w.document.close(); }
+      });
+
+      // Offline JSON export/import
+      document.getElementById("exportJsonBtn")?.addEventListener("click", () => {
+        const data = { appConfig, errorEntries, exportedAt: new Date().toISOString() };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `mcq_backup_${Date.now()}.json`;
+        a.click();
+        showToast("JSON exported");
+      });
+
+      document.getElementById("importJsonInput")?.addEventListener("change", e => {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = evt => {
+          try {
+            const parsed = JSON.parse(evt.target.result);
+            const payload = parsed.payload || parsed;
+            if (!payload || !Array.isArray(payload.errorEntries)) throw new Error("Invalid backup format");
+            if (!confirm(`Restore ${payload.errorEntries.length} entries from backup?`)) return;
+            appConfig = normalizeConfig(payload.appConfig || payload.settings);
+            errorEntries = payload.errorEntries;
+            saveLocalCache(true);
+            populateDropdowns();
+            renderTable();
+            showToast("Backup imported");
+          } catch (err) { showToast("Import failed: " + err.message); }
+        };
+        reader.readAsText(file);
+      });
+
+      // Drive Auth & Backup listeners
+      document.getElementById("authDriveBtn")?.addEventListener("click", triggerGoogleAuth);
+      document.getElementById("disconnectDriveBtn")?.addEventListener("click", disconnectGoogleDrive);
+      document.getElementById("manualCloudBackupBtn")?.addEventListener("click", () => runCloudBackup(false));
+      document.getElementById("restoreCloudBackupBtn")?.addEventListener("click", restoreLatestCloudBackup);
+      document.getElementById("closeLightboxBtn")?.addEventListener("click", () => document.getElementById("imageLightboxModal")?.classList.add("hidden"));
+
       populateDropdowns();
       renderTable();
       if (window.lucide) lucide.createIcons();
+      setTimeout(initGoogleClient, 400);
     });
   </script>
 </body>
