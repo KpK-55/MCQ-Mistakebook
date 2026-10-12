@@ -1894,15 +1894,18 @@
       const fSubEl = document.getElementById("filterSubject");
       const fSrc = fSrcEl?.multiple ? [...fSrcEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fSrcEl?.value || "ALL"].filter(v=>v!=="ALL");
       const fSub = fSubEl?.multiple ? [...fSubEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fSubEl?.value || "ALL"].filter(v=>v!=="ALL");
-      const fChap = document.getElementById("filterChapter")?.value || "ALL";
-      const fStatus = document.getElementById("filterReviewStatus")?.value || "ALL";
+      const fChapEl = document.getElementById("filterChapter");
+      const fChap = fChapEl?.multiple ? [...fChapEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fChapEl?.value || "ALL"].filter(v=>v!=="ALL");
+      const fErrEl = document.getElementById("filterErrorType");
+      const fErr = fErrEl?.multiple ? [...fErrEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fErrEl?.value || "ALL"].filter(v=>v!=="ALL");
+      const fStatusEl = document.getElementById("filterReviewStatus");
+      const fStatus = fStatusEl?.multiple ? [...fStatusEl.selectedOptions].map(o=>o.value).filter(v=>v!=="ALL") : [fStatusEl?.value || "ALL"].filter(v=>v!=="ALL");
       const list = errorEntries.filter(item => !item.deleted).sort((a,b) => (b.createdAt||0)-(a.createdAt||0)).filter(item => {
-        if (fSrc !== "ALL" && item.source !== fSrc) return false;
-        if (fSub !== "ALL" && item.subject !== fSub) return false;
-        if (fChap !== "ALL" && item.chapter !== fChap) return false;
-        if (fStatus === "NEW" && Number(item.reviewCount||0) > 0) return false;
-        if (fStatus === "REVIEWED" && Number(item.reviewCount||0) === 0) return false;
-        if (fStatus === "FLAGGED" && !item.flagged) return false;
+        if (fSrc.length && !fSrc.includes(item.source)) return false;
+        if (fSub.length && !fSub.includes(item.subject)) return false;
+        if (fChap.length && !fChap.includes(item.chapter)) return false;
+        if (fErr.length && !fErr.includes(item.errorType)) return false;
+        if (fStatus.length && !fStatus.some(status => status === "ALL" || (status === "NEW" && Number(item.reviewCount||0) === 0 && !item.flagged) || (status === "REVIEWED" && Number(item.reviewCount||0) > 0) || (status === "FLAGGED" && !!item.flagged))) return false;
         if (q && ![item.questionNum,item.source,item.subject,item.chapter,item.remedialAction,item.errorType].join(" ").toLowerCase().includes(q)) return false;
         return true;
       });
