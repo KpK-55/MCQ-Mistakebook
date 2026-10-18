@@ -689,7 +689,7 @@
           <div class="col-span-2 md:col-span-4 flex items-center justify-between gap-3"><span id="analyticsSummary" class="text-xs text-slate-500">0 logs in selection</span><button id="analyticsResetBtn" type="button" class="rounded-lg border border-slate-300 dark:border-amoled-border px-3 py-2 text-xs font-bold">Reset filters</button></div>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          <section class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 min-w-0"><h3 class="font-extrabold text-sm mb-2">Selected chapter: log count by error type</h3><div class="relative h-72"><canvas id="analyticsSubjectChart" aria-label="Pie chart showing logs by subject"></canvas></div></section>
+          
           <section class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 min-w-0"><h3 class="font-extrabold text-sm mb-2">Selected subject: logs by chapter</h3><div class="relative h-72"><canvas id="analyticsChapterChart" aria-label="Bar chart showing logs by chapter"></canvas></div></section>
           <section class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 min-w-0 lg:col-span-2"><h3 class="font-extrabold text-sm mb-2">Selected chapter: error type breakdown</h3><div class="relative h-72"><canvas id="analyticsErrorChart" aria-label="Bar chart showing logs by error type"></canvas></div></section>
         </div>
@@ -2063,17 +2063,19 @@
     function renderAnalytics() {
       const subject = document.getElementById('analyticsSubjectFilter')?.value || '';
       const chapter = document.getElementById('analyticsChapterFilter')?.value || '';
-      const rows = analyticsRows();
+      const from = document.getElementById('analyticsDateFrom')?.value || '';
+      const to = document.getElementById('analyticsDateTo')?.value || '';
+      const ready = Boolean(subject && chapter && from && to);
+      const rows = ready ? analyticsRows() : [];
       const chapterCounts = new Map();
-      if (subject) errorEntries.filter(x => !x.deleted && String(x.subject||'').trim()===subject).forEach(x=>{const key=String(x.chapter||'').trim(); if(key) chapterCounts.set(key,(chapterCounts.get(key)||0)+1);});
+      if (ready) rows.forEach(x => { const key=String(x.chapter||'').trim(); if(key) chapterCounts.set(key,(chapterCounts.get(key)||0)+1); });
       const chapterPairs = [...chapterCounts.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
-      setAnalyticsChart('analyticsChapterChart','bar',subject?chapterPairs.map(x=>x[0]):[],subject?chapterPairs.map(x=>x[1]):[],chapterPairs.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
+      setAnalyticsChart('analyticsChapterChart','bar',ready?chapterPairs.map(x=>x[0]):[],ready?chapterPairs.map(x=>x[1]):[],chapterPairs.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
       const errorCounts = new Map(); rows.forEach(x=>{const key=String(x.errorType||'Unspecified');errorCounts.set(key,(errorCounts.get(key)||0)+1);});
       const errors = [...errorCounts.entries()].sort((a,b)=>b[1]-a[1]);
-      setAnalyticsChart('analyticsSubjectChart','pie',errors.map(x=>x[0]),errors.map(x=>x[1]),errors.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
-      setAnalyticsChart('analyticsErrorChart','bar',errors.map(x=>x[0]),errors.map(x=>x[1]),errors.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
+      setAnalyticsChart('analyticsErrorChart','bar',ready?errors.map(x=>x[0]):[],ready?errors.map(x=>x[1]):[],errors.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
       const summary = document.getElementById('analyticsSummary');
-      if (summary) summary.textContent = !subject ? 'Select a subject to begin.' : !chapter ? `Select a chapter in ${subject} to view its error logs.` : `${rows.length} log${rows.length===1?'':'s'} for ${subject} → ${chapter}${(document.getElementById('analyticsDateFrom')?.value || document.getElementById('analyticsDateTo')?.value) ? ' in selected date range' : ''}.`;
+      if (summary) summary.textContent = !subject ? 'Select a subject to begin.' : !chapter ? `Select a chapter in ${subject}.` : (!from || !to) ? 'Select both From date and To date to view analytics for the selected chapter and date range.' : `${rows.length} log${rows.length===1?'':'s'} for ${subject} → ${chapter} from ${from} to ${to}.`;
     }
     function openAnalytics() {
       const modal = document.getElementById('analyticsModal'); if (!modal) return;
@@ -2438,6 +2440,25 @@
         if (btn) { btn.disabled = true; btn.textContent = "Preparing table export…"; }
         try {
           const esc = value => escapeHtml(value ?? "");
+          // Normalize handwritten notes for print: convert pure black canvas/background pixels to white,
+          // pure white pen pixels to black, and preserve colored strokes.
+          const normalizeNoteForPrint = async (src) => {
+            if (!src) return '';
+            try {
+              const img = new Image(); img.src = src;
+              await new Promise((resolve,reject)=>{ if(img.complete) resolve(); else {img.onload=resolve; img.onerror=reject;} });
+              const c=document.createElement('canvas'); c.width=img.naturalWidth||img.width; c.height=img.naturalHeight||img.height;
+              const cx=c.getContext('2d',{willReadFrequently:true}); cx.drawImage(img,0,0);
+              const im=cx.getImageData(0,0,c.width,c.height); const d=im.data;
+              for(let i=0;i<d.length;i+=4){ if(d[i+3]===0) { d[i]=255; d[i+1]=255; d[i+2]=255; d[i+3]=255; continue; }
+                const max=Math.max(d[i],d[i+1],d[i+2]), min=Math.min(d[i],d[i+1],d[i+2]);
+                if(max<35){d[i]=255;d[i+1]=255;d[i+2]=255;}
+                else if(min>238){d[i]=0;d[i+1]=0;d[i+2]=0;}
+              }
+              cx.putImageData(im,0,0); return c.toDataURL('image/png');
+            } catch(e) { return src; }
+          };
+          const printableRows = await Promise.all(rows.map(async x => ({...x, printNoteData: await normalizeNoteForPrint(x.remedialNoteData)})));
           const printHtml = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MCQ Error Tracker — Table Export</title><style>
             *{box-sizing:border-box}html{color-scheme:light}body{font:12px Arial,sans-serif;color:#111;margin:0;background:#fff}
             .toolbar{position:sticky;top:0;background:#f3f4f6;border-bottom:1px solid #ddd;padding:12px 18px;z-index:2;display:flex;gap:12px;align-items:center}
@@ -2449,7 +2470,7 @@
           </style></head><body><div class="toolbar"><button onclick="window.print()">Print / Save as PDF</button><span>Use “Save as PDF” in the print dialog. Export includes only the five requested columns. Handwritten Root Cause / Action notes are included in the Root Cause column; question and solution images are excluded.</span></div>
           <main class="wrap"><h1>MCQ Error Tracker — Review Table</h1><p class="subtitle">${rows.length} log(s) · Exported ${esc(new Date().toLocaleString())}</p>
           <table><thead><tr><th>#Qs</th><th>Chapter</th><th>Error Type</th><th>Source</th><th>Root Cause / Action</th></tr></thead><tbody>
-          ${rows.map(x=>`<tr><td>${esc(x.questionNum || "—")}</td><td>${esc(x.chapter || "—")}</td><td>${esc(x.errorType || "Unspecified")}</td><td>${esc(x.source || "—")}</td><td><div class="root-text">${esc(x.remedialAction || "") || (x.remedialNoteData ? "" : "—")}</div>${x.remedialNoteData ? `<img class="root-note" src="${x.remedialNoteData}" alt="Handwritten root cause/action note">` : ""}</td></tr>`).join("")}
+          ${printableRows.map(x=>`<tr><td>${esc(x.questionNum || "—")}</td><td>${esc(x.chapter || "—")}</td><td>${esc(x.errorType || "Unspecified")}</td><td>${esc(x.source || "—")}</td><td><div class="root-text">${esc(x.remedialAction || "") || (x.printNoteData ? "" : "—")}</div>${x.printNoteData ? `<img class="root-note" src="${x.printNoteData}" alt="Handwritten root cause/action note">` : ""}</td></tr>`).join("")}
           </tbody></table><div class="footer">MCQ Error Tracker · Table export</div></main></body></html>`;
           const w = window.open("about:blank", "_blank");
           if (!w) {
