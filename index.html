@@ -127,15 +127,20 @@
     #reviewTableContent th,#reviewTableContent td { padding:5px 6px !important; white-space:normal !important; overflow-wrap:anywhere; word-break:normal; vertical-align:middle; }
     #reviewTableContent th { position:sticky; top:0; z-index:2; }
     #reviewTableBody tr { height:auto; }
-    #reviewTableBody td:nth-child(1) { width:52px; min-width:48px; text-align:center; }
-    #reviewTableBody td:nth-child(2) { width:50px; }
-    #reviewTableBody td:nth-child(6) { min-width:260px; width:34%; }
-    #reviewTableBody td:nth-child(7),#reviewTableBody td:nth-child(8),#reviewTableBody td:nth-child(9) { width:48px; min-width:44px; text-align:center; }
+    #reviewTableBody td:nth-child(1) { width:54px; min-width:50px; text-align:center; }
+    #reviewTableBody td:nth-child(2) { width:52px; }
+    #reviewTableBody td:nth-child(6) { min-width:280px; width:42%; }
+    #reviewTableBody td:nth-child(7),#reviewTableBody td:nth-child(8) { width:64px; min-width:56px; text-align:center; }
     #modalRemedialEditor:empty:before { content:attr(data-placeholder); color:#94a3b8; pointer-events:none; }
     #reviewTableContent img { display:none !important; }
     /* Root cause/action is the exception: show the complete handwritten image in the same cell as typed notes. */
-    #reviewTableContent img.review-root-note { display:block !important; width:100% !important; max-width:100%; height:auto !important; max-height:280px; object-fit:contain !important; background:#fff !important; filter:none !important; mix-blend-mode:normal !important; border:1px solid #d1d5db; border-radius:6px; margin-top:6px; }
-    #reviewTableBody td:nth-child(6) { min-width:280px; width:34%; }
+    #reviewTableContent img.review-root-note { display:block !important; width:100% !important; max-width:100%; height:auto !important; max-height:320px; object-fit:contain !important; background:#000 !important; filter:none !important; mix-blend-mode:normal !important; border:1px solid #475569; border-radius:6px; margin-top:6px; }
+    #imageLightboxModal { z-index: 120 !important; }
+    #reviewTableBody .review-status-check { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border:1px solid #059669; border-radius:50%; color:#10b981; font-size:12px; line-height:1; }
+    #reviewTableBody .review-count-pill { display:inline-block; margin-top:5px; border:1px solid #065f46; border-radius:5px; padding:1px 5px; color:#10b981; background:rgba(16,185,129,.08); font-size:10px; font-weight:700; }
+    #reviewTableBody .review-media-thumb { width:25px; height:25px; object-fit:cover; border-radius:6px; border:1px solid #64748b; background:#000; display:block !important; filter:none !important; }
+    #reviewTableBody .review-media-icons { display:flex; align-items:center; justify-content:center; gap:5px; }
+    #reviewTableBody td:nth-child(6) { min-width:280px; width:42%; }
     @media (min-width:641px) { #reviewTableContent table { font-size:12px; } #reviewTableBody td:nth-child(6) { min-width:320px; } }
 
     .uppercase, th, label, h1, h2, h3 { font-weight: 700; }
@@ -701,7 +706,7 @@
     </div>
   </div>
 
-  <div id="reviewTableModal" class="fixed inset-0 z-[95] bg-black/80 flex items-center justify-center p-2 sm:p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="reviewTableTitle"><section class="bg-white dark:bg-amoled-card rounded-xl border border-slate-300 dark:border-amoled-border w-full h-[96dvh] flex flex-col overflow-hidden"><header class="p-3 border-b flex items-center justify-between gap-3"><div><h2 id="reviewTableTitle" class="font-extrabold">Review Table</h2><p class="text-xs text-slate-500">Select any row to open that log in Book view.</p></div><button id="closeReviewTableBtn" class="rounded-lg border px-3 py-2 text-sm">Close ✕</button></header><div id="reviewTableContent" class="flex-1 overflow-auto"><table class="w-full border-collapse text-xs" style="min-width:1500px;table-layout:fixed"><thead class="sticky top-0 z-10 bg-slate-100 dark:bg-slate-800"><tr><th class="p-2 border">Status</th><th class="p-2 border">#Qs</th><th class="p-2 border">Source</th><th class="p-2 border">Chapter</th><th class="p-2 border">Error type</th><th class="p-2 border">Root cause / action</th><th class="p-2 border">Question image</th><th class="p-2 border">Answer image</th><th class="p-2 border">Audio note</th></tr></thead><tbody id="reviewTableBody"></tbody></table></div></section></div>
+  <div id="reviewTableModal" class="fixed inset-0 z-[95] bg-black/80 flex items-center justify-center p-2 sm:p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="reviewTableTitle"><section class="bg-white dark:bg-amoled-card rounded-xl border border-slate-300 dark:border-amoled-border w-full h-[96dvh] flex flex-col overflow-hidden"><header class="p-3 border-b flex items-center justify-between gap-3"><div><h2 id="reviewTableTitle" class="font-extrabold">Review Table</h2><p class="text-xs text-slate-500">Select any row to open that log in Book view.</p></div><button id="closeReviewTableBtn" class="rounded-lg border px-3 py-2 text-sm">Close ✕</button></header><div id="reviewTableContent" class="flex-1 overflow-auto"><table class="w-full border-collapse text-xs" style="min-width:1500px;table-layout:fixed"><thead class="sticky top-0 z-10 bg-slate-100 dark:bg-slate-800"><tr><th class="p-2 border">Status</th><th class="p-2 border">#Qs</th><th class="p-2 border">Source</th><th class="p-2 border">Chapter</th><th class="p-2 border">Error type</th><th class="p-2 border">Root cause / action</th><th class="p-2 border">Visuals</th><th class="p-2 border">Audio note</th></tr></thead><tbody id="reviewTableBody"></tbody></table></div></section></div>
 
   <div id="analyticsModal" class="fixed inset-0 z-[90] bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-5 hidden" role="dialog" aria-modal="true" aria-labelledby="analyticsTitle">
     <div class="bg-white dark:bg-amoled-card text-slate-900 dark:text-slate-100 rounded-2xl border border-slate-300 dark:border-amoled-border max-w-7xl w-full max-h-[96dvh] flex flex-col overflow-hidden">
@@ -1752,16 +1757,23 @@
     function openReviewTable(rowsOverride=null, returnFrom="filtered") {
       const rows=Array.isArray(rowsOverride) ? rowsOverride : getFilteredEntries();
       reviewTableReturnRows=rows; reviewTableReturnFrom=returnFrom;
+      // Only one review surface at a time; the table is the parent for Book View.
+      document.getElementById("filteredLogsModal")?.classList.add("hidden");
+      document.getElementById("detailModal")?.classList.add("hidden");
+      document.getElementById("dailyReviewModal")?.classList.add("hidden");
+      document.getElementById("imageLightboxModal")?.classList.add("hidden");
       const body=document.getElementById("reviewTableBody");
       body.innerHTML=rows.map(item=>{
         const q=mediaFieldValue(item,"questionImage"),a=mediaFieldValue(item,"solutionImage"),audio=mediaFieldValue(item,"audioData");
-        const status=Number(item.reviewCount||0)>0?`x${Number(item.reviewCount)}`:"New";
-        const mediaBtn=(src,label,kind,driveId)=>src?`<button type="button" title="Open ${label}" aria-label="Open ${label}" data-table-image="${escapeHtml(item.id)}" data-table-image-kind="${kind}" class="inline-flex items-center justify-center rounded-md border px-2 py-2 text-base hover:bg-amber-500/20">▧</button>`:driveId?`<button type="button" title="Load ${label} from Drive" data-table-load-media="${escapeHtml(item.id)}" data-table-image-kind="${kind}" class="inline-flex items-center justify-center rounded-md border px-2 py-2 text-base">↻</button>`:`<span class="text-slate-500">—</span>`;
-        const audioBtn=audio?`<button type="button" title="Play voice note" aria-label="Play voice note" data-table-audio="${escapeHtml(item.id)}" class="rounded-md border px-2 py-2 text-base">▶</button>`:item.audioDriveId?`<button type="button" title="Load voice note" data-table-load-audio="${escapeHtml(item.id)}" class="rounded-md border px-2 py-2 text-base">♫</button>`:`<span class="text-slate-500">—</span>`;
+        const count=Number(item.reviewCount||0), status=count>0?`<span class="review-status-check" title="Reviewed">✓</span><span class="review-count-pill">x${count}</span>`:`<span class="text-amber-500 font-bold">New</span>`;
+        const mediaBtn=(src,label,kind,driveId)=>src
+          ? `<button type="button" title="Open ${label}" aria-label="Open ${label}" data-table-image="${escapeHtml(item.id)}" data-table-image-kind="${kind}" class="inline-flex items-center justify-center rounded-md p-0.5 hover:bg-amber-500/20"><img class="review-media-thumb" src="${src}" alt="${label}"></button>`
+          : driveId?`<button type="button" title="Load ${label} from Drive" data-table-load-media="${escapeHtml(item.id)}" data-table-image-kind="${kind}" class="inline-flex items-center justify-center rounded-md border w-7 h-7 text-sm">▧</button>`:`<span class="text-slate-500">—</span>`;
+        const audioBtn=audio?`<button type="button" title="Play voice note" aria-label="Play voice note" data-table-audio="${escapeHtml(item.id)}" class="rounded-md border w-7 h-7 text-sm">▶</button>`:item.audioDriveId?`<button type="button" title="Load voice note" data-table-load-audio="${escapeHtml(item.id)}" class="rounded-md border w-7 h-7 text-sm">♫</button>`:`<span class="text-slate-500">—</span>`;
         const rootText=renderRootCauseHtml(item.remedialAction||"");
         const rootImage=item.remedialNoteData?`<img class="review-root-note" src="${item.remedialNoteData}" alt="Handwritten root cause/action note" loading="lazy">`:"";
-        return `<tr tabindex="0" role="button" data-review-table-row="${escapeHtml(item.id)}" class="cursor-pointer hover:bg-amber-500/10"><td class="border text-center"><span title="Review count ${Number(item.reviewCount||0)}">${status}</span>${item.flagged?" 🚩":""}</td><td class="border">${escapeHtml(item.questionNum||"—")}</td><td class="border">${escapeHtml(item.source||"—")}</td><td class="border">${escapeHtml(item.chapter||"—")}</td><td class="border">${escapeHtml(item.errorType||"—")}</td><td class="border"><div class="whitespace-pre-wrap break-words">${rootText||"—"}</div>${rootImage}</td><td class="border">${mediaBtn(q,"question image","question",item.questionImageDriveId)}</td><td class="border">${mediaBtn(a,"answer image","solution",item.solutionImageDriveId)}</td><td class="border">${audioBtn}</td></tr>`;
-      }).join("")||'<tr><td colspan="9" class="p-6 text-center">No matching logs.</td></tr>';
+        return `<tr tabindex="0" role="button" data-review-table-row="${escapeHtml(item.id)}" class="cursor-pointer hover:bg-amber-500/10"><td class="border text-center"><div class="flex flex-col items-center">${status}</div>${item.flagged?" 🚩":""}</td><td class="border">${escapeHtml(item.questionNum||"—")}</td><td class="border">${escapeHtml(item.source||"—")}</td><td class="border">${escapeHtml(item.chapter||"—")}</td><td class="border">${escapeHtml(item.errorType||"—")}</td><td class="border"><div class="whitespace-pre-wrap break-words">${rootText||"—"}</div>${rootImage}</td><td class="border"><div class="review-media-icons">${mediaBtn(q,"question image","question",item.questionImageDriveId)}${mediaBtn(a,"answer image","solution",item.solutionImageDriveId)}</div></td><td class="border text-center">${audioBtn}</td></tr>`;
+      }).join("")||'<tr><td colspan="8" class="p-6 text-center">No matching logs.</td></tr>';
       const needs=rows.filter(x=>(x.questionImageDriveId&&!mediaFieldValue(x,"questionImage"))||(x.solutionImageDriveId&&!mediaFieldValue(x,"solutionImage"))||(x.audioDriveId&&!mediaFieldValue(x,"audioData")));
       if(needs.length) Promise.all(needs.map(x=>loadEntryMedia(x).catch(()=>false))).then(()=>{if(!document.getElementById("reviewTableModal").classList.contains("hidden"))openReviewTable(rows,returnFrom);});
       document.getElementById("reviewTableTitle").textContent=returnFrom==="daily"?"Daily Review Table":"Review Table";
@@ -1775,8 +1787,10 @@
     }
     document.getElementById("closeReviewTableBtn")?.addEventListener("click",()=>{
       document.getElementById("reviewTableModal")?.classList.add("hidden");
-      if(reviewTableReturnFrom==="daily"){document.getElementById("dailyReviewModal")?.classList.remove("hidden");}
-      else {document.getElementById("filteredLogsModal")?.classList.remove("hidden");}
+      document.getElementById("filteredLogsModal")?.classList.add("hidden");
+      document.getElementById("detailModal")?.classList.add("hidden");
+      document.getElementById("dailyReviewModal")?.classList.add("hidden");
+      filteredPopupReturn=false; dailyReviewReturn=false;
     });
     document.getElementById("reviewTableBody")?.addEventListener("click",async e=>{
       const imageBtn=e.target.closest("[data-table-image]");
@@ -1789,6 +1803,8 @@
       const rows=reviewTableReturnRows||getFilteredEntries();
       document.getElementById("reviewTableModal")?.classList.add("hidden");
       filteredPopupReturn=true; dailyReviewReturn=false; filteredLogsViewMode="book"; filteredBookRows=rows;
+      document.getElementById("filteredBookNav")?.classList.remove("hidden");
+      document.getElementById("filteredBookNav")?.classList.add("flex");
       const idx=filteredBookRows.findIndex(x=>x.id===rowEl.dataset.reviewTableRow);
       document.getElementById("filteredBookCounter").dataset.index=String(Math.max(0,idx));
       document.getElementById("filteredLogsModal")?.classList.remove("hidden");renderFilteredLogsPopup();
@@ -1898,7 +1914,7 @@
           <td class="py-3 px-3 text-slate-600 dark:text-slate-300">${escapeHtml(item.chapter)}</td>
           <td class="py-3 px-3">${getErrorTypeBadge(item.errorType)}</td>
           <td class="py-3 px-3 text-center">${visualsHtml}</td><td class="py-3 px-3 text-center">${audioHtml}</td>`;
-        tr.addEventListener("click", e => { if (!e.target.closest('[data-no-row="1"]') && !e.target.closest("button")) openDetail(item.id); });
+        tr.addEventListener("click", e => { if (!e.target.closest('[data-no-row="1"]') && !e.target.closest("button")) { filteredPopupReturn=false; dailyReviewReturn=false; openDetail(item.id); } });
         tr.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target === tr) { e.preventDefault(); openDetail(item.id); } });
         tr.addEventListener("contextmenu", e => { e.preventDefault(); showContextMenu(item.id,e.clientX,e.clientY); });
         let pressTimer; tr.addEventListener("touchstart", e => { const touch=e.touches[0]; pressTimer=setTimeout(()=>showContextMenu(item.id,touch.clientX,touch.clientY),600); },{passive:true});
@@ -2240,8 +2256,8 @@
       document.getElementById("invertStudyImagesBtn")?.addEventListener("click", toggleStudyImageInversion);
       document.getElementById("invertDetailImagesBtn")?.addEventListener("click", toggleStudyImageInversion);
       document.getElementById("filteredLogsContent")?.addEventListener("scroll", updateFilteredBookCounter, {passive:true});
-      document.getElementById("closeFilteredLogsBtn")?.addEventListener("click", () => { if(filteredPopupReturn && !document.getElementById("reviewTableModal")?.classList.contains("hidden")) returnToReviewTable(); else document.getElementById("filteredLogsModal")?.classList.add("hidden"); });
-      document.getElementById("closeFilteredLogsFooterBtn")?.addEventListener("click", () => { if(filteredPopupReturn) returnToReviewTable(); else document.getElementById("filteredLogsModal")?.classList.add("hidden"); });
+      document.getElementById("closeFilteredLogsBtn")?.addEventListener("click", () => { if(filteredPopupReturn && reviewTableReturnRows) returnToReviewTable(); else document.getElementById("filteredLogsModal")?.classList.add("hidden"); });
+      document.getElementById("closeFilteredLogsFooterBtn")?.addEventListener("click", () => { if(filteredPopupReturn && reviewTableReturnRows) returnToReviewTable(); else document.getElementById("filteredLogsModal")?.classList.add("hidden"); });
       const closeDetailAndRestoreFilter = () => {
         document.getElementById("detailModal")?.classList.add("hidden");
         if (dailyReviewReturn) { dailyReviewReturn = false; document.getElementById("dailyReviewModal")?.classList.remove("hidden"); renderDailyReview(); }
