@@ -101,7 +101,7 @@
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 9999px; }
 
     .spin-fast { animation: spin 0.8s linear infinite !important; }
-    #quickSyncBtn.syncing #syncSpinner { animation: spin .8s linear infinite !important; transform-origin: center; }
+    #quickSyncBtn.syncing #syncSpinner { animation: none !important; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
     /* === [LINES 68-76] MAIN SCREEN TABLE DESIGN === */
@@ -272,7 +272,7 @@
         </button>
 
         <button id="quickSyncBtn" type="button" class="p-2 rounded-xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition" title="Sync With Drive">
-          <i data-lucide="refresh-cw" class="w-4 h-4" id="syncSpinner"></i>
+          <i data-lucide="cloud" class="w-4 h-4" id="syncSpinner"></i>
         </button>
 
         <button id="openSettingsModalBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card text-black dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition">
@@ -303,6 +303,7 @@
       <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-slate-500 dark:text-slate-400">Total Logs</div><div id="statTotalLogs" class="text-2xl font-extrabold mt-1">0</div><div class="text-xs font-semibold text-slate-400">All active entries</div></div>
       <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-amber-500">New / Unreviewed</div><div id="statNewLogs" class="text-2xl font-extrabold text-amber-500 mt-1">0</div><div class="text-xs font-semibold text-slate-400">Not reviewed yet</div></div>
       <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-emerald-500">Reviewed</div><div id="statReviewedLogs" class="text-2xl font-extrabold text-emerald-500 mt-1">0</div><div class="text-xs font-semibold text-slate-400">At least one review</div></div>
+      <button id="openDailyReviewBtn" type="button" class="text-left rounded-2xl border border-emerald-500/50 bg-white dark:bg-amoled-card p-3 hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"><div class="flex items-center justify-between gap-2"><div class="text-xs uppercase tracking-wider font-extrabold text-emerald-500">Daily Review</div><i data-lucide="calendar-check" class="w-5 h-5 text-emerald-500"></i></div><div class="text-sm font-extrabold mt-2">Review due logs</div><div class="text-xs font-semibold text-slate-400 mt-1">Due today · Review history</div></button>
       <button id="openAnalyticsBtn" type="button" class="text-left rounded-2xl border border-amber-500/50 bg-white dark:bg-amoled-card p-3 hover:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500"><div class="flex items-center justify-between gap-2"><div class="text-xs uppercase tracking-wider font-extrabold text-amber-500">Analytics</div><i data-lucide="chart-no-axes-combined" class="w-5 h-5 text-amber-500"></i></div><div class="text-sm font-extrabold mt-2">Open dashboard</div><div class="text-xs font-semibold text-slate-400 mt-1">Subject · Chapter · Error type</div></button>
     </section>
 
@@ -1400,7 +1401,7 @@
       const spinner = document.getElementById("syncSpinner");
       const syncButton = document.getElementById("quickSyncBtn");
       syncButton?.classList.add("syncing");
-      if (spinner) spinner.classList.add("spin-fast");
+      if (spinner) spinner.classList.remove("spin-fast");
       setSyncProgress("Checking Drive…", 8);
       try {
         const folders = await ensureMediaFolders();
@@ -1492,7 +1493,7 @@
         if (!unauthorized) showToast(e.message || "Sync failed. Check connection and permissions.");
       } finally {
         isSyncing = false;
-        if (spinner) { spinner.classList.remove("spin-fast"); spinner.style.animation = "none"; void spinner.getBoundingClientRect(); spinner.style.animation = ""; }
+        if (spinner) { spinner.classList.remove("spin-fast"); spinner.style.animation = "none"; }
         syncButton?.classList.remove("syncing");
         updateUploadSizeUI();
         if (syncNeedsSilentReauth) {
@@ -1839,8 +1840,14 @@
       if (item) {
         item.reviewCount = Number(item.reviewCount || 0) + 1;
         item.reviewHistory = Array.isArray(item.reviewHistory) ? item.reviewHistory : [];
-        item.reviewHistory.push(Date.now());
-        item.updatedAt = Date.now();
+        const reviewedAt = Date.now();
+        item.reviewHistory.push(reviewedAt);
+        // Spaced repetition: 1, 3, 7, 14, then 30 days after each review.
+        const intervals = [1, 3, 7, 14, 30];
+        const intervalDays = intervals[Math.min(item.reviewHistory.length - 1, intervals.length - 1)];
+        item.lastReviewedAt = reviewedAt;
+        item.nextReviewAt = reviewedAt + intervalDays * 86400000;
+        item.updatedAt = reviewedAt;
         saveLocalCache();
         renderTable();
         syncWithGoogleDriveImmediate();
@@ -2137,6 +2144,18 @@
         document.getElementById("detailModal")?.classList.add("hidden");
         if (filteredPopupReturn) { filteredPopupReturn = false; document.getElementById("filteredLogsModal")?.classList.remove("hidden"); renderFilteredLogsPopup(); }
       };
+      function renderDailyReview() {
+        const now = new Date(); now.setHours(23,59,59,999); const cutoff = now.getTime();
+        const due = errorEntries.filter(x => !x.deleted && (!Number(x.reviewCount||0) || !Number(x.nextReviewAt) || Number(x.nextReviewAt) <= cutoff)).sort((a,b) => (Number(a.nextReviewAt)||0)-(Number(b.nextReviewAt)||0));
+        const list = document.getElementById("dailyReviewList"), summary = document.getElementById("dailyReviewSummary");
+        if (summary) summary.textContent = `${due.length} log(s) due today · ${errorEntries.filter(x=>!x.deleted && Number(x.reviewCount||0)>0).length} previously reviewed log(s)`;
+        if (!list) return;
+        list.innerHTML = due.length ? due.map(x => `<article class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 flex flex-col sm:flex-row sm:items-center gap-3"><div class="min-w-0 flex-1"><div class="text-xs text-slate-500">${escapeHtml(x.subject||'No subject')} · Q${escapeHtml(x.questionNum||'—')}</div><div class="font-bold">${escapeHtml(x.chapter||'No chapter')}</div><div class="text-xs text-slate-500">${escapeHtml(x.errorType||'Unspecified')} · Reviewed ${Number(x.reviewCount||0)} time(s)</div><div class="text-xs text-slate-500">${x.nextReviewAt ? `Next due: ${new Date(x.nextReviewAt).toLocaleDateString()}` : 'Never reviewed'}</div></div><div class="flex gap-2"><button type="button" class="px-3 py-2 rounded-lg border text-xs font-bold" data-daily-open="${escapeHtml(x.id)}">Open</button><button type="button" class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-xs font-bold" data-daily-reviewed="${escapeHtml(x.id)}">Reviewed ✓</button></div></article>`).join('') : '<div class="rounded-xl border p-6 text-center text-sm text-slate-500">No logs due today. Great work!</div>';
+      }
+      document.getElementById("openDailyReviewBtn")?.addEventListener("click", () => { document.getElementById("dailyReviewModal")?.classList.remove("hidden"); renderDailyReview(); if(window.lucide) lucide.createIcons(); });
+      document.getElementById("closeDailyReviewBtn")?.addEventListener("click", () => document.getElementById("dailyReviewModal")?.classList.add("hidden"));
+      document.getElementById("dailyReviewList")?.addEventListener("click", e => { const open=e.target.closest('[data-daily-open]'); const done=e.target.closest('[data-daily-reviewed]'); if(open){document.getElementById("dailyReviewModal")?.classList.add("hidden");openDetail(open.dataset.dailyOpen);} else if(done){window.toggleReviewStatus(done.dataset.dailyReviewed);renderDailyReview();} });
+
       document.getElementById("closeDetailBtn")?.addEventListener("click", closeDetailAndRestoreFilter);
       document.getElementById("detailModal")?.addEventListener("click", e => { if (e.target?.id === "detailModal") closeDetailAndRestoreFilter(); });
       document.getElementById("closeModalBtn")?.addEventListener("click", closeEntryModal);
