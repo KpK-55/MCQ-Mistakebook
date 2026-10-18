@@ -679,7 +679,7 @@
 
   <div id="analyticsModal" class="fixed inset-0 z-[90] bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-5 hidden" role="dialog" aria-modal="true" aria-labelledby="analyticsTitle">
     <div class="bg-white dark:bg-amoled-card text-slate-900 dark:text-slate-100 rounded-2xl border border-slate-300 dark:border-amoled-border max-w-7xl w-full max-h-[96dvh] flex flex-col overflow-hidden">
-      <div class="p-3 sm:p-4 border-b border-slate-200 dark:border-amoled-border flex items-center justify-between gap-3"><div><h2 id="analyticsTitle" class="text-lg font-extrabold">Analytics Dashboard</h2><p class="text-xs text-slate-500 mt-1">Select a subject and chapter to view its mistake logs and error types</p></div><button id="closeAnalyticsBtn" type="button" class="p-2 rounded-lg border border-slate-300 dark:border-amoled-border" aria-label="Close analytics"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+      <div class="p-3 sm:p-4 border-b border-slate-200 dark:border-amoled-border flex items-center justify-between gap-3"><div><h2 id="analyticsTitle" class="text-lg font-extrabold">Analytics Dashboard</h2><p class="text-xs text-slate-500 mt-1">Overall error distribution stays visible; select a subject and chapter to filter the other charts</p></div><button id="closeAnalyticsBtn" type="button" class="p-2 rounded-lg border border-slate-300 dark:border-amoled-border" aria-label="Close analytics"><i data-lucide="x" class="w-5 h-5"></i></button></div>
       <div class="p-3 sm:p-4 overflow-auto space-y-4">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-2 rounded-xl border border-slate-200 dark:border-amoled-border p-3">
           <label class="text-xs font-bold">From date<input id="analyticsDateFrom" type="date" class="block mt-1 w-full rounded-lg border border-slate-300 dark:border-amoled-border bg-white dark:bg-[#0c1222] p-2 text-sm"></label>
@@ -689,9 +689,9 @@
           <div class="col-span-2 md:col-span-4 flex items-center justify-between gap-3"><span id="analyticsSummary" class="text-xs text-slate-500">0 logs in selection</span><button id="analyticsResetBtn" type="button" class="rounded-lg border border-slate-300 dark:border-amoled-border px-3 py-2 text-xs font-bold">Reset filters</button></div>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          
-          <section class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 min-w-0"><h3 class="font-extrabold text-sm mb-2">Selected subject: logs by chapter</h3><div class="relative h-72"><canvas id="analyticsChapterChart" aria-label="Bar chart showing logs by chapter"></canvas></div></section>
-          <section class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 min-w-0 lg:col-span-2"><h3 class="font-extrabold text-sm mb-2">Selected chapter: error type breakdown</h3><div class="relative h-72"><canvas id="analyticsErrorChart" aria-label="Bar chart showing logs by error type"></canvas></div></section>
+          <section class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 min-w-0"><h3 class="font-extrabold text-sm mb-2">All subjects: error distribution</h3><div class="relative h-72"><canvas id="analyticsOverallPieChart" aria-label="Pie chart showing all logs by subject"></canvas></div></section>
+          <section class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 min-w-0"><h3 class="font-extrabold text-sm mb-2">Selected subject: total errors by chapter</h3><div class="relative h-72"><canvas id="analyticsChapterChart" aria-label="Bar chart showing selected subject logs by chapter"></canvas></div></section>
+          <section class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 min-w-0 lg:col-span-2"><h3 class="font-extrabold text-sm mb-2">Selected subject and chapter: error types</h3><div class="relative h-72"><canvas id="analyticsErrorChart" aria-label="Bar chart showing selected chapter logs by error type"></canvas></div></section>
         </div>
       </div>
     </div>
@@ -2016,7 +2016,7 @@
       syncWithGoogleDriveImmediate();
     };
 
-    // Analytics dashboard: no data is charted until a subject and chapter are selected.
+    // Analytics dashboard: overall subject pie is independent of filters; bars respond to selections.
     let analyticsCharts = {};
     const analyticsPalette = ['#f59e0b','#3b82f6','#10b981','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899','#84cc16','#64748b','#a855f7','#14b8a6'];
     function analyticsDateValue(item) {
@@ -2030,19 +2030,14 @@
       const chapterSelect = document.getElementById('analyticsChapterFilter'); if (!chapterSelect) return;
       const current = chapterSelect.value;
       const chapters = subject ? [...new Set(errorEntries.filter(x => !x.deleted && String(x.subject || '').trim() === subject).map(x => String(x.chapter || '').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b)) : [];
-      chapterSelect.innerHTML = '<option value="">Select chapter…</option>' + chapters.map(ch => `<option value="${escapeHtml(ch)}">${escapeHtml(ch)}</option>`).join('');
+      chapterSelect.innerHTML = '<option value="">All chapters…</option>' + chapters.map(ch => `<option value="${escapeHtml(ch)}">${escapeHtml(ch)}</option>`).join('');
       chapterSelect.disabled = !subject || !chapters.length;
       chapterSelect.value = chapters.includes(current) ? current : '';
     }
-    function analyticsRows() {
+    function analyticsDateFiltered(rows) {
       const from = document.getElementById('analyticsDateFrom')?.value || '';
       const to = document.getElementById('analyticsDateTo')?.value || '';
-      const subject = document.getElementById('analyticsSubjectFilter')?.value || '';
-      const chapter = document.getElementById('analyticsChapterFilter')?.value || '';
-      if (!subject || !chapter) return [];
-      return errorEntries.filter(x => {
-        if (x.deleted) return false;
-        if (String(x.subject || '').trim() !== subject || String(x.chapter || '').trim() !== chapter) return false;
+      return rows.filter(x => {
         const date = analyticsDateValue(x);
         if (from && (!date || date < from)) return false;
         if (to && (!date || date > to)) return false;
@@ -2063,19 +2058,28 @@
     function renderAnalytics() {
       const subject = document.getElementById('analyticsSubjectFilter')?.value || '';
       const chapter = document.getElementById('analyticsChapterFilter')?.value || '';
-      const from = document.getElementById('analyticsDateFrom')?.value || '';
-      const to = document.getElementById('analyticsDateTo')?.value || '';
-      const ready = Boolean(subject && chapter && from && to);
-      const rows = ready ? analyticsRows() : [];
+      const allLogs = errorEntries.filter(x => !x.deleted);
+      // Chart 1 always represents all available logs, grouped by subject, and ignores filters.
+      const subjectCounts = new Map();
+      allLogs.forEach(x => { const key=String(x.subject||'Unspecified').trim() || 'Unspecified'; subjectCounts.set(key,(subjectCounts.get(key)||0)+1); });
+      const subjectPairs = [...subjectCounts.entries()].sort((a,b)=>b[1]-a[1]);
+      setAnalyticsChart('analyticsOverallPieChart','pie',subjectPairs.map(x=>x[0]),subjectPairs.map(x=>x[1]),subjectPairs.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
+
+      // Chart 2 shows every chapter for the selected subject. Date range applies; chapter selection does not.
+      const fromSubject = subject ? analyticsDateFiltered(allLogs.filter(x=>String(x.subject||'').trim()===subject)) : [];
       const chapterCounts = new Map();
-      if (ready) rows.forEach(x => { const key=String(x.chapter||'').trim(); if(key) chapterCounts.set(key,(chapterCounts.get(key)||0)+1); });
-      const chapterPairs = [...chapterCounts.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
-      setAnalyticsChart('analyticsChapterChart','bar',ready?chapterPairs.map(x=>x[0]):[],ready?chapterPairs.map(x=>x[1]):[],chapterPairs.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
-      const errorCounts = new Map(); rows.forEach(x=>{const key=String(x.errorType||'Unspecified');errorCounts.set(key,(errorCounts.get(key)||0)+1);});
-      const errors = [...errorCounts.entries()].sort((a,b)=>b[1]-a[1]);
-      setAnalyticsChart('analyticsErrorChart','bar',ready?errors.map(x=>x[0]):[],ready?errors.map(x=>x[1]):[],errors.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
-      const summary = document.getElementById('analyticsSummary');
-      if (summary) summary.textContent = !subject ? 'Select a subject to begin.' : !chapter ? `Select a chapter in ${subject}.` : (!from || !to) ? 'Select both From date and To date to view analytics for the selected chapter and date range.' : `${rows.length} log${rows.length===1?'':'s'} for ${subject} → ${chapter} from ${from} to ${to}.`;
+      fromSubject.forEach(x=>{const key=String(x.chapter||'Unspecified').trim()||'Unspecified';chapterCounts.set(key,(chapterCounts.get(key)||0)+1);});
+      const chapterPairs=[...chapterCounts.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+      setAnalyticsChart('analyticsChapterChart','bar',chapterPairs.map(x=>x[0]),chapterPairs.map(x=>x[1]),chapterPairs.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
+
+      // Chart 3 shows error types for the selected subject + chapter, with date filter applied.
+      const selectedRows = subject && chapter ? analyticsDateFiltered(allLogs.filter(x=>String(x.subject||'').trim()===subject && String(x.chapter||'').trim()===chapter)) : [];
+      const errorCounts=new Map();
+      selectedRows.forEach(x=>{const key=String(x.errorType||'Unspecified').trim()||'Unspecified';errorCounts.set(key,(errorCounts.get(key)||0)+1);});
+      const errors=[...errorCounts.entries()].sort((a,b)=>b[1]-a[1]);
+      setAnalyticsChart('analyticsErrorChart','bar',errors.map(x=>x[0]),errors.map(x=>x[1]),errors.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
+      const summary=document.getElementById('analyticsSummary');
+      if(summary) summary.textContent = !subject ? `${allLogs.length} total logs across all subjects. Select a subject to view chapter counts.` : !chapter ? `${allLogs.length} total logs overall. ${fromSubject.length} logs for ${subject} in the selected date range; select a chapter for error-type counts.` : `${allLogs.length} total logs overall. ${selectedRows.length} logs for ${subject} → ${chapter} in the selected date range.`;
     }
     function openAnalytics() {
       const modal = document.getElementById('analyticsModal'); if (!modal) return;
