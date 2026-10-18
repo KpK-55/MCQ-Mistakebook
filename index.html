@@ -679,19 +679,19 @@
 
   <div id="analyticsModal" class="fixed inset-0 z-[90] bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-5 hidden" role="dialog" aria-modal="true" aria-labelledby="analyticsTitle">
     <div class="bg-white dark:bg-amoled-card text-slate-900 dark:text-slate-100 rounded-2xl border border-slate-300 dark:border-amoled-border max-w-7xl w-full max-h-[96dvh] flex flex-col overflow-hidden">
-      <div class="p-3 sm:p-4 border-b border-slate-200 dark:border-amoled-border flex items-center justify-between gap-3"><div><h2 id="analyticsTitle" class="text-lg font-extrabold">Analytics Dashboard</h2><p class="text-xs text-slate-500 mt-1">Explore mistakes by subject, chapter, and error type</p></div><button id="closeAnalyticsBtn" type="button" class="p-2 rounded-lg border border-slate-300 dark:border-amoled-border" aria-label="Close analytics"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+      <div class="p-3 sm:p-4 border-b border-slate-200 dark:border-amoled-border flex items-center justify-between gap-3"><div><h2 id="analyticsTitle" class="text-lg font-extrabold">Analytics Dashboard</h2><p class="text-xs text-slate-500 mt-1">Select a subject and chapter to view its mistake logs and error types</p></div><button id="closeAnalyticsBtn" type="button" class="p-2 rounded-lg border border-slate-300 dark:border-amoled-border" aria-label="Close analytics"><i data-lucide="x" class="w-5 h-5"></i></button></div>
       <div class="p-3 sm:p-4 overflow-auto space-y-4">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-2 rounded-xl border border-slate-200 dark:border-amoled-border p-3">
           <label class="text-xs font-bold">From date<input id="analyticsDateFrom" type="date" class="block mt-1 w-full rounded-lg border border-slate-300 dark:border-amoled-border bg-white dark:bg-[#0c1222] p-2 text-sm"></label>
           <label class="text-xs font-bold">To date<input id="analyticsDateTo" type="date" class="block mt-1 w-full rounded-lg border border-slate-300 dark:border-amoled-border bg-white dark:bg-[#0c1222] p-2 text-sm"></label>
-          <label class="text-xs font-bold">Subject<select id="analyticsSubjectFilter" class="block mt-1 w-full rounded-lg border border-slate-300 dark:border-amoled-border bg-white dark:bg-[#0c1222] p-2 text-sm"><option value="ALL">All subjects</option></select></label>
-          <label class="text-xs font-bold">Chapter<select id="analyticsChapterFilter" class="block mt-1 w-full rounded-lg border border-slate-300 dark:border-amoled-border bg-white dark:bg-[#0c1222] p-2 text-sm"><option value="ALL">All chapters</option></select></label>
+          <label class="text-xs font-bold">Subject<select id="analyticsSubjectFilter" class="block mt-1 w-full rounded-lg border border-slate-300 dark:border-amoled-border bg-white dark:bg-[#0c1222] p-2 text-sm"><option value="">Select subject…</option></select></label>
+          <label class="text-xs font-bold">Chapter<select id="analyticsChapterFilter" class="block mt-1 w-full rounded-lg border border-slate-300 dark:border-amoled-border bg-white dark:bg-[#0c1222] p-2 text-sm"><option value="">Select chapter…</option></select></label>
           <div class="col-span-2 md:col-span-4 flex items-center justify-between gap-3"><span id="analyticsSummary" class="text-xs text-slate-500">0 logs in selection</span><button id="analyticsResetBtn" type="button" class="rounded-lg border border-slate-300 dark:border-amoled-border px-3 py-2 text-xs font-bold">Reset filters</button></div>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          <section class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 min-w-0"><h3 class="font-extrabold text-sm mb-2">Logs by subject</h3><div class="relative h-72"><canvas id="analyticsSubjectChart" aria-label="Pie chart showing logs by subject"></canvas></div></section>
-          <section class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 min-w-0"><h3 class="font-extrabold text-sm mb-2">Logs by chapter</h3><div class="relative h-72"><canvas id="analyticsChapterChart" aria-label="Bar chart showing logs by chapter"></canvas></div></section>
-          <section class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 min-w-0 lg:col-span-2"><h3 class="font-extrabold text-sm mb-2">Logs by error type</h3><div class="relative h-72"><canvas id="analyticsErrorChart" aria-label="Bar chart showing logs by error type"></canvas></div></section>
+          <section class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 min-w-0"><h3 class="font-extrabold text-sm mb-2">Selected chapter: log count by error type</h3><div class="relative h-72"><canvas id="analyticsSubjectChart" aria-label="Pie chart showing logs by subject"></canvas></div></section>
+          <section class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 min-w-0"><h3 class="font-extrabold text-sm mb-2">Selected subject: logs by chapter</h3><div class="relative h-72"><canvas id="analyticsChapterChart" aria-label="Bar chart showing logs by chapter"></canvas></div></section>
+          <section class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 min-w-0 lg:col-span-2"><h3 class="font-extrabold text-sm mb-2">Selected chapter: error type breakdown</h3><div class="relative h-72"><canvas id="analyticsErrorChart" aria-label="Bar chart showing logs by error type"></canvas></div></section>
         </div>
       </div>
     </div>
@@ -2016,7 +2016,7 @@
       syncWithGoogleDriveImmediate();
     };
 
-    // Analytics dashboard (read-only; uses the existing active log records).
+    // Analytics dashboard: no data is charted until a subject and chapter are selected.
     let analyticsCharts = {};
     const analyticsPalette = ['#f59e0b','#3b82f6','#10b981','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899','#84cc16','#64748b','#a855f7','#14b8a6'];
     function analyticsDateValue(item) {
@@ -2026,25 +2026,26 @@
       return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
     function refreshAnalyticsChapterOptions() {
-      const subject = document.getElementById('analyticsSubjectFilter')?.value || 'ALL';
+      const subject = document.getElementById('analyticsSubjectFilter')?.value || '';
       const chapterSelect = document.getElementById('analyticsChapterFilter'); if (!chapterSelect) return;
       const current = chapterSelect.value;
-      const chapters = [...new Set(errorEntries.filter(x => !x.deleted && (subject === 'ALL' || x.subject === subject)).map(x => String(x.chapter || '').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-      chapterSelect.innerHTML = '<option value="ALL">All chapters</option>' + chapters.map(ch => `<option value="${escapeHtml(ch)}">${escapeHtml(ch)}</option>`).join('');
-      if (chapters.includes(current)) chapterSelect.value = current;
+      const chapters = subject ? [...new Set(errorEntries.filter(x => !x.deleted && String(x.subject || '').trim() === subject).map(x => String(x.chapter || '').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b)) : [];
+      chapterSelect.innerHTML = '<option value="">Select chapter…</option>' + chapters.map(ch => `<option value="${escapeHtml(ch)}">${escapeHtml(ch)}</option>`).join('');
+      chapterSelect.disabled = !subject || !chapters.length;
+      chapterSelect.value = chapters.includes(current) ? current : '';
     }
     function analyticsRows() {
       const from = document.getElementById('analyticsDateFrom')?.value || '';
       const to = document.getElementById('analyticsDateTo')?.value || '';
-      const subject = document.getElementById('analyticsSubjectFilter')?.value || 'ALL';
-      const chapter = document.getElementById('analyticsChapterFilter')?.value || 'ALL';
+      const subject = document.getElementById('analyticsSubjectFilter')?.value || '';
+      const chapter = document.getElementById('analyticsChapterFilter')?.value || '';
+      if (!subject || !chapter) return [];
       return errorEntries.filter(x => {
         if (x.deleted) return false;
+        if (String(x.subject || '').trim() !== subject || String(x.chapter || '').trim() !== chapter) return false;
         const date = analyticsDateValue(x);
         if (from && (!date || date < from)) return false;
         if (to && (!date || date > to)) return false;
-        if (subject !== 'ALL' && String(x.subject || '') !== subject) return false;
-        if (chapter !== 'ALL' && String(x.chapter || '') !== chapter) return false;
         return true;
       });
     }
@@ -2060,27 +2061,28 @@
       });
     }
     function renderAnalytics() {
+      const subject = document.getElementById('analyticsSubjectFilter')?.value || '';
+      const chapter = document.getElementById('analyticsChapterFilter')?.value || '';
       const rows = analyticsRows();
-      const subjectCounts = new Map(); rows.forEach(x => { const key=String(x.subject || 'Unspecified'); subjectCounts.set(key,(subjectCounts.get(key)||0)+1); });
-      // Keep the four standard NEET subject labels visible, including zero-count subjects.
-      const standard = ['Botany','Zoology','Physics','Chemistry'];
-      const subjects = [...standard, ...[...subjectCounts.keys()].filter(x=>!standard.includes(x)).sort((a,b)=>a.localeCompare(b))];
-      setAnalyticsChart('analyticsSubjectChart','pie',subjects,subjects.map(x=>subjectCounts.get(x)||0),subjects.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
-      const chapterCounts = new Map(); rows.forEach(x=>{const key=String(x.chapter||'Unspecified');chapterCounts.set(key,(chapterCounts.get(key)||0)+1);});
-      const chapters = [...chapterCounts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,30);
-      setAnalyticsChart('analyticsChapterChart','bar',chapters.map(x=>x[0]),chapters.map(x=>x[1]),chapters.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
+      const chapterCounts = new Map();
+      if (subject) errorEntries.filter(x => !x.deleted && String(x.subject||'').trim()===subject).forEach(x=>{const key=String(x.chapter||'').trim(); if(key) chapterCounts.set(key,(chapterCounts.get(key)||0)+1);});
+      const chapterPairs = [...chapterCounts.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+      setAnalyticsChart('analyticsChapterChart','bar',subject?chapterPairs.map(x=>x[0]):[],subject?chapterPairs.map(x=>x[1]):[],chapterPairs.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
       const errorCounts = new Map(); rows.forEach(x=>{const key=String(x.errorType||'Unspecified');errorCounts.set(key,(errorCounts.get(key)||0)+1);});
       const errors = [...errorCounts.entries()].sort((a,b)=>b[1]-a[1]);
+      setAnalyticsChart('analyticsSubjectChart','pie',errors.map(x=>x[0]),errors.map(x=>x[1]),errors.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
       setAnalyticsChart('analyticsErrorChart','bar',errors.map(x=>x[0]),errors.map(x=>x[1]),errors.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
-      const summary = document.getElementById('analyticsSummary'); if (summary) summary.textContent = `${rows.length} active log${rows.length===1?'':'s'} in selection · chapter chart shows up to 30 chapters`;
+      const summary = document.getElementById('analyticsSummary');
+      if (summary) summary.textContent = !subject ? 'Select a subject to begin.' : !chapter ? `Select a chapter in ${subject} to view its error logs.` : `${rows.length} log${rows.length===1?'':'s'} for ${subject} → ${chapter}${(document.getElementById('analyticsDateFrom')?.value || document.getElementById('analyticsDateTo')?.value) ? ' in selected date range' : ''}.`;
     }
     function openAnalytics() {
       const modal = document.getElementById('analyticsModal'); if (!modal) return;
       const subjectSelect = document.getElementById('analyticsSubjectFilter');
-      const current = subjectSelect?.value || 'ALL';
       const subjects = [...new Set(errorEntries.filter(x=>!x.deleted).map(x=>String(x.subject||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-      if (subjectSelect) { subjectSelect.innerHTML = '<option value="ALL">All subjects</option>' + subjects.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join(''); subjectSelect.value = subjects.includes(current) ? current : 'ALL'; }
-      refreshAnalyticsChapterOptions(); modal.classList.remove('hidden'); renderAnalytics();
+      if (subjectSelect) { subjectSelect.innerHTML = '<option value="">Select subject…</option>' + subjects.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join(''); subjectSelect.value = ''; }
+      refreshAnalyticsChapterOptions();
+      const chapterSelect = document.getElementById('analyticsChapterFilter'); if (chapterSelect) chapterSelect.value = '';
+      modal.classList.remove('hidden'); renderAnalytics();
       if (window.lucide) lucide.createIcons();
     }
 
@@ -2099,7 +2101,7 @@
       document.getElementById('analyticsModal')?.addEventListener('click', e => { if (e.target?.id === 'analyticsModal') e.currentTarget.classList.add('hidden'); });
       ['analyticsDateFrom','analyticsDateTo','analyticsChapterFilter'].forEach(id => document.getElementById(id)?.addEventListener('change', renderAnalytics));
       document.getElementById('analyticsSubjectFilter')?.addEventListener('change', () => { refreshAnalyticsChapterOptions(); renderAnalytics(); });
-      document.getElementById('analyticsResetBtn')?.addEventListener('click', () => { document.getElementById('analyticsDateFrom').value=''; document.getElementById('analyticsDateTo').value=''; document.getElementById('analyticsSubjectFilter').value='ALL'; refreshAnalyticsChapterOptions(); document.getElementById('analyticsChapterFilter').value='ALL'; renderAnalytics(); });
+      document.getElementById('analyticsResetBtn')?.addEventListener('click', () => { document.getElementById('analyticsDateFrom').value=''; document.getElementById('analyticsDateTo').value=''; document.getElementById('analyticsSubjectFilter').value=''; refreshAnalyticsChapterOptions(); document.getElementById('analyticsChapterFilter').value=''; renderAnalytics(); });
       document.getElementById("openNewLogModalBtn")?.addEventListener("click", () => openEntryModal());
       const menuPanel = document.getElementById("mobileMenuPanel");
       const menuBtn = document.getElementById("mobileMenuBtn");
@@ -2442,12 +2444,12 @@
             .toolbar button{padding:10px 16px;background:#f59e0b;color:#111;border:0;border-radius:8px;font-weight:bold;cursor:pointer}
             .toolbar span{font-size:12px;color:#444}.wrap{padding:18px;max-width:1400px;margin:0 auto}h1{font-size:20px;margin:0 0 6px} .subtitle{margin:0 0 14px;color:#555}
             table{border-collapse:collapse;width:100%;table-layout:fixed}th,td{border:1px solid #888;padding:8px;vertical-align:top;text-align:left;overflow-wrap:anywhere;white-space:pre-wrap}th{background:#eee;font-weight:bold}th:nth-child(1){width:9%}th:nth-child(2){width:19%}th:nth-child(3){width:17%}th:nth-child(4){width:17%}th:nth-child(5){width:38%}
-            tbody tr{break-inside:avoid;page-break-inside:avoid}.empty{color:#666;font-style:italic}.footer{font-size:10px;color:#666;margin-top:12px}
+            tbody tr{break-inside:avoid;page-break-inside:avoid}.root-text{white-space:pre-wrap;overflow-wrap:anywhere}.root-note{display:block;max-width:100%;max-height:260px;object-fit:contain;object-position:left top;margin-top:6px;break-inside:avoid;page-break-inside:avoid}.empty{color:#666;font-style:italic}.footer{font-size:10px;color:#666;margin-top:12px}
             @page{size:auto;margin:12mm}@media print{.toolbar{display:none}.wrap{max-width:none;padding:0}body{margin:0}thead{display:table-header-group}tr{break-inside:avoid;page-break-inside:avoid}}
-          </style></head><body><div class="toolbar"><button onclick="window.print()">Print / Save as PDF</button><span>Use “Save as PDF” in the print dialog. Export includes only the five requested columns; question and solution images are excluded.</span></div>
+          </style></head><body><div class="toolbar"><button onclick="window.print()">Print / Save as PDF</button><span>Use “Save as PDF” in the print dialog. Export includes only the five requested columns. Handwritten Root Cause / Action notes are included in the Root Cause column; question and solution images are excluded.</span></div>
           <main class="wrap"><h1>MCQ Error Tracker — Review Table</h1><p class="subtitle">${rows.length} log(s) · Exported ${esc(new Date().toLocaleString())}</p>
           <table><thead><tr><th>#Qs</th><th>Chapter</th><th>Error Type</th><th>Source</th><th>Root Cause / Action</th></tr></thead><tbody>
-          ${rows.map(x=>`<tr><td>${esc(x.questionNum || "—")}</td><td>${esc(x.chapter || "—")}</td><td>${esc(x.errorType || "Unspecified")}</td><td>${esc(x.source || "—")}</td><td>${esc(x.remedialAction || "—")}</td></tr>`).join("")}
+          ${rows.map(x=>`<tr><td>${esc(x.questionNum || "—")}</td><td>${esc(x.chapter || "—")}</td><td>${esc(x.errorType || "Unspecified")}</td><td>${esc(x.source || "—")}</td><td><div class="root-text">${esc(x.remedialAction || "") || (x.remedialNoteData ? "" : "—")}</div>${x.remedialNoteData ? `<img class="root-note" src="${x.remedialNoteData}" alt="Handwritten root cause/action note">` : ""}</td></tr>`).join("")}
           </tbody></table><div class="footer">MCQ Error Tracker · Table export</div></main></body></html>`;
           const w = window.open("about:blank", "_blank");
           if (!w) {
