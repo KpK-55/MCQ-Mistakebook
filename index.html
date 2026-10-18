@@ -9,6 +9,8 @@
   <meta name="mobile-web-app-capable" content="yes">
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Charts for analytics dashboard -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- Google Identity Services -->
@@ -136,7 +138,7 @@
       border-color: #e6e2d8 !important; 
     }
     #filteredLogsModal .border-b, #detailModal .border-b { border-bottom-width: 1px !important; }
-    #statTotalLogs, #statNewLogs, #statReviewedLogs, #statErrorTypes { font-size: 2rem !important; line-height: 1.1 !important; font-weight: 800 !important; }
+    #statTotalLogs, #statNewLogs, #statReviewedLogs { font-size: 2rem !important; line-height: 1.1 !important; font-weight: 800 !important; }
     main > .grid:first-child > div { border-width: 1px !important; padding: 1rem !important; }
     #errorTypeStats > span { border-width: 1px !important; }
 
@@ -301,7 +303,7 @@
       <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-slate-500 dark:text-slate-400">Total Logs</div><div id="statTotalLogs" class="text-2xl font-extrabold mt-1">0</div><div class="text-xs font-semibold text-slate-400">All active entries</div></div>
       <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-amber-500">New / Unreviewed</div><div id="statNewLogs" class="text-2xl font-extrabold text-amber-500 mt-1">0</div><div class="text-xs font-semibold text-slate-400">Not reviewed yet</div></div>
       <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-emerald-500">Reviewed</div><div id="statReviewedLogs" class="text-2xl font-extrabold text-emerald-500 mt-1">0</div><div class="text-xs font-semibold text-slate-400">At least one review</div></div>
-      <div class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3"><div class="text-xs uppercase tracking-wider font-extrabold text-slate-500 dark:text-slate-400">Error Types</div><div id="statErrorTypes" class="text-2xl font-extrabold mt-1">0</div><div class="text-xs font-semibold text-slate-400">Types currently configured</div></div>
+      <button id="openAnalyticsBtn" type="button" class="text-left rounded-2xl border border-amber-500/50 bg-white dark:bg-amoled-card p-3 hover:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500"><div class="flex items-center justify-between gap-2"><div class="text-xs uppercase tracking-wider font-extrabold text-amber-500">Analytics</div><i data-lucide="chart-no-axes-combined" class="w-5 h-5 text-amber-500"></i></div><div class="text-sm font-extrabold mt-2">Open dashboard</div><div class="text-xs font-semibold text-slate-400 mt-1">Subject · Chapter · Error type</div></button>
     </section>
 
     <section id="mistakeTypeSection" class="rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card p-3">
@@ -675,6 +677,25 @@
     </div>
   </div>
 
+  <div id="analyticsModal" class="fixed inset-0 z-[90] bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-5 hidden" role="dialog" aria-modal="true" aria-labelledby="analyticsTitle">
+    <div class="bg-white dark:bg-amoled-card text-slate-900 dark:text-slate-100 rounded-2xl border border-slate-300 dark:border-amoled-border max-w-7xl w-full max-h-[96dvh] flex flex-col overflow-hidden">
+      <div class="p-3 sm:p-4 border-b border-slate-200 dark:border-amoled-border flex items-center justify-between gap-3"><div><h2 id="analyticsTitle" class="text-lg font-extrabold">Analytics Dashboard</h2><p class="text-xs text-slate-500 mt-1">Explore mistakes by subject, chapter, and error type</p></div><button id="closeAnalyticsBtn" type="button" class="p-2 rounded-lg border border-slate-300 dark:border-amoled-border" aria-label="Close analytics"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+      <div class="p-3 sm:p-4 overflow-auto space-y-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 rounded-xl border border-slate-200 dark:border-amoled-border p-3">
+          <label class="text-xs font-bold">From date<input id="analyticsDateFrom" type="date" class="block mt-1 w-full rounded-lg border border-slate-300 dark:border-amoled-border bg-white dark:bg-[#0c1222] p-2 text-sm"></label>
+          <label class="text-xs font-bold">To date<input id="analyticsDateTo" type="date" class="block mt-1 w-full rounded-lg border border-slate-300 dark:border-amoled-border bg-white dark:bg-[#0c1222] p-2 text-sm"></label>
+          <label class="text-xs font-bold">Subject<select id="analyticsSubjectFilter" class="block mt-1 w-full rounded-lg border border-slate-300 dark:border-amoled-border bg-white dark:bg-[#0c1222] p-2 text-sm"><option value="ALL">All subjects</option></select></label>
+          <label class="text-xs font-bold">Chapter<select id="analyticsChapterFilter" class="block mt-1 w-full rounded-lg border border-slate-300 dark:border-amoled-border bg-white dark:bg-[#0c1222] p-2 text-sm"><option value="ALL">All chapters</option></select></label>
+          <div class="col-span-2 md:col-span-4 flex items-center justify-between gap-3"><span id="analyticsSummary" class="text-xs text-slate-500">0 logs in selection</span><button id="analyticsResetBtn" type="button" class="rounded-lg border border-slate-300 dark:border-amoled-border px-3 py-2 text-xs font-bold">Reset filters</button></div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <section class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 min-w-0"><h3 class="font-extrabold text-sm mb-2">Logs by subject</h3><div class="relative h-72"><canvas id="analyticsSubjectChart" aria-label="Pie chart showing logs by subject"></canvas></div></section>
+          <section class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 min-w-0"><h3 class="font-extrabold text-sm mb-2">Logs by chapter</h3><div class="relative h-72"><canvas id="analyticsChapterChart" aria-label="Bar chart showing logs by chapter"></canvas></div></section>
+          <section class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 min-w-0 lg:col-span-2"><h3 class="font-extrabold text-sm mb-2">Logs by error type</h3><div class="relative h-72"><canvas id="analyticsErrorChart" aria-label="Bar chart showing logs by error type"></canvas></div></section>
+        </div>
+      </div>
+    </div>
+  </div>
   <div id="imageCropModal" class="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-3 hidden" role="dialog" aria-modal="true"><div class="bg-white dark:bg-amoled-card rounded-2xl border border-slate-300 dark:border-amoled-border max-w-3xl w-full max-h-[94dvh] flex flex-col overflow-hidden"><div class="p-3 border-b flex items-center justify-between"><strong>Crop image before attaching</strong><button id="cropCancelBtn" type="button" class="px-3 py-1 rounded-lg border">Cancel</button></div><div class="p-3 overflow-auto"><label class="text-xs">Crop mode <select id="cropAspect" class="border rounded-lg p-1 text-black"><option value="free">Free crop</option><option value="original">Original image</option></select></label><div class="text-xs text-slate-500 mt-2">Preview shows the crop. Choose a ratio and drag the image to reposition it.</div><div id="cropStage" class="relative mx-auto mt-3 overflow-hidden bg-black resize both" style="max-width:100%;width:720px;height:420px;min-width:220px;min-height:180px;resize:both;touch-action:none"><img id="cropImage" alt="Image to crop" draggable="false" class="absolute max-w-none select-none" style="transform-origin:top left;touch-action:none"></div></div><div class="p-3 border-t flex justify-end gap-2"><button id="cropUseOriginalBtn" type="button" class="rounded-lg border px-3 py-2 text-sm">Use full image</button><button id="cropApplyBtn" type="button" class="rounded-lg bg-amber-500 text-black px-4 py-2 font-bold text-sm">Crop & attach</button></div></div></div>
   <!-- Detailed log view -->
   <div id="detailModal" class="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 hidden" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
@@ -1705,7 +1726,6 @@
       document.getElementById("statTotalLogs").textContent = active.length;
       document.getElementById("statNewLogs").textContent = active.length - reviewed;
       document.getElementById("statReviewedLogs").textContent = reviewed;
-      document.getElementById("statErrorTypes").textContent = appConfig.errorTypes.length;
       const holder = document.getElementById("errorTypeStats");
       const counts = new Map(); active.forEach(x => counts.set(x.errorType, (counts.get(x.errorType) || 0) + 1));
       holder.innerHTML = appConfig.errorTypes.map(et => `<span class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-amoled-border bg-slate-50 dark:bg-[#0c1222] px-2.5 py-1.5 text-[11px]"><span class="font-semibold text-slate-600 dark:text-slate-300">${escapeHtml(et.label)}</span><span class="rounded-full bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 font-extrabold text-slate-800 dark:text-white">${counts.get(et.label) || 0}</span></span>`).join("") || '<span class="text-xs text-slate-500">No error types configured</span>';
@@ -1996,6 +2016,74 @@
       syncWithGoogleDriveImmediate();
     };
 
+    // Analytics dashboard (read-only; uses the existing active log records).
+    let analyticsCharts = {};
+    const analyticsPalette = ['#f59e0b','#3b82f6','#10b981','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899','#84cc16','#64748b','#a855f7','#14b8a6'];
+    function analyticsDateValue(item) {
+      const raw = Number(item.createdAt || item.updatedAt || 0);
+      if (!raw) return '';
+      const d = new Date(raw);
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    function refreshAnalyticsChapterOptions() {
+      const subject = document.getElementById('analyticsSubjectFilter')?.value || 'ALL';
+      const chapterSelect = document.getElementById('analyticsChapterFilter'); if (!chapterSelect) return;
+      const current = chapterSelect.value;
+      const chapters = [...new Set(errorEntries.filter(x => !x.deleted && (subject === 'ALL' || x.subject === subject)).map(x => String(x.chapter || '').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+      chapterSelect.innerHTML = '<option value="ALL">All chapters</option>' + chapters.map(ch => `<option value="${escapeHtml(ch)}">${escapeHtml(ch)}</option>`).join('');
+      if (chapters.includes(current)) chapterSelect.value = current;
+    }
+    function analyticsRows() {
+      const from = document.getElementById('analyticsDateFrom')?.value || '';
+      const to = document.getElementById('analyticsDateTo')?.value || '';
+      const subject = document.getElementById('analyticsSubjectFilter')?.value || 'ALL';
+      const chapter = document.getElementById('analyticsChapterFilter')?.value || 'ALL';
+      return errorEntries.filter(x => {
+        if (x.deleted) return false;
+        const date = analyticsDateValue(x);
+        if (from && (!date || date < from)) return false;
+        if (to && (!date || date > to)) return false;
+        if (subject !== 'ALL' && String(x.subject || '') !== subject) return false;
+        if (chapter !== 'ALL' && String(x.chapter || '') !== chapter) return false;
+        return true;
+      });
+    }
+    function setAnalyticsChart(id, type, labels, values, colors) {
+      if (typeof Chart === 'undefined') return;
+      const canvas = document.getElementById(id); if (!canvas) return;
+      if (analyticsCharts[id]) analyticsCharts[id].destroy();
+      const isPie = type === 'pie';
+      analyticsCharts[id] = new Chart(canvas, {
+        type: isPie ? 'pie' : 'bar',
+        data: { labels, datasets: [{ label: 'Logs', data: values, backgroundColor: colors, borderColor: colors, borderWidth: 1, borderRadius: isPie ? 0 : 5 }] },
+        options: { responsive:true, maintainAspectRatio:false, indexAxis: 'x', plugins:{ legend:{ display:isPie, position:'bottom', labels:{ color:document.documentElement.classList.contains('dark')?'#e5e7eb':'#374151', boxWidth:12 } }, tooltip:{ callbacks:{ label:ctx=>`${ctx.label}: ${ctx.raw} log${ctx.raw===1?'':'s'}` } } }, scales: isPie ? {} : { x:{ ticks:{ color:document.documentElement.classList.contains('dark')?'#cbd5e1':'#475569', autoSkip:false, maxRotation:55, minRotation:0 }, grid:{ display:false } }, y:{ beginAtZero:true, ticks:{ precision:0, color:document.documentElement.classList.contains('dark')?'#cbd5e1':'#475569' }, grid:{ color:document.documentElement.classList.contains('dark')?'#30343b':'#e5e7eb' } } } }
+      });
+    }
+    function renderAnalytics() {
+      const rows = analyticsRows();
+      const subjectCounts = new Map(); rows.forEach(x => { const key=String(x.subject || 'Unspecified'); subjectCounts.set(key,(subjectCounts.get(key)||0)+1); });
+      // Keep the four standard NEET subject labels visible, including zero-count subjects.
+      const standard = ['Botany','Zoology','Physics','Chemistry'];
+      const subjects = [...standard, ...[...subjectCounts.keys()].filter(x=>!standard.includes(x)).sort((a,b)=>a.localeCompare(b))];
+      setAnalyticsChart('analyticsSubjectChart','pie',subjects,subjects.map(x=>subjectCounts.get(x)||0),subjects.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
+      const chapterCounts = new Map(); rows.forEach(x=>{const key=String(x.chapter||'Unspecified');chapterCounts.set(key,(chapterCounts.get(key)||0)+1);});
+      const chapters = [...chapterCounts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,30);
+      setAnalyticsChart('analyticsChapterChart','bar',chapters.map(x=>x[0]),chapters.map(x=>x[1]),chapters.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
+      const errorCounts = new Map(); rows.forEach(x=>{const key=String(x.errorType||'Unspecified');errorCounts.set(key,(errorCounts.get(key)||0)+1);});
+      const errors = [...errorCounts.entries()].sort((a,b)=>b[1]-a[1]);
+      setAnalyticsChart('analyticsErrorChart','bar',errors.map(x=>x[0]),errors.map(x=>x[1]),errors.map((_,i)=>analyticsPalette[i%analyticsPalette.length]));
+      const summary = document.getElementById('analyticsSummary'); if (summary) summary.textContent = `${rows.length} active log${rows.length===1?'':'s'} in selection · chapter chart shows up to 30 chapters`;
+    }
+    function openAnalytics() {
+      const modal = document.getElementById('analyticsModal'); if (!modal) return;
+      const subjectSelect = document.getElementById('analyticsSubjectFilter');
+      const current = subjectSelect?.value || 'ALL';
+      const subjects = [...new Set(errorEntries.filter(x=>!x.deleted).map(x=>String(x.subject||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+      if (subjectSelect) { subjectSelect.innerHTML = '<option value="ALL">All subjects</option>' + subjects.map(x=>`<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join(''); subjectSelect.value = subjects.includes(current) ? current : 'ALL'; }
+      refreshAnalyticsChapterOptions(); modal.classList.remove('hidden'); renderAnalytics();
+      if (window.lucide) lucide.createIcons();
+    }
+
     // DOM events initialization
     window.addEventListener("DOMContentLoaded", () => {
       updateUploadSizeUI();
@@ -2006,6 +2094,12 @@
         document.documentElement.classList.add("dark");
       }
 
+      document.getElementById('openAnalyticsBtn')?.addEventListener('click', openAnalytics);
+      document.getElementById('closeAnalyticsBtn')?.addEventListener('click', () => document.getElementById('analyticsModal')?.classList.add('hidden'));
+      document.getElementById('analyticsModal')?.addEventListener('click', e => { if (e.target?.id === 'analyticsModal') e.currentTarget.classList.add('hidden'); });
+      ['analyticsDateFrom','analyticsDateTo','analyticsChapterFilter'].forEach(id => document.getElementById(id)?.addEventListener('change', renderAnalytics));
+      document.getElementById('analyticsSubjectFilter')?.addEventListener('change', () => { refreshAnalyticsChapterOptions(); renderAnalytics(); });
+      document.getElementById('analyticsResetBtn')?.addEventListener('click', () => { document.getElementById('analyticsDateFrom').value=''; document.getElementById('analyticsDateTo').value=''; document.getElementById('analyticsSubjectFilter').value='ALL'; refreshAnalyticsChapterOptions(); document.getElementById('analyticsChapterFilter').value='ALL'; renderAnalytics(); });
       document.getElementById("openNewLogModalBtn")?.addEventListener("click", () => openEntryModal());
       const menuPanel = document.getElementById("mobileMenuPanel");
       const menuBtn = document.getElementById("mobileMenuBtn");
