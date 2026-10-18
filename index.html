@@ -135,7 +135,7 @@
     #reviewTableContent img { display:none !important; }
     /* Root cause/action is the exception: show the complete handwritten image in the same cell as typed notes. */
     #reviewTableContent img.review-root-note { display:block !important; width:100% !important; max-width:100%; height:auto !important; max-height:320px; object-fit:contain !important; background:#000 !important; filter:none !important; mix-blend-mode:normal !important; border:1px solid #475569; border-radius:6px; margin-top:6px; }
-    #imageLightboxModal { z-index: 120 !important; }
+    #imageLightboxModal { z-index: 9999 !important; position: fixed !important; }
     #reviewTableBody .review-status-check { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border:1px solid #059669; border-radius:50%; color:#10b981; font-size:12px; line-height:1; }
     #reviewTableBody .review-count-pill { display:inline-block; margin-top:5px; border:1px solid #065f46; border-radius:5px; padding:1px 5px; color:#10b981; background:rgba(16,185,129,.08); font-size:10px; font-weight:700; }
     #reviewTableBody .review-media-thumb { width:25px; height:25px; object-fit:cover; border-radius:6px; border:1px solid #64748b; background:#000; display:block !important; filter:none !important; }
@@ -689,7 +689,7 @@
       <div class="px-3 py-3 border-b border-slate-200 dark:border-amoled-border flex items-center justify-between gap-3">
         <div class="min-w-0"><h2 id="filteredLogsTitle" class="font-extrabold text-base">Filtered logs</h2><p id="filteredLogsSubtitle" class="text-xs text-slate-500 mt-1">Matching current filters</p></div>
         <div class="flex items-center gap-2 shrink-0">
-          <button id="openReviewTableBtn" type="button" class="px-2.5 py-2 rounded-lg border text-xs font-bold">Table view</button>
+          <button id="filteredMobileViewBtn" type="button" class="px-2.5 py-2 rounded-lg border text-xs font-bold bg-amber-500 text-slate-950">Mobile view</button><button id="filteredBookViewBtn" type="button" class="px-2.5 py-2 rounded-lg border text-xs font-bold">Book view</button><button id="openReviewTableBtn" type="button" class="px-2.5 py-2 rounded-lg border text-xs font-bold">Table view</button>
           <button id="invertStudyImagesBtn" type="button" class="px-2.5 py-2 rounded-lg border text-xs font-bold" aria-pressed="false">Invert images: Off</button>
           <button id="closeFilteredLogsBtn" type="button" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close filtered logs"><i data-lucide="x" class="w-5 h-5"></i></button>
         </div>
@@ -892,7 +892,8 @@
 
     let activeDetailId = null;
     let contextEntryId = null;
-    let filteredLogsViewMode = "book";
+    let filteredLogsViewMode = "list";
+    let mobileViewReturn = false;
     let filteredBookRows = [];
     let filteredPopupReturn = false;
     let dailyReviewReturn = false;
@@ -1673,7 +1674,11 @@
     }
 
     function setFilteredLogsView(mode) {
-      filteredLogsViewMode = "book";
+      filteredLogsViewMode = mode === "book" ? "book" : "list";
+      document.getElementById("filteredMobileViewBtn")?.classList.toggle("bg-amber-500", filteredLogsViewMode === "list");
+      document.getElementById("filteredMobileViewBtn")?.classList.toggle("text-slate-950", filteredLogsViewMode === "list");
+      document.getElementById("filteredBookViewBtn")?.classList.toggle("bg-amber-500", filteredLogsViewMode === "book");
+      document.getElementById("filteredBookViewBtn")?.classList.toggle("text-slate-950", filteredLogsViewMode === "book");
       document.getElementById("filteredListViewBtn")?.classList.toggle("bg-amber-500", filteredLogsViewMode === "list");
       document.getElementById("filteredListViewBtn")?.classList.toggle("text-slate-950", filteredLogsViewMode === "list");
       document.getElementById("filteredBookViewBtn")?.classList.toggle("bg-amber-500", filteredLogsViewMode === "book");
@@ -1692,17 +1697,18 @@
       if (!rows.length) {
         content.innerHTML = '<div class="py-12 text-center text-sm text-slate-500">No logs match the current filters.</div>';
       } else if (filteredLogsViewMode === "list") {
-        content.className = "p-3 sm:p-4 overflow-auto space-y-3";
-        content.innerHTML = rows.map(item => { const qi=mediaFieldValue(item,"questionImage"), si=mediaFieldValue(item,"solutionImage"); const media=(src,label,type)=>src?`<button type="button" class="text-left" data-list-image="${escapeHtml(item.id)}" data-list-image-type="${type}"><img src="${src}" alt="${label}" class="w-full max-h-48 object-contain rounded-lg border bg-black"><span class="text-[10px] text-amber-500">Tap to enlarge ${label.toLowerCase()}</span></button>`:`<div class="text-xs text-slate-500">${label}: ${type==="question"&&item.questionImageDriveId||type==="solution"&&item.solutionImageDriveId?"stored in Drive":"not attached"}</div>`; return `<article tabindex="0" role="button" data-filtered-card="${escapeHtml(item.id)}" class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 space-y-2"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="text-[10px] uppercase tracking-wide text-slate-500">${escapeHtml(item.subject || "No subject")} · Q${escapeHtml(item.questionNum || "—")}</div><div class="font-extrabold text-sm break-words mt-1">${escapeHtml(item.chapter || "No chapter")}</div></div><button type="button" class="shrink-0 rounded-lg bg-amber-500 text-slate-950 font-bold px-3 py-1.5 text-xs hover:bg-amber-600" data-open-filtered-id="${escapeHtml(item.id)}">Details</button></div><div>${getErrorTypeBadge(item.errorType || "Unspecified")}</div><section class="space-y-2"><div class="text-xs font-extrabold uppercase tracking-wide">Question (Q)</div>${media(qi,"Question image","question")}</section><section class="space-y-2"><div class="text-xs font-extrabold uppercase tracking-wide">Root cause / Action (N)</div>${item.remedialAction ? `<div class="whitespace-pre-wrap break-words text-sm rounded-lg border p-3">${renderRootCauseHtml(item.remedialAction)}</div>` : ""}${item.remedialNoteData ? `<button type="button" data-note-lightbox="${escapeHtml(item.id)}" class="block w-full text-left"><img src="${item.remedialNoteData}" alt="Open handwritten note full screen" class="w-full max-h-72 object-contain rounded-lg border bg-black"><span class="text-[10px] text-amber-500">Tap handwritten note to enlarge</span></button>` : `<div class="text-xs text-slate-500">No handwritten note</div>`}</section><section class="space-y-2"><div class="text-xs font-extrabold uppercase tracking-wide">Solution (S)</div>${media(si,"Solution image","solution")}</section><div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-500"><span>Source: ${escapeHtml(item.source || "—")}</span><span>Reviews: ${Number(item.reviewCount || 0)}</span><button type="button" class="rounded-lg bg-emerald-600 text-white px-3 py-1.5 font-bold" data-reviewed-next="${escapeHtml(item.id)}">Reviewed ✓</button>${item.audioData || item.audioDriveId ? `<button type="button" class="text-amber-500 font-bold" data-play-filtered-id="${escapeHtml(item.id)}">▶ Play audio</button>` : ""}</div></article>`; }).join("");
-        content.querySelectorAll("[data-filtered-card]").forEach(card => {
-          const openCard = e => { if (e.target.closest("button, audio, a, input, select, textarea")) return; filteredPopupReturn = true; document.getElementById("filteredLogsModal").classList.add("hidden"); openDetail(card.dataset.filteredCard); };
-          card.addEventListener("click", openCard);
-          card.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openCard(e); } });
-        });
-        content.querySelectorAll("[data-open-filtered-id]").forEach(btn => btn.addEventListener("click", e => { e.stopPropagation(); filteredPopupReturn = true; document.getElementById("filteredLogsModal").classList.add("hidden"); openDetail(btn.dataset.openFilteredId); }));
-        content.querySelectorAll("[data-play-filtered-id]").forEach(btn => btn.addEventListener("click", e => { e.stopPropagation(); playInlineAudio(btn.dataset.playFilteredId, btn); }));
-        content.querySelectorAll("[data-list-image]").forEach(btn=>btn.addEventListener("click",e=>{e.stopPropagation();window.viewLightbox(btn.dataset.listImage,btn.dataset.listImageType);}));
-        content.querySelectorAll("[data-reviewed-next]").forEach(btn=>btn.addEventListener("click",e=>{e.stopPropagation();const id=btn.dataset.reviewedNext;window.toggleReviewStatus(id);btn.textContent="Reviewed ✓";btn.disabled=true;btn.classList.add("opacity-60");}));
+        content.className = "p-3 sm:p-4 overflow-y-auto space-y-3";
+        content.innerHTML = rows.map((item,index) => {
+          const rootText = renderRootCauseHtml(item.remedialAction||"");
+          const rootImg = item.remedialNoteData ? `<button type="button" data-mobile-note="${escapeHtml(item.id)}" class="block w-full rounded-xl overflow-hidden border border-slate-300 dark:border-slate-700 bg-white"><img src="${item.remedialNoteData}" alt="Handwritten root cause/action" class="w-full max-h-[48dvh] object-contain bg-white" style="filter:none;mix-blend-mode:normal"><span class="block text-[10px] text-slate-500 p-1">Tap image to enlarge</span></button>` : `<div class="text-xs text-slate-500">No handwritten root-cause image</div>`;
+          const audio = item.audioData || item.audioDriveId ? `<button type="button" data-mobile-audio="${escapeHtml(item.id)}" class="rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-600 px-4 py-2 text-sm font-bold">▶ Audio note</button>` : `<span class="text-xs text-slate-500">No audio note</span>`;
+          const count = Number(item.reviewCount||0);
+          return `<article class="rounded-2xl border border-slate-200 dark:border-amoled-border p-3 sm:p-4 space-y-3 bg-white dark:bg-amoled-card"><div class="flex items-center justify-between gap-3"><div>${getErrorTypeBadge(item.errorType||"Unspecified")}</div><span class="text-xs font-bold ${count?'text-emerald-500':'text-amber-500'}">${count ? `✓ x${count}` : 'New'}</span></div><section><div class="text-[10px] font-extrabold uppercase tracking-wide text-slate-500 mb-1">Root cause / action</div>${rootText ? `<div class="text-sm whitespace-pre-wrap break-words mb-2">${rootText}</div>` : ''}${rootImg}</section><div class="flex flex-wrap items-center gap-2">${audio}<button type="button" data-mobile-reviewed="${escapeHtml(item.id)}" class="rounded-lg bg-emerald-600 text-white px-3 py-2 text-xs font-bold">✓ Reviewed (+1)</button><button type="button" data-open-filtered-id="${escapeHtml(item.id)}" class="rounded-lg bg-amber-500 text-slate-950 px-4 py-2 text-xs font-extrabold">Click to view details</button></div><div class="text-[10px] text-slate-500 text-right">${index+1} / ${rows.length}</div></article>`;
+        }).join("") || '<div class="py-12 text-center text-sm text-slate-500">No logs match the current filters.</div>';
+        content.querySelectorAll("[data-open-filtered-id]").forEach(btn => btn.addEventListener("click", e => { e.stopPropagation(); mobileViewReturn=true; filteredPopupReturn=false; dailyReviewReturn=false; document.getElementById("filteredLogsModal").classList.add("hidden"); openDetail(btn.dataset.openFilteredId); }));
+        content.querySelectorAll("[data-mobile-note]").forEach(btn=>btn.addEventListener("click",e=>{e.stopPropagation();window.viewNoteLightbox(btn.dataset.mobileNote);}));
+        content.querySelectorAll("[data-mobile-audio]").forEach(btn=>btn.addEventListener("click",e=>{e.stopPropagation();playInlineAudio(btn.dataset.mobileAudio,btn);}));
+        content.querySelectorAll("[data-mobile-reviewed]").forEach(btn=>btn.addEventListener("click",e=>{e.stopPropagation();window.toggleReviewStatus(btn.dataset.mobileReviewed);renderFilteredLogsPopup();}));
       } else {
         content.className = "p-0 overflow-hidden";
         const needsMedia = rows.filter(item => (item.questionImageDriveId && !mediaFieldValue(item, "questionImage")) || (item.solutionImageDriveId && !mediaFieldValue(item, "solutionImage")) || (item.audioDriveId && !mediaFieldValue(item, "audioData")));
@@ -1802,12 +1808,10 @@
       const rowEl=e.target.closest("[data-review-table-row]");if(!rowEl)return;
       const rows=reviewTableReturnRows||getFilteredEntries();
       document.getElementById("reviewTableModal")?.classList.add("hidden");
-      filteredPopupReturn=true; dailyReviewReturn=false; filteredLogsViewMode="book"; filteredBookRows=rows;
-      document.getElementById("filteredBookNav")?.classList.remove("hidden");
-      document.getElementById("filteredBookNav")?.classList.add("flex");
-      const idx=filteredBookRows.findIndex(x=>x.id===rowEl.dataset.reviewTableRow);
-      document.getElementById("filteredBookCounter").dataset.index=String(Math.max(0,idx));
+      filteredPopupReturn=false; dailyReviewReturn=false; mobileViewReturn=false; filteredLogsViewMode="list"; filteredBookRows=rows; reviewTableReturnRows=rows;
+      document.getElementById("filteredBookNav")?.classList.add("hidden");
       document.getElementById("filteredLogsModal")?.classList.remove("hidden");renderFilteredLogsPopup();
+      const target=document.querySelector(`#filteredLogsContent [data-mobile-reviewed="${CSS.escape(rowEl.dataset.reviewTableRow)}"]`); target?.closest("article")?.scrollIntoView({block:"start"});
     });
     document.getElementById("reviewTableBody")?.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches("[data-review-table-row]")){e.preventDefault();e.target.click();}});
 
@@ -2248,9 +2252,11 @@
       mistakeToggle?.addEventListener("click", () => setMistakeStatsOpen(mistakeStats?.classList.contains("hidden")));
       document.getElementById("mobileMenuMistakeTypesBtn")?.addEventListener("click", () => { menuPanel.classList.add("hidden"); setMistakeStatsOpen(true); document.getElementById("mistakeTypeSection")?.scrollIntoView({behavior:"smooth",block:"start"}); });
       setStudyImageInversion(document.documentElement.classList.contains("invert-study-images"));
-      const showFiltered = () => { filteredPopupReturn = true; openReviewTable(getFilteredEntries(), "filtered"); };
+      const showFiltered = () => { filteredPopupReturn=false; dailyReviewReturn=false; mobileViewReturn=false; reviewTableReturnRows=getFilteredEntries(); filteredBookRows=reviewTableReturnRows; filteredLogsViewMode="list"; document.getElementById("reviewTableModal")?.classList.add("hidden"); document.getElementById("detailModal")?.classList.add("hidden"); document.getElementById("filteredLogsModal")?.classList.remove("hidden"); document.getElementById("filteredBookNav")?.classList.add("hidden"); renderFilteredLogsPopup(); };
       document.getElementById("showFilteredLogsBtn")?.addEventListener("click", showFiltered);
-      document.getElementById("openReviewTableBtn")?.addEventListener("click", () => openReviewTable(getFilteredEntries(), "filtered"));
+      document.getElementById("openReviewTableBtn")?.addEventListener("click", () => openReviewTable(filteredBookRows.length ? filteredBookRows : getFilteredEntries(), "filtered"));
+      document.getElementById("filteredMobileViewBtn")?.addEventListener("click", () => { filteredLogsViewMode="list"; document.getElementById("filteredBookNav")?.classList.add("hidden"); renderFilteredLogsPopup(); });
+      document.getElementById("filteredBookViewBtn")?.addEventListener("click", () => { filteredLogsViewMode="book"; document.getElementById("filteredBookNav")?.classList.remove("hidden"); document.getElementById("filteredBookNav")?.classList.add("flex"); renderFilteredLogsPopup(); });
       document.getElementById("filteredBookPrev")?.addEventListener("click", () => moveFilteredBook(-1));
       document.getElementById("filteredBookNext")?.addEventListener("click", () => moveFilteredBook(1));
       document.getElementById("invertStudyImagesBtn")?.addEventListener("click", toggleStudyImageInversion);
@@ -2260,7 +2266,8 @@
       document.getElementById("closeFilteredLogsFooterBtn")?.addEventListener("click", () => { if(filteredPopupReturn && reviewTableReturnRows) returnToReviewTable(); else document.getElementById("filteredLogsModal")?.classList.add("hidden"); });
       const closeDetailAndRestoreFilter = () => {
         document.getElementById("detailModal")?.classList.add("hidden");
-        if (dailyReviewReturn) { dailyReviewReturn = false; document.getElementById("dailyReviewModal")?.classList.remove("hidden"); renderDailyReview(); }
+        if (mobileViewReturn) { mobileViewReturn=false; document.getElementById("filteredLogsModal")?.classList.remove("hidden"); renderFilteredLogsPopup(); }
+        else if (dailyReviewReturn) { dailyReviewReturn = false; document.getElementById("dailyReviewModal")?.classList.remove("hidden"); renderDailyReview(); }
         else if (filteredPopupReturn) { returnToReviewTable(); }
       };
       function renderDailyReview() {
@@ -2271,7 +2278,7 @@
         if (!list) return;
         list.innerHTML = due.length ? due.map(x => `<article class="rounded-xl border border-slate-200 dark:border-amoled-border p-3 flex flex-col sm:flex-row sm:items-center gap-3"><div class="min-w-0 flex-1"><div class="text-xs text-slate-500">${escapeHtml(x.subject||'No subject')} · Q${escapeHtml(x.questionNum||'—')}</div><div class="font-bold">${escapeHtml(x.chapter||'No chapter')}</div><div class="text-xs text-slate-500">${escapeHtml(x.errorType||'Unspecified')} · Reviewed ${Number(x.reviewCount||0)} time(s)</div><div class="text-xs text-slate-500">${x.nextReviewAt ? `Next due: ${new Date(x.nextReviewAt).toLocaleDateString()}` : 'Never reviewed'}</div></div><div class="flex gap-2"><button type="button" class="px-3 py-2 rounded-lg border text-xs font-bold" data-daily-open="${escapeHtml(x.id)}">Open</button><button type="button" class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-xs font-bold" data-daily-reviewed="${escapeHtml(x.id)}">Reviewed ✓</button></div></article>`).join('') : '<div class="rounded-xl border p-6 text-center text-sm text-slate-500">No logs due today. Great work!</div>';
       }
-      document.getElementById("openDailyReviewBtn")?.addEventListener("click", () => { const now=new Date(); now.setHours(23,59,59,999); const cutoff=now.getTime(); const due=errorEntries.filter(x=>!x.deleted&&(!Number(x.reviewCount||0)||!Number(x.nextReviewAt)||Number(x.nextReviewAt)<=cutoff)).sort((a,b)=>(Number(a.nextReviewAt)||0)-(Number(b.nextReviewAt)||0)); renderDailyReview(); openReviewTable(due, "daily"); if(window.lucide) lucide.createIcons(); });
+      document.getElementById("openDailyReviewBtn")?.addEventListener("click", () => { const now=new Date(); now.setHours(23,59,59,999); const cutoff=now.getTime(); const due=errorEntries.filter(x=>!x.deleted&&(!Number(x.reviewCount||0)||!Number(x.nextReviewAt)||Number(x.nextReviewAt)<=cutoff)).sort((a,b)=>(Number(a.nextReviewAt)||0)-(Number(b.nextReviewAt)||0)); dailyReviewReturn=false; filteredPopupReturn=false; mobileViewReturn=false; reviewTableReturnRows=due; filteredBookRows=due; filteredLogsViewMode="list"; document.getElementById("dailyReviewModal")?.classList.add("hidden"); document.getElementById("reviewTableModal")?.classList.add("hidden"); document.getElementById("detailModal")?.classList.add("hidden"); document.getElementById("filteredLogsTitle").textContent="Daily Review"; document.getElementById("filteredLogsSubtitle").textContent=`${due.length} logs due for review`; document.getElementById("filteredLogsModal")?.classList.remove("hidden"); document.getElementById("filteredBookNav")?.classList.add("hidden"); renderFilteredLogsPopup(); if(window.lucide) lucide.createIcons(); });
       document.getElementById("closeDailyReviewBtn")?.addEventListener("click", () => document.getElementById("dailyReviewModal")?.classList.add("hidden"));
       document.getElementById("dailyReviewList")?.addEventListener("click", e => { const open=e.target.closest('[data-daily-open]'); const done=e.target.closest('[data-daily-reviewed]'); if(open){dailyReviewReturn=true;document.getElementById("dailyReviewModal")?.classList.add("hidden");openDetail(open.dataset.dailyOpen);} else if(done){window.toggleReviewStatus(done.dataset.dailyReviewed);renderDailyReview();} });
 
