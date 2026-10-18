@@ -186,19 +186,19 @@
       #logsTable colgroup { display: none; }
       #logsTable th, #logsTable td { padding: .65rem .45rem !important; font-size: 11px !important; overflow-wrap: anywhere; }
       #logsTable th { font-size: 9px !important; letter-spacing: .035em !important; }
+      /* Mobile home table: keep only the essentials visible — Q#, chapter, error type, visuals. */
       #logsTable th:nth-child(1), #logsTable td:nth-child(1),
-      #logsTable th:nth-child(2), #logsTable td:nth-child(2),
       #logsTable th:nth-child(3), #logsTable td:nth-child(3),
       #logsTable th:nth-child(4), #logsTable td:nth-child(4),
-      #logsTable th:nth-child(7), #logsTable td:nth-child(7),
       #logsTable th:nth-child(8), #logsTable td:nth-child(8) { display: none !important; }
-      #logsTable th:nth-child(5), #logsTable td:nth-child(5) { width: 47%; }
-      #logsTable th:nth-child(6), #logsTable td:nth-child(6) { width: 37%; }
-      #logsTable th:nth-child(9), #logsTable td:nth-child(9) { width: 16%; text-align: center !important; }
-      #logsTable td:nth-child(5) { font-size: 11px !important; font-weight: 700; }
+      #logsTable th:nth-child(2), #logsTable td:nth-child(2) { width: 15% !important; text-align:center; }
+      #logsTable th:nth-child(5), #logsTable td:nth-child(5) { width: 35% !important; }
+      #logsTable th:nth-child(6), #logsTable td:nth-child(6) { width: 30% !important; }
+      #logsTable th:nth-child(7), #logsTable td:nth-child(7) { width: 20% !important; text-align:center !important; }
+      #logsTable td:nth-child(2), #logsTable td:nth-child(5) { font-size: 11px !important; font-weight: 700; }
       #logsTable td:nth-child(6) > * { max-width: 100%; white-space: normal; }
-      #logsTable td:nth-child(9) button { width: 2rem !important; height: 2rem !important; }
-      #logsTable td:nth-child(9) span { font-size: 9px !important; }
+      #logsTable td:nth-child(7) img { width: 1.7rem !important; height: 1.7rem !important; }
+      #logsTable td:nth-child(7) button { min-width: 1.7rem; }
       #searchFilterSection { display: block !important; }
       #searchFilterControls { display: grid !important; grid-template-columns: repeat(2,minmax(0,1fr)) !important; gap: .4rem !important; width: 100%; }
       #searchFilterControls select { min-width: 0 !important; width: 100% !important; padding: .55rem .35rem !important; font-size: 10px !important; text-overflow: ellipsis; }
@@ -2334,20 +2334,57 @@
         renderErrorTypeRadioPills(v); renderTable(); syncWithGoogleDriveImmediate();
       });
 
-      document.getElementById("exportPdfBtn")?.addEventListener("click", () => {
-        const rows = getFilteredEntries();
+      document.getElementById("exportPdfBtn")?.addEventListener("click", async () => {
+        let rows = getFilteredEntries();
         if (!rows.length) { showToast("No matching logs to export"); return; }
-        const esc = value => escapeHtml(value ?? "");
-        const printHtml = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MCQ Mistake Logs</title><style>
-          *{box-sizing:border-box}body{font:12px Arial,sans-serif;color:#111;margin:20px}h1{font-size:18px}p{color:#555;font-size:10px}button{padding:10px 16px;background:#f59e0b;color:#000;border:0;border-radius:8px;font-weight:bold;margin:0 0 14px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #bbb;padding:6px;vertical-align:top;overflow-wrap:anywhere;white-space:pre-wrap}th{background:#eee;text-align:left}th:nth-child(1){width:7%}th:nth-child(2){width:16%}th:nth-child(3){width:11%}th:nth-child(4){width:17%}th:nth-child(5){width:14%}th:nth-child(6){width:35%}@media print{body{margin:10mm}button{display:none}tr{break-inside:avoid}thead{display:table-header-group}}
-          </style></head><body><button onclick="window.print()">Print / Save as PDF</button><h1>MCQ Error Tracker — Mistake Logs</h1><p>Exported ${new Date().toLocaleString()} · ${rows.length} entries</p><table><thead><tr><th>Question #</th><th>Source</th><th>Subject</th><th>Chapter</th><th>Error Type</th><th>Text Explanation</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.questionNum)}</td><td>${esc(x.source)}</td><td>${esc(x.subject)}</td><td>${esc(x.chapter)}</td><td>${esc(x.errorType)}</td><td>${esc(x.remedialAction)}</td></tr>`).join("")}</tbody></table></body></html>`;
-        const w = window.open("about:blank", "_blank");
-        if (!w) {
-          const blob = new Blob([printHtml], {type:"text/html;charset=utf-8"});
-          const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "MCQ-Mistake-Logs.html"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
-          showToast("Popup blocked — downloaded printable file."); return;
-        }
-        w.document.open(); w.document.write(printHtml); w.document.close();
+        const btn = document.getElementById("exportPdfBtn");
+        const originalLabel = btn?.textContent;
+        if (btn) { btn.disabled = true; btn.textContent = "Preparing PDF…"; }
+        try {
+          // Resolve Drive-backed images before composing the printable document.
+          await Promise.all(rows.map(item => loadEntryMedia(item).catch(() => false)));
+          rows = rows.map(item => ({...item,
+            _q: mediaFieldValue(item, "questionImage"),
+            _s: mediaFieldValue(item, "solutionImage"),
+            _n: item.remedialNoteData || ""
+          }));
+          const esc = value => escapeHtml(value ?? "");
+          const imgBlock = (src, label, missing=false) => src
+            ? `<figure><figcaption>${label}</figcaption><img class="full-image" src="${src}" alt="${label}" /></figure>`
+            : `<div class="missing">${label}: ${missing ? "image is stored in Google Drive but could not be loaded for this export" : "not attached"}</div>`;
+          const printHtml = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MCQ Error Tracker — Complete Review Export</title><style>
+            *{box-sizing:border-box}html{color-scheme:light}body{font:12px Arial,sans-serif;color:#111;margin:0;background:#fff}
+            .toolbar{position:sticky;top:0;background:#f3f4f6;border-bottom:1px solid #ddd;padding:12px 18px;z-index:2;display:flex;gap:12px;align-items:center}
+            .toolbar button{padding:10px 16px;background:#f59e0b;color:#111;border:0;border-radius:8px;font-weight:bold;cursor:pointer}
+            .toolbar span{font-size:12px;color:#444}.entry{padding:18px 20px 24px;max-width:900px;margin:0 auto;border-bottom:2px dashed #bbb;break-after:page;page-break-after:always}
+            .entry:last-child{break-after:auto;page-break-after:auto}.topline{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:2px solid #222;padding-bottom:9px;margin-bottom:12px}
+            h1{font-size:20px;margin:0 0 5px}h2{font-size:15px;margin:0 0 8px}h3{font-size:12px;margin:14px 0 6px;text-transform:uppercase;letter-spacing:.04em}
+            .meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;margin:10px 0 14px}.meta div{overflow-wrap:anywhere}.label{color:#555;font-size:10px;text-transform:uppercase;display:block;margin-bottom:2px}
+            .section{margin:14px 0;break-inside:avoid;page-break-inside:avoid}.text-note{white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid #bbb;border-radius:5px;padding:10px;min-height:26px;font-size:12px;line-height:1.45}
+            figure{margin:8px 0 14px;break-inside:avoid;page-break-inside:avoid}figcaption{font-weight:bold;font-size:11px;margin-bottom:6px}.full-image{display:block;max-width:100%;width:auto;height:auto;object-fit:contain;margin:0 auto;border:1px solid #ddd}
+            .note-image{max-width:100%;width:auto;height:auto;display:block;margin:8px auto 0;border:1px solid #ddd}.missing{color:#666;font-style:italic;border:1px dashed #bbb;padding:10px;border-radius:5px}
+            .footer{font-size:10px;color:#666;margin-top:16px;border-top:1px solid #ddd;padding-top:7px}
+            @page{size:auto;margin:12mm}@media print{.toolbar{display:none}.entry{max-width:none;padding:0 0 8mm;margin:0}.entry:last-child{break-after:auto;page-break-after:auto}body{margin:0}.section,figure{break-inside:avoid;page-break-inside:avoid}.full-image,.note-image{max-height:none}}
+          </style></head><body><div class="toolbar"><button onclick="window.print()">Print / Save as PDF</button><span>Use “Save as PDF” in the print dialog. Images are kept at their natural aspect ratio and may continue across pages if needed.</span></div>
+          ${rows.map((x,i)=>`<article class="entry"><div class="topline"><div><h1>MCQ Error Tracker</h1><h2>Question ${esc(x.questionNum || "—")} · ${esc(x.subject || "No subject")}</h2></div><div style="text-align:right;font-size:11px">Log ${i+1} of ${rows.length}<br>Reviews: ${Number(x.reviewCount||0)}<br>Flagged: ${x.flagged?"Yes":"No"}</div></div>
+          <div class="meta"><div><span class="label">Source</span>${esc(x.source || "—")}</div><div><span class="label">Error Type</span>${esc(x.errorType || "Unspecified")}</div><div><span class="label">Subject</span>${esc(x.subject || "—")}</div><div><span class="label">Chapter</span>${esc(x.chapter || "—")}</div></div>
+          <section class="section"><h3>1. Question (Q)</h3>${imgBlock(x._q,"Question image",!!x.questionImageDriveId)}</section>
+          <section class="section"><h3>2. Root Cause / Action (N)</h3><div class="text-note">${esc(x.remedialAction || "No written root cause/action notes")}</div>${x._n?`<figure><figcaption>Handwritten notes</figcaption><img class="note-image" src="${x._n}" alt="Handwritten root cause and action notes"></figure>`:`<div class="missing">No handwritten notes attached</div>`}</section>
+          <section class="section"><h3>3. Solution (S)</h3>${imgBlock(x._s,"Solution image",!!x.solutionImageDriveId)}</section>
+          <div class="footer">Exported ${esc(new Date().toLocaleString())} · Log ID: ${esc(x.id || "—")}</div></article>`).join("")}</body></html>`;
+          const w = window.open("about:blank", "_blank");
+          if (!w) {
+            const blob = new Blob([printHtml], {type:"text/html;charset=utf-8"});
+            const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "MCQ-Complete-Review-Logs.html"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+            showToast("Popup blocked — downloaded a printable review file."); return;
+          }
+          w.document.open(); w.document.write(printHtml); w.document.close();
+          // Wait for images to decode before the user opens the print dialog.
+          w.addEventListener("load", () => { Promise.all([...w.document.images].map(im => im.decode ? im.decode().catch(()=>{}) : Promise.resolve())).then(()=>{}); }, {once:true});
+        } catch (err) {
+          console.error("PDF export preparation failed", err);
+          showToast("Export preparation failed. Check Drive connection and try again.");
+        } finally { if (btn) { btn.disabled = false; btn.textContent = originalLabel || "Export PDF"; } }
       });
 
       function runMigrationAudit() {
