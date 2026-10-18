@@ -2519,7 +2519,19 @@
           <main class="wrap"><h1>MCQ Error Tracker — Review Table</h1><p class="subtitle">${rows.length} log(s) · Exported ${esc(new Date().toLocaleString())}</p>
           <table><thead><tr><th>#Qs</th><th>Chapter</th><th>Error Type</th><th>Source</th><th>Root Cause / Action</th></tr></thead><tbody>
           ${printableRows.map(x=>`<tr><td>${esc(x.questionNum || "—")}</td><td>${esc(x.chapter || "—")}</td><td>${esc(x.errorType || "Unspecified")}</td><td>${esc(x.source || "—")}</td><td><div class="root-text">${esc(x.remedialAction || "") || (x.printNoteData ? "" : "—")}</div>${x.printNoteData ? `<img class="root-note" src="${x.printNoteData}" alt="Handwritten root cause/action note">` : ""}</td></tr>`).join("")}
-          </tbody></table><div class="footer">MCQ Error Tracker · Table export</div></main></body></html>`;
+          </tbody></table><div class="footer">MCQ Error Tracker · Table export</div></main>
+<!-- Daily Review modal (required by the dashboard button) -->
+<div id="dailyReviewModal" class="hidden fixed inset-0 z-[100] bg-black/70 p-3 sm:p-6 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="dailyReviewTitle">
+  <section class="max-w-3xl mx-auto mt-4 sm:mt-10 rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card shadow-2xl overflow-hidden">
+    <header class="flex items-start justify-between gap-4 p-4 sm:p-5 border-b border-slate-200 dark:border-amoled-border">
+      <div><h2 id="dailyReviewTitle" class="text-lg font-extrabold">Daily Review</h2><p id="dailyReviewSummary" class="text-sm text-slate-500 mt-1">Loading due logs…</p></div>
+      <button id="closeDailyReviewBtn" type="button" class="rounded-lg border px-3 py-2 text-sm font-bold" aria-label="Close Daily Review">Close ✕</button>
+    </header>
+    <div id="dailyReviewList" class="p-4 sm:p-5 space-y-3"><div class="text-sm text-slate-500">Loading review logs…</div></div>
+  </section>
+</div>
+
+</body></html>`;
           const w = window.open("about:blank", "_blank");
           if (!w) {
             const blob = new Blob([printHtml], {type:"text/html;charset=utf-8"});
@@ -2848,5 +2860,17 @@
       setTimeout(initGoogleClient, 400);
     });
   </script>
+
+<!-- Daily Review modal (required by the dashboard button) -->
+<div id="dailyReviewModal" class="hidden fixed inset-0 z-[100] bg-black/70 p-3 sm:p-6 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="dailyReviewTitle">
+  <section class="max-w-3xl mx-auto mt-4 sm:mt-10 rounded-2xl border border-slate-200 dark:border-amoled-border bg-white dark:bg-amoled-card shadow-2xl overflow-hidden">
+    <header class="flex items-start justify-between gap-4 p-4 sm:p-5 border-b border-slate-200 dark:border-amoled-border">
+      <div><h2 id="dailyReviewTitle" class="text-lg font-extrabold">Daily Review</h2><p id="dailyReviewSummary" class="text-sm text-slate-500 mt-1">Loading due logs…</p></div>
+      <button id="closeDailyReviewBtn" type="button" class="rounded-lg border px-3 py-2 text-sm font-bold" aria-label="Close Daily Review">Close ✕</button>
+    </header>
+    <div id="dailyReviewList" class="p-4 sm:p-5 space-y-3"><div class="text-sm text-slate-500">Loading review logs…</div></div>
+  </section>
+</div>
+
 </body>
 </html>
