@@ -573,7 +573,7 @@
               </div>
             </div>
             <textarea id="modalRemedial" rows="4" placeholder="Switch to Text to type lines or explanations…" class="hidden w-full px-3 py-2 bg-white dark:bg-[#0c1222] border border-slate-200 dark:border-amoled-border rounded-xl text-black dark:text-white leading-relaxed"></textarea>
-            <div id="noteCanvasResizer" class="relative w-full min-w-0 overflow-auto rounded-lg border border-slate-600 resize both" style="height:340px;min-height:180px;max-height:70dvh;touch-action:pan-x pan-y;resize:both">
+            <div id="noteCanvasResizer" class="relative w-full min-w-0 overflow-auto rounded-lg border border-slate-600 resize both" style="height:340px;min-height:180px;max-height:70dvh;touch-action:pan-x pan-y;resize:both;aspect-ratio:2/1">
               <canvas id="remedialNoteCanvas" width="1200" height="600" class="rounded-lg touch-none" style="background:#000;touch-action:none;display:block;width:100%;height:100%;min-height:180px"></canvas>
               <span class="absolute bottom-1 right-2 pointer-events-none text-[10px] text-slate-500">Drag corner to resize · pinch to zoom</span>
             </div>
@@ -623,7 +623,7 @@
             <button type="button" id="stopVoiceRecBtn" disabled class="px-2.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-400 font-bold text-xs flex items-center gap-1 cursor-not-allowed">
               <i data-lucide="square" class="w-3.5 h-3.5"></i> Stop
             </button>
-            <span id="voiceTimer" class="font-mono text-xs text-slate-500 ml-1">00:00</span>
+            <span id="voiceTimer" class="font-mono text-xs text-slate-500 ml-1">00:00</span><canvas id="voiceWaveform" width="260" height="36" class="hidden rounded-md bg-black/90" style="width:min(34vw,180px);height:28px" aria-label="Live recording waveform"></canvas>
           </div>
           <div class="flex items-center gap-2"><label class="cursor-pointer text-xs font-bold text-amber-500">Upload audio<input type="file" id="modalAudioInput" accept="audio/*" class="hidden"></label></div>
           <div id="voicePlaybackContainer" class="hidden flex items-center gap-2">
@@ -2197,7 +2197,7 @@
       function notePoint(e){const r=noteCanvas.getBoundingClientRect();return{x:(e.clientX-r.left)*noteCanvas.width/r.width,y:(e.clientY-r.top)*noteCanvas.height/r.height};}
       function setNoteZoom(z){noteZoom=Math.max(0.7,Math.min(3,z));noteCanvas.style.width=(100*noteZoom)+"%";noteCanvas.style.height=(100*noteZoom)+"%";noteCanvas.style.minWidth=(100*noteZoom)+"%";noteCanvas.style.minHeight=(100*noteZoom)+"%";}
       document.getElementById("noteZoomInBtn")?.addEventListener("click",()=>setNoteZoom(noteZoom+0.15));document.getElementById("noteZoomOutBtn")?.addEventListener("click",()=>setNoteZoom(noteZoom-0.15));
-      if(noteCanvas&&noteCtx){noteCanvas.addEventListener("pointerdown",e=>{if(e.pointerType==="touch"&&pinchStart)return;e.preventDefault();try{noteUndo.push(noteCanvas.toDataURL("image/png"));if(noteUndo.length>30)noteUndo.shift();}catch(_){}noteDrawing=true;notePointLast=notePoint(e);noteCanvas.setPointerCapture?.(e.pointerId);noteCtx.beginPath();noteCtx.arc(notePointLast.x,notePointLast.y,Number(document.getElementById("notePenSize").value)/2,0,Math.PI*2);noteCtx.fillStyle=noteEraser?"#000000":document.getElementById("notePenColor").value;noteCtx.fill();});noteCanvas.addEventListener("pointermove",e=>{if(!noteDrawing)return;e.preventDefault();const p=notePoint(e);noteCtx.beginPath();noteCtx.moveTo(notePointLast.x,notePointLast.y);noteCtx.lineTo(p.x,p.y);noteCtx.strokeStyle=noteEraser?"#000000":document.getElementById("notePenColor").value;noteCtx.lineWidth=Number(document.getElementById("notePenSize").value)*noteCanvas.width/Math.max(1,noteCanvas.getBoundingClientRect().width);noteCtx.lineCap="round";noteCtx.lineJoin="round";noteCtx.stroke();notePointLast=p;});const stop=()=>{noteDrawing=false;notePointLast=null;};noteCanvas.addEventListener("pointerup",stop);noteCanvas.addEventListener("pointercancel",stop);document.getElementById("noteEraserBtn")?.addEventListener("click",()=>{noteEraser=!noteEraser;document.getElementById("noteEraserBtn").classList.toggle("bg-amber-500",noteEraser);document.getElementById("noteEraserBtn").classList.toggle("text-black",noteEraser);document.getElementById("noteEraserBtn").textContent=noteEraser?"Eraser: On":"Eraser";});document.getElementById("noteUndoBtn")?.addEventListener("click",()=>{const d=noteUndo.pop();if(!d)return;const im=new Image();im.onload=()=>{noteCtx.clearRect(0,0,noteCanvas.width,noteCanvas.height);noteCtx.drawImage(im,0,0);};im.src=d;});document.getElementById("noteClearBtn")?.addEventListener("click",()=>{noteUndo.push(noteCanvas.toDataURL("image/png"));noteCtx.clearRect(0,0,noteCanvas.width,noteCanvas.height);});
+      if(noteCanvas&&noteCtx){noteCanvas.addEventListener("pointerdown",e=>{if(e.pointerType==="touch"&&pinchStart)return;e.preventDefault();try{noteUndo.push(noteCanvas.toDataURL("image/png"));if(noteUndo.length>30)noteUndo.shift();}catch(_){}noteDrawing=true;notePointLast=notePoint(e);noteCanvas.setPointerCapture?.(e.pointerId);noteCtx.beginPath();noteCtx.arc(notePointLast.x,notePointLast.y,Number(document.getElementById("notePenSize").value)/2,0,Math.PI*2);noteCtx.globalCompositeOperation=noteEraser?"destination-out":"source-over";noteCtx.fillStyle=document.getElementById("notePenColor").value;noteCtx.fill();noteCtx.globalCompositeOperation="source-over";});noteCanvas.addEventListener("pointermove",e=>{if(!noteDrawing)return;e.preventDefault();const p=notePoint(e);noteCtx.beginPath();noteCtx.moveTo(notePointLast.x,notePointLast.y);noteCtx.lineTo(p.x,p.y);noteCtx.globalCompositeOperation=noteEraser?"destination-out":"source-over";noteCtx.strokeStyle=document.getElementById("notePenColor").value;noteCtx.lineWidth=Number(document.getElementById("notePenSize").value)*noteCanvas.width/Math.max(1,noteCanvas.getBoundingClientRect().width);noteCtx.lineCap="round";noteCtx.lineJoin="round";noteCtx.stroke();noteCtx.globalCompositeOperation="source-over";notePointLast=p;});const stop=()=>{noteDrawing=false;notePointLast=null;};noteCanvas.addEventListener("pointerup",stop);noteCanvas.addEventListener("pointercancel",stop);document.getElementById("noteEraserBtn")?.addEventListener("click",()=>{noteEraser=!noteEraser;document.getElementById("noteEraserBtn").classList.toggle("bg-amber-500",noteEraser);document.getElementById("noteEraserBtn").classList.toggle("text-black",noteEraser);document.getElementById("noteEraserBtn").textContent=noteEraser?"Eraser: On":"Eraser";});document.getElementById("noteUndoBtn")?.addEventListener("click",()=>{const d=noteUndo.pop();if(!d)return;const im=new Image();im.onload=()=>{noteCtx.clearRect(0,0,noteCanvas.width,noteCanvas.height);noteCtx.drawImage(im,0,0);};im.src=d;});document.getElementById("noteClearBtn")?.addEventListener("click",()=>{noteUndo.push(noteCanvas.toDataURL("image/png"));noteCtx.clearRect(0,0,noteCanvas.width,noteCanvas.height);});
         // Two-finger pinch zoom; keep pointer drawing for stylus/finger single-touch.
         noteCanvas.addEventListener("touchstart",e=>{if(e.touches.length===2){noteDrawing=false;notePointLast=null;pinchStart={distance:Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY),zoom:noteZoom};}},{passive:true});noteCanvas.addEventListener("touchmove",e=>{if(e.touches.length===2&&pinchStart){e.preventDefault();const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);setNoteZoom(pinchStart.zoom*d/pinchStart.distance);}},{passive:false});const clearPinch=()=>pinchStart=null;noteCanvas.addEventListener("touchend",e=>{if(e.touches.length<2)clearPinch();});noteCanvas.addEventListener("touchcancel",clearPinch);
       }
@@ -2252,14 +2252,23 @@
         } catch (err) { showToast("Audio upload failed"); }
       });
       document.getElementById("deleteVoiceBtn")?.addEventListener("click", () => {
-        recordedAudioBase64 = null; document.getElementById("modalAudioEl").removeAttribute("src");
+        recordedAudioBase64 = null; stopVoiceWaveform(); document.getElementById("modalAudioEl").removeAttribute("src");
         document.getElementById("modalAudioInput").value = ""; document.getElementById("voicePlaybackContainer").classList.add("hidden");
       });
+      let voiceAudioContext = null, voiceAnalyser = null, voiceWaveFrame = 0, voiceSourceNode = null;
+      function stopVoiceWaveform(){ if(voiceWaveFrame)cancelAnimationFrame(voiceWaveFrame); voiceWaveFrame=0; const c=document.getElementById("voiceWaveform"); if(c)c.classList.add("hidden"); try{voiceSourceNode?.disconnect();}catch(_){} try{voiceAudioContext?.close();}catch(_){} voiceSourceNode=null;voiceAnalyser=null;voiceAudioContext=null; }
+      function startVoiceWaveform(stream){
+        const canvas=document.getElementById("voiceWaveform"),ctx=canvas?.getContext("2d"); if(!canvas||!ctx)return;
+        canvas.classList.remove("hidden");
+        try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;voiceAudioContext=new AC();voiceAnalyser=voiceAudioContext.createAnalyser();voiceAnalyser.fftSize=256;voiceSourceNode=voiceAudioContext.createMediaStreamSource(stream);voiceSourceNode.connect(voiceAnalyser);const data=new Uint8Array(voiceAnalyser.frequencyBinCount);
+          const draw=()=>{if(!voiceAnalyser)return;voiceWaveFrame=requestAnimationFrame(draw);voiceAnalyser.getByteTimeDomainData(data);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.strokeStyle="#60a5fa";ctx.lineWidth=3;ctx.beginPath();for(let i=0;i<data.length;i++){const x=i/(data.length-1)*canvas.width,y=data[i]/255*canvas.height;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.stroke();};draw();
+        }catch(_){ctx.fillStyle="#60a5fa";ctx.fillText("Recording…",8,22);}
+      }
       document.getElementById("startVoiceRecBtn")?.addEventListener("click", async () => {
         try {
           if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw new Error("Audio recording not supported in this browser.");
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          audioChunks = []; mediaRecorder = new MediaRecorder(stream);
+          audioChunks = []; mediaRecorder = new MediaRecorder(stream); startVoiceWaveform(stream);
           mediaRecorder.ondataavailable = ev => { if (ev.data?.size) audioChunks.push(ev.data); };
           mediaRecorder.onstop = async () => {
             try {
@@ -2270,6 +2279,7 @@
               document.getElementById("voicePlaybackContainer").classList.remove("hidden");
             } catch (err) { showToast("Could not save recording"); }
             stream.getTracks().forEach(track => track.stop());
+            stopVoiceWaveform();
             clearInterval(recordInterval); recordInterval = null;
             document.getElementById("startVoiceRecBtn").disabled = false; document.getElementById("stopVoiceRecBtn").disabled = true;
           };
